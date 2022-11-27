@@ -1,0 +1,98 @@
+from abc import ABC
+
+
+class Categories(ABC):
+    """Categories is an abstract base class that defines the interface for a category."""
+
+    def __init__(self):
+        self.marshes_and_lowlands = "marshes_and_lowlands"
+        self.flats_and_plateaus = "flats_and_plateaus"
+        self.flats_and_plateaus_in_combination_with_hills = "flats_and_plateaus_in_combination_with_hills"
+        self.hills_with_gentle_slopes = "hills_with_gentle_slopes"
+        self.steeper_hills_and_foothills = "steeper_hills_and_foothills"
+        self.hills_and_outcrops_of_mountain_ranges = "hills_and_outcrops_of_mountain_ranges"
+        self.higher_hills = "higher_hills"
+        self.mountains = "mountains"
+        self.highest_mountains = "highest_mountains"
+
+
+class LandUse(Categories):
+    """LandUse is a Categories class that has 9 categories of land use type.
+    Class attribute is for return numeric value for fuzzy engine.
+    Attribute in init return string value categories of land use type.
+    """
+    marshes_and_lowlands = 1
+    flats_and_plateaus = 2
+    flats_and_plateaus_in_combination_with_hills = 3
+    hills_with_gentle_slopes = 4
+    steeper_hills_and_foothills = 5
+    hills_and_outcrops_of_mountain_ranges = 6
+    higher_hills = 7
+    mountains = 8
+    highest_mountains = 9
+    
+    def __init__(self):
+        """Attribute in init return string value categories of land use type."""
+        super().__init__()
+
+
+class LandForm:
+    """LandType is a categories class that has 13 categories of land form type.
+    Class attribute is for return numeric value for fuzzy engine.
+    Attribute in init return string value categories of land form type.
+    """
+    medium_conditions = 1
+    permeable_areas = 2
+    permeable_terrain_on_plains = 3
+    hilly_terrain = 4
+    mountainous_terrain = 5
+    bare_rocky_slopes = 6
+    urban = 7
+    suburban = 8
+    rural = 9
+    forests = 10
+    meadows = 11
+    arable_land = 12
+    marshes = 13
+    
+    def __init__(self):
+        """Attribute in init return string value categories of land form type."""
+        self.medium_conditions = "medium_conditions"
+        self.permeable_areas = "permeable_areas"
+        self.permeable_terrain_on_plains = "permeable_terrain_on_plains"
+        self.hilly_terrain = "hilly_terrain"
+        self.mountainous_terrain = "mountainous_terrain"
+        self.bare_rocky_slopes = "bare_rocky_slopes"
+        self.urban = "urban"
+        self.suburban = "suburban"
+        self.rural = "rural"
+        self.forests = "forests"
+        self.meadows = "meadows"
+        self.arable_land = "arable_land"
+        self.marshes = "marshes"
+
+
+class Slope(Categories):
+    """Slope is a categories class that has 9 categories of land slope type.
+    Class attribute is for return numeric value for fuzzy engine.
+    Attribute in init return string value categories of land slope type.
+    """
+    def __init__(self):
+        """Attribute in init return string value categories of land slope type."""
+        super().__init__()
+
+
+class Impervious(Categories):
+    """Impervious is a categories class that has 9 categories of land impervious type.
+    Class attribute is for return numeric value for fuzzy engine.
+    Attribute in init return string value categories of land impervious type.
+    """
+    def __init__(self):
+        """Attribute in init return string value categories of land impervious type."""
+        super().__init__()
+
+
+land_use = LandUse()
+land_form = LandForm()
+slope_ctgr = Slope()
+impervious_ctgr = Impervious()
