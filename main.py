@@ -1,19 +1,14 @@
-from skfuzzy import control as ctrl
+from fuzzy.engine import FuzzyEngine
+from fuzzy.categories import LandUse, LandForm
 
-from rules import RulesSet
-from categories import LandUse, LandForm
 
-simulation_ctrl = ctrl.ControlSystem(RulesSet.get_rules("slope"))
+calc = FuzzyEngine(
+    land_use=LandUse.flats_and_plateaus, land_form=LandForm.permeable_areas
+)
 
-# compute
-simulation = ctrl.ControlSystemSimulation(simulation_ctrl)
 
-# calculate slope
-simulation.input['land_use'] = LandUse.higher_hills
-simulation.input['land_form'] = LandForm.permeable_areas
-# result slope
-simulation.compute()
-result = simulation.output['slope']
-
-print(result)
-# slope.view(sim=simulation)
+if __name__ == "__main__":
+    print(calc.slope_result)
+    print(calc.impervious_result)
+    print(calc.catchment_result)
+    print(calc.get_populate(result=calc.catchment_result))
