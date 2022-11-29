@@ -151,7 +151,10 @@ slope_ctgr = Slope()
 impervious_ctgr = Impervious()
 catchment_ctgr = Catchments()
 #
-# with open("r", "w") as file:
-#     for i in vars(land_use):
-#         for s in vars(land_form):
-#             file.write(f"(membership.land_use_type[categories.land_use.{i}] & membership.land_form_type[categories.land_form.{s}]) |" + "\n")
+with open("r", "w") as file:
+    for s in vars(land_form):
+        for i in vars(land_use):
+            file.write(
+                f"(membership.land_form_type[categories.land_form.{s}] & membership.land_use_type[categories.land_use.{i}]) |"
+                + "\n"
+            )

@@ -10,671 +10,799 @@ class RulesSet:
         self.rule1 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
                     ]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.rural]
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.forests]
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[categories.land_use.higher_hills]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.arable]
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[categories.land_use.mountains]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.meadows]
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.marshes]
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
                 )
-            ),
+                | (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+            )
         )
         self.rule2 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[categories.land_use.mountains]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.rural]
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[categories.land_use.higher_hills]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.forests]
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[categories.land_use.mountains]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.arable]
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.meadows]
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[categories.land_use.mountains]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+                | (
+                    membership.land_form_type[
                         categories.land_form.permeable_terrain_on_plains
                     ]
+                    & membership.land_use_type[categories.land_use.higher_hills]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
                     ]
-                    & membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[categories.land_use.mountains]
                 )
                 | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
                     ]
-                    & membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
                 )
-            ),
+                | (
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+            )
         )
 
         self.rule3 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
                 )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
-                    ]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-            ),
+            )
         )
-
         self.rule4 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
                 )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
-                    ]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_with_gentle_slopes
-                    ]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-            ),
+            )
         )
-
-        self.rule5 = ctrl.Rule(
-            antecedent=(
-                (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
-                    ]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.steeper_hills_and_foothills
-                    ]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
-                    ]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-            ),
-        )
-
         self.rule6 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
                     ]
                 )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.hills_and_outcrops_of_mountain_ranges
-                    ]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-            ),
+            )
         )
-
         self.rule7 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.urban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.suburban]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.rural]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.marshes_and_lowlands]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
-                )
-                | (
-                    membership.land_use_type[
-                        categories.land_use.flats_and_plateaus_in_combination_with_hills
-                    ]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
-                )
-                | (
-                    membership.land_use_type[
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[
                         categories.land_use.hills_with_gentle_slopes
                     ]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
                 )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.higher_hills]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
-                    ]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.forests]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.meadows]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.arable]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.marshes]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.flats_and_plateaus]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
-                )
-            ),
+            )
         )
-
         self.rule8 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.hilly]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.mountains]
-                    & membership.land_form_type[categories.land_form.mountains]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.permeable_areas]
-                )
-                | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[
-                        categories.land_form.permeable_terrain_on_plains
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
                     ]
                 )
-            ),
+            )
         )
-
         self.rule9 = ctrl.Rule(
             antecedent=(
                 (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.hilly]
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+            )
+        )
+        self.rule10 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+            )
+        )
+        self.rule11 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+            )
+        )
+        self.rule12 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.urban]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+            )
+        )
+        self.rule13 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+            )
+        )
+        self.rule14 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+            )
+        )
+        self.rule15 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+            )
+        )
+        self.rule16 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+            )
+        )
+        self.rule17 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+            )
+        )
+        self.rule18 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+            )
+        )
+        self.rule19 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+            )
+        )
+        self.rule20 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+            )
+        )
+        self.rule21 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.suburban]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+            )
+        )
+        self.rule22 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+            )
+        )
+        self.rule23 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+            )
+        )
+        self.rule24 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+            )
+        )
+        self.rule25 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+            )
+        )
+        self.rule26 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+            )
+        )
+        self.rule27 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+            )
+        )
+        self.rule28 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[categories.land_use.higher_hills]
+                )
+            )
+        )
+        self.rule29 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[categories.land_use.mountains]
+                )
+            )
+        )
+        self.rule30 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.rural]
+                    & membership.land_use_type[categories.land_use.highest_mountains]
+                )
+            )
+        )
+        self.rule31 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+            )
+        )
+        self.rule32 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.medium_conditions]
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+            )
+        )
+        self.rule33 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
                 )
                 | (
-                    membership.land_use_type[categories.land_use.highest_mountains]
-                    & membership.land_form_type[categories.land_form.mountains]
+                    membership.land_form_type[categories.land_form.forests]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
                 )
-            ),
+            )
+        )
+        self.rule34 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+            )
+        )
+        self.rule35 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.marshes]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+            )
+        )
+        self.rule36 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+            )
+        )
+        self.rule37 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+            )
+        )
+        self.rule38 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.meadows]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+            )
+        )
+        self.rule39 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+            )
+        )
+        self.rule40 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+            )
+        )
+        self.rule41 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.arable]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+            )
+        )
+        # skały i przepuszczalne
+        self.rule42 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+            )
+        )
+        self.rule43 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+            )
+        )
+        self.rule44 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.bare_rocky_slopes]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.mountains]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+            )
+        )
+
+        self.rule45 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+                | (
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
+                    ]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+            )
+        )
+        self.rule46 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+                | (
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
+                    ]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+            )
+        )
+        self.rule47 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+                | (
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
+                    ]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+            )
+        )
+        self.rule48 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+                | (
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
+                    ]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+            )
+        )
+        self.rule49 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+                | (
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
+                    ]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+            )
+        )
+        self.rule50 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.medium_conditions]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.permeable_areas]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+                | (
+                    membership.land_form_type[
+                        categories.land_form.permeable_terrain_on_plains
+                    ]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+            )
+        )
+        self.rule51 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[categories.land_use.marshes_and_lowlands]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[categories.land_use.flats_and_plateaus]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[
+                        categories.land_use.flats_and_plateaus_in_combination_with_hills
+                    ]
+                )
+            )
+        )
+        self.rule52 = ctrl.Rule(
+            antecedent=(
+                (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[
+                        categories.land_use.hills_with_gentle_slopes
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[
+                        categories.land_use.steeper_hills_and_foothills
+                    ]
+                )
+                | (
+                    membership.land_form_type[categories.land_form.hilly]
+                    & membership.land_use_type[
+                        categories.land_use.hills_and_outcrops_of_mountain_ranges
+                    ]
+                )
+            )
         )
 
 
@@ -682,27 +810,137 @@ class SlopeRule(RulesSet):
     def __init__(self):
         super().__init__()
         self.rule1.consequent = membership.slope[
+            categories.slope_ctgr.highest_mountains
+        ]
+        self.rule2.consequent = membership.slope[categories.slope_ctgr.mountains]
+        self.rule3.consequent = membership.slope[
             categories.slope_ctgr.marshes_and_lowlands
         ]
-        self.rule2.consequent = membership.slope[
+        self.rule4.consequent = membership.slope[
             categories.slope_ctgr.flats_and_plateaus
         ]
-        self.rule3.consequent = membership.slope[
+        self.rule6.consequent = membership.slope[
             categories.slope_ctgr.flats_and_plateaus_in_combination_with_hills
         ]
-        self.rule4.consequent = membership.slope[
+        self.rule7.consequent = membership.slope[
             categories.slope_ctgr.hills_with_gentle_slopes
         ]
-        self.rule5.consequent = membership.slope[
+        self.rule8.consequent = membership.slope[
             categories.slope_ctgr.steeper_hills_and_foothills
         ]
-        self.rule6.consequent = membership.slope[
+        self.rule9.consequent = membership.slope[
             categories.slope_ctgr.hills_and_outcrops_of_mountain_ranges
         ]
-        self.rule7.consequent = membership.slope[categories.slope_ctgr.higher_hills]
-        self.rule8.consequent = membership.slope[categories.slope_ctgr.mountains]
-        self.rule9.consequent = membership.slope[
+        self.rule10.consequent = membership.slope[categories.slope_ctgr.higher_hills]
+        self.rule11.consequent = membership.slope[categories.slope_ctgr.mountains]
+        self.rule12.consequent = membership.slope[
             categories.slope_ctgr.highest_mountains
+        ]
+        self.rule13.consequent = membership.slope[
+            categories.slope_ctgr.marshes_and_lowlands
+        ]
+        self.rule14.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus
+        ]
+        self.rule15.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus_in_combination_with_hills
+        ]
+        self.rule16.consequent = membership.slope[
+            categories.slope_ctgr.hills_with_gentle_slopes
+        ]
+        self.rule17.consequent = membership.slope[
+            categories.slope_ctgr.steeper_hills_and_foothills
+        ]
+        self.rule18.consequent = membership.slope[
+            categories.slope_ctgr.hills_and_outcrops_of_mountain_ranges
+        ]
+        self.rule19.consequent = membership.slope[categories.slope_ctgr.higher_hills]
+        self.rule20.consequent = membership.slope[categories.slope_ctgr.mountains]
+        self.rule21.consequent = membership.slope[
+            categories.slope_ctgr.highest_mountains
+        ]
+        self.rule22.consequent = membership.slope[
+            categories.slope_ctgr.marshes_and_lowlands
+        ]
+        self.rule23.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus
+        ]
+        self.rule24.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus_in_combination_with_hills
+        ]
+        self.rule25.consequent = membership.slope[
+            categories.slope_ctgr.hills_with_gentle_slopes
+        ]
+        self.rule26.consequent = membership.slope[
+            categories.slope_ctgr.steeper_hills_and_foothills
+        ]
+        self.rule27.consequent = membership.slope[
+            categories.slope_ctgr.hills_and_outcrops_of_mountain_ranges
+        ]
+        self.rule28.consequent = membership.slope[categories.slope_ctgr.higher_hills]
+        self.rule29.consequent = membership.slope[categories.slope_ctgr.mountains]
+        self.rule30.consequent = membership.slope[
+            categories.slope_ctgr.highest_mountains
+        ]
+        self.rule31.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus
+        ]
+        self.rule32.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus_in_combination_with_hills
+        ]
+        self.rule33.consequent = membership.slope[
+            categories.slope_ctgr.hills_and_outcrops_of_mountain_ranges
+        ]
+        self.rule34.consequent = membership.slope[
+            categories.slope_ctgr.marshes_and_lowlands
+        ]
+        self.rule35.consequent = membership.slope[
+            categories.slope_ctgr.marshes_and_lowlands
+        ]
+        self.rule36.consequent = membership.slope[
+            categories.slope_ctgr.marshes_and_lowlands
+        ]
+        self.rule37.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus
+        ]
+        self.rule38.consequent = membership.slope[
+            categories.slope_ctgr.hills_with_gentle_slopes
+        ]
+        self.rule39.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus
+        ]
+        self.rule40.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus_in_combination_with_hills
+        ]
+        self.rule41.consequent = membership.slope[
+            categories.slope_ctgr.steeper_hills_and_foothills
+        ]
+        self.rule42.consequent = membership.slope[categories.slope_ctgr.higher_hills]
+        self.rule43.consequent = membership.slope[categories.slope_ctgr.mountains]
+        self.rule44.consequent = membership.slope[categories.slope_ctgr.mountains]
+        self.rule45.consequent = membership.slope[
+            categories.slope_ctgr.marshes_and_lowlands
+        ]
+        self.rule46.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus
+        ]
+        self.rule47.consequent = membership.slope[
+            categories.slope_ctgr.flats_and_plateaus_in_combination_with_hills
+        ]
+        self.rule48.consequent = membership.slope[
+            categories.slope_ctgr.hills_with_gentle_slopes
+        ]
+        self.rule49.consequent = membership.slope[
+            categories.slope_ctgr.steeper_hills_and_foothills
+        ]
+        self.rule50.consequent = membership.slope[
+            categories.slope_ctgr.hills_and_outcrops_of_mountain_ranges
+        ]
+        self.rule51.consequent = membership.slope[
+            categories.slope_ctgr.steeper_hills_and_foothills
+        ]
+        self.rule52.consequent = membership.slope[
+            categories.slope_ctgr.hills_and_outcrops_of_mountain_ranges
         ]
 
 
@@ -710,42 +948,204 @@ class ImperviousRule(RulesSet):
     def __init__(self):
         super().__init__()
         self.rule1.consequent = membership.impervious[
-            categories.impervious_ctgr.marshes
+            categories.impervious_ctgr.mountains
         ]
-        self.rule2.consequent = membership.impervious[categories.impervious_ctgr.arable]
-        self.rule3.consequent = membership.impervious[
-            categories.impervious_ctgr.meadows
+        self.rule2.consequent = membership.impervious[
+            categories.impervious_ctgr.mountains
         ]
-        self.rule4.consequent = membership.impervious[
-            categories.impervious_ctgr.forests
-        ]
-        self.rule5.consequent = membership.impervious[categories.impervious_ctgr.rural]
-        self.rule6.consequent = membership.impervious[
+        self.rule3.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule4.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule6.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule7.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule8.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule9.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule10.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule11.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule12.consequent = membership.impervious[categories.impervious_ctgr.urban]
+        self.rule13.consequent = membership.impervious[
             categories.impervious_ctgr.suburban
         ]
-        self.rule7.consequent = membership.impervious[categories.impervious_ctgr.urban]
-        self.rule8.consequent = membership.impervious[categories.impervious_ctgr.hilly]
-        self.rule9.consequent = membership.impervious[
+        self.rule14.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule15.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule16.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule17.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule18.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule19.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule20.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule21.consequent = membership.impervious[
+            categories.impervious_ctgr.suburban
+        ]
+        self.rule22.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule23.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule24.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule25.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule26.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule27.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule28.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule29.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule30.consequent = membership.impervious[categories.impervious_ctgr.rural]
+        self.rule31.consequent = membership.impervious[
+            categories.impervious_ctgr.forests
+        ]
+        self.rule32.consequent = membership.impervious[
+            categories.impervious_ctgr.forests
+        ]
+        self.rule33.consequent = membership.impervious[
+            categories.impervious_ctgr.forests
+        ]
+        self.rule34.consequent = membership.impervious[
+            categories.impervious_ctgr.marshes
+        ]
+        self.rule35.consequent = membership.impervious[
+            categories.impervious_ctgr.meadows
+        ]
+        self.rule36.consequent = membership.impervious[
+            categories.impervious_ctgr.meadows
+        ]
+        self.rule37.consequent = membership.impervious[
+            categories.impervious_ctgr.meadows
+        ]
+        self.rule38.consequent = membership.impervious[
+            categories.impervious_ctgr.meadows
+        ]
+        self.rule39.consequent = membership.impervious[
+            categories.impervious_ctgr.meadows
+        ]
+        self.rule40.consequent = membership.impervious[
+            categories.impervious_ctgr.arable
+        ]
+        self.rule41.consequent = membership.impervious[
+            categories.impervious_ctgr.arable
+        ]
+        self.rule42.consequent = membership.impervious[categories.impervious_ctgr.hilly]
+        self.rule43.consequent = membership.impervious[
             categories.impervious_ctgr.mountains
+        ]
+        self.rule44.consequent = membership.impervious[
+            categories.impervious_ctgr.mountains
+        ]
+        self.rule45.consequent = membership.impervious[
+            categories.impervious_ctgr.marshes
+        ]
+        self.rule46.consequent = membership.impervious[
+            categories.impervious_ctgr.meadows
+        ]
+        self.rule47.consequent = membership.impervious[
+            categories.impervious_ctgr.arable
+        ]
+        self.rule48.consequent = membership.impervious[
+            categories.impervious_ctgr.arable
+        ]
+        self.rule49.consequent = membership.impervious[
+            categories.impervious_ctgr.arable
+        ]
+        self.rule50.consequent = membership.impervious[
+            categories.impervious_ctgr.arable
+        ]
+        self.rule51.consequent = membership.impervious[
+            categories.impervious_ctgr.meadows
+        ]
+        self.rule52.consequent = membership.impervious[
+            categories.impervious_ctgr.forests
         ]
 
 
 class CatchmentsRule(RulesSet):
     def __init__(self):
         super().__init__()
-        self.rule1.consequent = membership.catchment[categories.catchment_ctgr.rural]
-        self.rule2.consequent = membership.catchment[categories.catchment_ctgr.arable]
-        self.rule3.consequent = membership.catchment[categories.catchment_ctgr.meadows]
-        self.rule4.consequent = membership.catchment[categories.catchment_ctgr.forests]
-        self.rule5.consequent = membership.catchment[categories.catchment_ctgr.rural]
-        self.rule6.consequent = membership.catchment[categories.catchment_ctgr.suburban]
+        self.rule1.consequent = membership.catchment[
+            categories.catchment_ctgr.mountains
+        ]
+        self.rule2.consequent = membership.catchment[
+            categories.catchment_ctgr.mountains
+        ]
+        self.rule3.consequent = membership.catchment[categories.catchment_ctgr.urban]
+        self.rule4.consequent = membership.catchment[categories.catchment_ctgr.urban]
+        self.rule6.consequent = membership.catchment[categories.catchment_ctgr.urban]
         self.rule7.consequent = membership.catchment[categories.catchment_ctgr.urban]
-        self.rule8.consequent = membership.catchment[
+        self.rule8.consequent = membership.catchment[categories.catchment_ctgr.urban]
+        self.rule9.consequent = membership.catchment[categories.catchment_ctgr.urban]
+        self.rule10.consequent = membership.catchment[categories.catchment_ctgr.urban]
+        self.rule11.consequent = membership.catchment[categories.catchment_ctgr.urban]
+        self.rule12.consequent = membership.catchment[categories.catchment_ctgr.urban]
+        self.rule13.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule14.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule15.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule16.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule17.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule18.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule19.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule20.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule21.consequent = membership.catchment[
+            categories.catchment_ctgr.suburban
+        ]
+        self.rule22.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule23.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule24.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule25.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule26.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule27.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule28.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule29.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule30.consequent = membership.catchment[categories.catchment_ctgr.rural]
+        self.rule31.consequent = membership.catchment[categories.catchment_ctgr.forests]
+        self.rule32.consequent = membership.catchment[categories.catchment_ctgr.forests]
+        self.rule33.consequent = membership.catchment[categories.catchment_ctgr.forests]
+        self.rule34.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule35.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule36.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule37.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule38.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule39.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule40.consequent = membership.catchment[categories.catchment_ctgr.arable]
+        self.rule41.consequent = membership.catchment[categories.catchment_ctgr.arable]
+        self.rule42.consequent = membership.catchment[
             categories.catchment_ctgr.mountains
         ]
-        self.rule9.consequent = membership.catchment[
+        self.rule43.consequent = membership.catchment[
             categories.catchment_ctgr.mountains
         ]
+        self.rule44.consequent = membership.catchment[
+            categories.catchment_ctgr.mountains
+        ]
+        self.rule45.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule46.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule47.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule48.consequent = membership.catchment[categories.catchment_ctgr.arable]
+        self.rule49.consequent = membership.catchment[categories.catchment_ctgr.arable]
+        self.rule50.consequent = membership.catchment[categories.catchment_ctgr.arable]
+        self.rule51.consequent = membership.catchment[categories.catchment_ctgr.meadows]
+        self.rule52.consequent = membership.catchment[categories.catchment_ctgr.forests]
 
 
 slope_rules = [rule for rule in vars(SlopeRule()).values()]
