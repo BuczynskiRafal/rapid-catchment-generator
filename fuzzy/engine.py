@@ -17,7 +17,7 @@ from fuzzy.memberships import membership
 class FuzzyEngine:
     """FuzzyEngine returns result of calculation the slope, impervious, and catchment values."""
 
-    def __init__(self, land_use: categories.LandUse, land_form: categories.LandForm):
+    def __init__(self):
         """
         The function takes in two inputs, land use and land form, and then uses the rules defined in the rules.py file to
         calculate the slope, impervious, and catchment values.
@@ -40,29 +40,44 @@ class FuzzyEngine:
             self.catchment_simulation_ctrl
         )
 
+
+engine = FuzzyEngine()
+
+
+class Prototype:
+
+    def __init__(self, land_use: categories.LandUse, land_form: categories.LandForm):
+        """The function takes in two inputs, land use and land form, and then uses the rules defined in the rules.py file to
+        calculate the slope, impervious, and catchment values.
+
+        :param land_use: categories.LandUse
+        :type land_use: categories.LandUse
+        :param land_form: categories.LandForm
+        :type land_form: categories.LandForm"""
+
         # calculate
-        self.slope_simulation.input[membership.land_use_type.label] = land_use
-        self.slope_simulation.input[membership.land_form_type.label] = land_form
+        engine.slope_simulation.input[membership.land_use_type.label] = land_use
+        engine.slope_simulation.input[membership.land_form_type.label] = land_form
 
-        self.impervious_simulation.input[membership.land_use_type.label] = land_use
-        self.impervious_simulation.input[membership.land_form_type.label] = land_form
+        engine.impervious_simulation.input[membership.land_use_type.label] = land_use
+        engine.impervious_simulation.input[membership.land_form_type.label] = land_form
 
-        self.catchment_simulation.input[membership.land_use_type.label] = land_use
-        self.catchment_simulation.input[membership.land_form_type.label] = land_form
+        engine.catchment_simulation.input[membership.land_use_type.label] = land_use
+        engine.catchment_simulation.input[membership.land_form_type.label] = land_form
 
         # get slope result
-        self.slope_simulation.compute()
-        self.slope_result = self.slope_simulation.output[membership.slope.label]
+        engine.slope_simulation.compute()
+        self.slope_result = engine.slope_simulation.output[membership.slope.label]
 
         # get impervious result
-        self.impervious_simulation.compute()
-        self.impervious_result = self.impervious_simulation.output[
+        engine.impervious_simulation.compute()
+        self.impervious_result = engine.impervious_simulation.output[
             membership.impervious.label
         ]
 
         # get catchment result
-        self.catchment_simulation.compute()
-        self.catchment_result = self.catchment_simulation.output[
+        engine.catchment_simulation.compute()
+        self.catchment_result = engine.catchment_simulation.output[
             membership.catchment.label
         ]
 

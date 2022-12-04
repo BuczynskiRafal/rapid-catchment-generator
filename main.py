@@ -1,8 +1,8 @@
-from fuzzy.engine import FuzzyEngine
+from fuzzy.engine import Prototype
 from fuzzy.categories import LandUse, LandForm
 
 
-calc = FuzzyEngine(
+calc = Prototype(
     land_use=LandUse.flats_and_plateaus, land_form=LandForm.permeable_areas
 )
 
