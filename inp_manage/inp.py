@@ -2,18 +2,18 @@ import os
 import swmmio
 import pandas as pd
 import numpy as np
-desired_width=320
-pd.set_option('display.width', desired_width)
+
+desired_width = 500
+pd.set_option("display.width", desired_width)
 np.set_printoptions(linewidth=desired_width)
-pd.set_option('display.max_columns',10)
+pd.set_option("display.max_columns", 15)
 
 
 class File:
-
     def __init__(self, raw_file):
         self.raw_file = raw_file
         self.file = File.copy_file(self, copy=self.raw_file)
-        self.model=swmmio.Model(self.file)
+        self.model = swmmio.Model(self.file)
         self.new_catchment = None
 
     def copy_file(self, copy=None, suffix="copy"):
@@ -31,12 +31,35 @@ class File:
         baseline.inp.save(new_path)
         return new_path
 
-    def get_name(self):
+    @staticmethod
+    def empty_df():
+        return pd.DataFrame(
+            data={},
+            columns=[
+                "Raingage",
+                "Outlet",
+                "Area",
+                "PercImperv",
+                "Width",
+                "PercSlope",
+                "CurbLength",
+                "N-Imperv",
+                "N-Perv",
+                "S-Imperv",
+                "S-Perv",
+                "PctZero",
+                "RouteTo",
+                "coords",
+            ],
+            index=["Name"],
+        )
+
+    def get_name(self, name):
         pass
 
-    def add_subcatchment_id(self, name):
+    def add_subcatchment_id(self, subcatchment_id):
         subcatchment = self.model.inp.subcatchments
-        self.model.inp.subcatchments.loc[name]
+        self.model.inp.subcatchments.loc[subcatchment_id]
 
     def _add_subcatchments_feature(self, feature, value):
         subcatchment = self.model.inp.subcatchments
@@ -45,9 +68,11 @@ class File:
             self.model.inp.path, "[SUBCATCHMENTS]", subcatchment
         )
 
-data = File('example.inp')
-print(data.model.inp.subcatchments)
+
+data = File("example.inp")
+print(data.empty_df())
+# print(data.model.inp.subcatchments)
 # print(data.model.inp.infiltration)
-print(data.model.inp.subareas)
+# print(data.model.inp.subareas)
 # data.model.inp.subcatchments.to_excel('show.xlsx')
-# print(data.model.subcatchments.dataframe)
+# print(data.model.subcatchments.dataframe.columns)
