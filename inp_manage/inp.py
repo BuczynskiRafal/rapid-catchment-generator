@@ -31,9 +31,8 @@ class File:
         baseline.inp.save(new_path)
         return new_path
 
-    @staticmethod
-    def empty_df():
-        return pd.DataFrame(
+    def empty_df(self):
+        self.new_catchment = pd.DataFrame(
             data={},
             columns=[
                 "Raingage",
@@ -51,15 +50,22 @@ class File:
                 "RouteTo",
                 "coords",
             ],
-            index=["Name"],
+            # index=["Name"],
         )
-
-    def get_name(self, name):
-        pass
 
     def add_subcatchment_id(self, subcatchment_id):
         subcatchment = self.model.inp.subcatchments
-        self.model.inp.subcatchments.loc[subcatchment_id]
+        if subcatchment_id not in subcatchment.index:
+            # subcatchments.loc["S2"] = subcatchments.loc["S1"].values
+            self.model.subcatchments.dataframe.loc[subcatchment_id] = self.model.subcatchments.dataframe.iloc[:1, ]
+            # self.new_catchment.iloc[:1,] = subcatchment_id
+            print(self.new_catchment)
+            # print(self.model.subcatchments.dataframe)
+            # self.model.subcatchments.dataframe.loc[subcatchment_id] = self.new_catchment
+            return self.model.subcatchments.dataframe
+
+    def get_name(self, name):
+        return self.model.subcatchments.dataframe.loc[name]
 
     def _add_subcatchments_feature(self, feature, value):
         subcatchment = self.model.inp.subcatchments
@@ -69,10 +75,12 @@ class File:
         )
 
 
+
 data = File("example.inp")
-print(data.empty_df())
+# print(data.get_name("S1"))
+data.add_subcatchment_id("S2")
 # print(data.model.inp.subcatchments)
 # print(data.model.inp.infiltration)
 # print(data.model.inp.subareas)
 # data.model.inp.subcatchments.to_excel('show.xlsx')
-# print(data.model.subcatchments.dataframe.columns)
+# print(data.model.subcatchments.dataframe)
