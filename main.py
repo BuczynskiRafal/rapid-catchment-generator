@@ -1,14 +1,7 @@
-from fuzzy.engine import Prototype
-from fuzzy.categories import LandUse, LandForm
+import sys
+from inp_manage.inp import BuildCatchments
 
-
-calc = Prototype(
-    land_use=LandUse.flats_and_plateaus, land_form=LandForm.permeable_areas
-)
-
+model = BuildCatchments(file_path=sys.argv[1])
 
 if __name__ == "__main__":
-    print(calc.slope_result)
-    print(calc.impervious_result)
-    print(calc.catchment_result)
-    print(calc.get_populate(result=calc.catchment_result))
+    model.add_subcatchment()

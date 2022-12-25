@@ -3,84 +3,109 @@ import swmmio
 import pandas as pd
 import numpy as np
 
+from fuzzy.engine import Prototype
+from fuzzy.categories import LandUse, LandForm
+from swmmio.utils.modify_model import replace_inp_section
+
 desired_width = 500
 pd.set_option("display.width", desired_width)
 np.set_printoptions(linewidth=desired_width)
 pd.set_option("display.max_columns", 15)
 
 
-class File:
-    def __init__(self, raw_file):
-        self.raw_file = raw_file
-        self.file = File.copy_file(self, copy=self.raw_file)
+class BuildCatchments:
+    def __init__(self, file_path: str) -> None:
+        self.file = file_path
         self.model = swmmio.Model(self.file)
-        self.new_catchment = None
 
-    def copy_file(self, copy=None, suffix="copy"):
+    def _get_new_subcatchment_id(self, counter: int = 1) -> str:
         """
-        > This function takes a SWMM input file and creates a copy of it with a suffix added to the end of the file name
-
-        :param copy: the path to the file you want to copy. If you don't specify one, it will use the raw_file
-        :param suffix: the suffix to add to the end of the file name, defaults to copy (optional)
-        :return: The new path of the copied file.
+        Create new subcatchment id (subcatchment name) using len of all subcatchments in model
+        and create name using value +1, if it is already in the model then add 1 to the value.
+        :param counter: This is the counter that is used to generate the new subcatchment ID, defaults to 1 (optional)
+        :return: The name of the new subcatchment.
         """
-        if copy is None:
-            copy = self.raw_file
-        baseline = swmmio.Model(copy)
-        new_path = os.path.join(baseline.inp.name + "_" + suffix + ".inp")
-        baseline.inp.save(new_path)
-        return new_path
+        name = "S" + f"{len(self.model.inp.subcatchments) + counter}"
+        if name not in self.model.inp.subcatchments.index:
+            return name
+        else:
+            counter += 1
+            return self._get_new_subcatchment_id(counter=counter)
 
-    def empty_df(self):
-        self.new_catchment = pd.DataFrame(
-            data={},
-            columns=[
-                "Raingage",
-                "Outlet",
-                "Area",
-                "PercImperv",
-                "Width",
-                "PercSlope",
-                "CurbLength",
-                "N-Imperv",
-                "N-Perv",
-                "S-Imperv",
-                "S-Perv",
-                "PctZero",
-                "RouteTo",
-                "coords",
-            ],
-            # index=["Name"],
-        )
+    def _get_subcatchment_values(self) -> dict:
+        """
+        The function takes the user input and returns a dictionary with the area, slope and imperviousness of the
+        subcatchment
+        :return (dict): The area, slope and imperviousness of the subcatchment.
+        """
+        area = input("Enter the area of the subcatchment: ")
+        land_use = input("Enter the land use type (choose:\nmarshes_and_lowlands\n"
+                         "flats_and_plateaus\n"
+                         "flats_and_plateaus_in_combination_with_hills\n"
+                         "hills_with_gentle_slopes\n"
+                         "steeper_hills_and_foothills\n"
+                         "hills_and_outcrops_of_mountain_ranges\n"
+                         "higher_hills\n"
+                         "mountains\n"
+                         "highest_mountains\n:")
+        land_form = input("Enter the land form type (choose: medium_conditions\n"
+                          "permeable_areas\n"
+                          "permeable_terrain_on_plains\n"
+                          "hilly\n"
+                          "mountains\n"
+                          "bare_rocky_slopes\n"
+                          "urban\n"
+                          "suburban\n"
+                          "rural\n"
+                          "forests\n"
+                          "meadows\n"
+                          "arable \n"
+                          "marshes\n:")
+        calculate = Prototype(land_use=getattr(LandUse, land_use), land_form=getattr(LandForm, land_form))
+        return {
+            "Area": area,
+            "PercSlope": calculate.slope_result,
+            "PercImperv": calculate.impervious_result,
+        }
 
-    def add_subcatchment_id(self, subcatchment_id):
-        subcatchment = self.model.inp.subcatchments
-        if subcatchment_id not in subcatchment.index:
-            # subcatchments.loc["S2"] = subcatchments.loc["S1"].values
-            self.model.subcatchments.dataframe.loc[subcatchment_id] = self.model.subcatchments.dataframe.iloc[:1, ]
-            # self.new_catchment.iloc[:1,] = subcatchment_id
-            print(self.new_catchment)
-            # print(self.model.subcatchments.dataframe)
-            # self.model.subcatchments.dataframe.loc[subcatchment_id] = self.new_catchment
-            return self.model.subcatchments.dataframe
+    def _add_subcatchment(self) -> None:
+        """
+        Adds a new subcatchment to the model.
+        The function adds values such as subcatchment id, area, percent slope, percent impervious.
+        :return: None
+        """
+        subcatchment_id = self._get_new_subcatchment_id()
+        catchment_values = self._get_subcatchment_values()
+        self.model.inp.subcatchments.loc[subcatchment_id] = {
+            "Name": subcatchment_id,
+            "Raingage": "1",
+            "Outlet": "J1",
+            "Area": catchment_values["Area"],
+            "PercImperv": catchment_values["PercImperv"],
+            "Width": 500,
+            "PercSlope": catchment_values["PercSlope"],
+            "CurbLength": 0,
+        }
+        replace_inp_section(self.model.inp.path, "[SUBCATCHMENTS]", self.model.inp.subcatchments)
+        return None
 
-    def get_name(self, name):
-        return self.model.subcatchments.dataframe.loc[name]
+    def get_subcatchment_name(self, name) -> pd.DataFrame:
+        """
+        Takes a subcatchment id (name) and returns the subcatchment dataframe row with that name (index)
 
-    def _add_subcatchments_feature(self, feature, value):
-        subcatchment = self.model.inp.subcatchments
-        subcatchment.loc[self.subcatchment_id, feature] = value
-        swmmio.utils.modify_model.replace_inp_section(
-            self.model.inp.path, "[SUBCATCHMENTS]", subcatchment
-        )
+        :param name: The name of the subcatchment
+        :type name: str
+        :return: The dataframe of the subcatchment with the name given.
+        """
+        try:
+            return self.model.subcatchments.dataframe.loc[name]
+        except KeyError:
+            raise KeyError(f"Subcatchment with name: {name} doesn't exist")
 
-
-
-data = File("example.inp")
-# print(data.get_name("S1"))
-data.add_subcatchment_id("S2")
-# print(data.model.inp.subcatchments)
-# print(data.model.inp.infiltration)
-# print(data.model.inp.subareas)
-# data.model.inp.subcatchments.to_excel('show.xlsx')
-# print(data.model.subcatchments.dataframe)
+    def add_subcatchment(self) -> None:
+        """
+        Add new subcatchment to the project:
+        :return: None
+        """
+        self._add_subcatchment()
+        return None

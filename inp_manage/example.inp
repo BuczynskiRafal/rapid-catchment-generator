@@ -51,9 +51,10 @@ DRY_ONLY         NO
 1                INTENSITY 1:00     1.0      TIMESERIES test_series     
 
 [SUBCATCHMENTS]
-;;Name           Rain Gage        Outlet           Area     %Imperv  Width    %Slope   CurbLen  SnowPack        
-;;-------------- ---------------- ---------------- -------- -------- -------- -------- -------- ----------------
-S1               1                J1               5        25       500      10       0                        
+;;   Raingage Outlet Area PercImperv          Width PercSlope            CurbLength
+S1   1        J1     5    25.0                500   10.0                 0       
+S2   1        J1     12   65.00000000000004   500   5.000000000000001    0       
+S3   1        J1     6    83.33333333333336   500   1.7777777777777777   0       
 
 [SUBAREAS]
 ;;Subcatchment   N-Imperv   N-Perv     S-Imperv   S-Perv     PctZero    RouteTo    PctRouted 
