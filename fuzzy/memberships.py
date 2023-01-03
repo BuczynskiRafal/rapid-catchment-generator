@@ -99,61 +99,61 @@ class Memberships:
     def populate_slope(self):
         """Populate slope with membership functions."""
         self.slope[slope_ctgr.marshes_and_lowlands] = fuzz.trimf(
-            self.slope.universe, [0, 1.5, 3]
+            self.slope.universe, [0, 0, 5]
         )
         self.slope[slope_ctgr.flats_and_plateaus] = fuzz.trimf(
-            self.slope.universe, [1.5, 3, 5]
+            self.slope.universe, [0, 5, 10]
         )
         self.slope[
             slope_ctgr.flats_and_plateaus_in_combination_with_hills
-        ] = fuzz.trimf(self.slope.universe, [3, 5, 7])
+        ] = fuzz.trimf(self.slope.universe, [5, 10, 15])
         self.slope[slope_ctgr.hills_with_gentle_slopes] = fuzz.trimf(
-            self.slope.universe, [5, 7, 8]
+            self.slope.universe, [10, 15, 20]
         )
         self.slope[slope_ctgr.steeper_hills_and_foothills] = fuzz.trimf(
-            self.slope.universe, [7, 12, 23]
+            self.slope.universe, [15, 20, 25]
         )
         self.slope[slope_ctgr.hills_and_outcrops_of_mountain_ranges] = fuzz.trimf(
-            self.slope.universe, [8, 23, 37]
+            self.slope.universe, [20, 30, 40]
         )
         self.slope[slope_ctgr.higher_hills] = fuzz.trimf(
-            self.slope.universe, [10, 37, 65]
+            self.slope.universe, [30, 45, 60]
         )
         self.slope[slope_ctgr.mountains] = fuzz.trimf(
-            self.slope.universe, [30, 65, 100]
+            self.slope.universe, [45, 60, 80]
         )
         self.slope[slope_ctgr.highest_mountains] = fuzz.trimf(
-            self.slope.universe, [50, 100, 100]
+            self.slope.universe, [60, 80, 100]
         )
 
     def populate_impervious(self):
         """Populate impervious with membership functions."""
         self.impervious[impervious_ctgr.marshes] = fuzz.trimf(
-            self.impervious.universe, [50, 100, 100]
+            self.impervious.universe, [0, 0, 5]
         )
         self.impervious[impervious_ctgr.arable] = fuzz.trimf(
-            self.impervious.universe, [30, 65, 100]
+            self.impervious.universe, [0, 5, 10]
         )
         self.impervious[impervious_ctgr.meadows] = fuzz.trimf(
-            self.impervious.universe, [25, 30, 35]
+            self.impervious.universe, [5, 10, 15]
         )
         self.impervious[impervious_ctgr.forests] = fuzz.trimf(
-            self.impervious.universe, [20, 25, 30]
+            self.impervious.universe, [10, 15, 20]
         )
         self.impervious[impervious_ctgr.rural] = fuzz.trimf(
             self.impervious.universe, [15, 20, 25]
         )
         self.impervious[impervious_ctgr.suburban] = fuzz.trimf(
-            self.impervious.universe, [10, 15, 20]
+            self.impervious.universe, [20, 25, 30]
         )
         self.impervious[impervious_ctgr.urban] = fuzz.trimf(
-            self.impervious.universe, [5, 10, 15]
+            self.impervious.universe, [25, 30, 35]
         )
         self.impervious[impervious_ctgr.mountains] = fuzz.trimf(
-            self.impervious.universe, [0, 5, 10]
+            self.impervious.universe, [30, 65, 100]
         )
         self.impervious[impervious_ctgr.hilly] = fuzz.trimf(
-            self.impervious.universe, [0, 0, 5]
+            self.impervious.universe, [50, 100, 100]
         )
 
     def populate_catchment(self):

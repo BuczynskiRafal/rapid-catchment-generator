@@ -48,14 +48,15 @@ DRY_ONLY         NO
 [RAINGAGES]
 ;;Name           Format    Interval SCF      Source    
 ;;-------------- --------- ------ ------ ----------
-1                INTENSITY 1:00     1.0      TIMESERIES test_series     
+1                INTENSITY 1:00     1.0      TIMESERIES test_series
 
 [SUBCATCHMENTS]
-;;   Raingage Outlet Area PercImperv           Width   PercSlope            CurbLength
-S1   1        J1     5    25.0                 500.0   10.0                 0       
-S2   1        J1     12   65.00000000000004    500.0   5.000000000000001    0       
-S3   1        J1     6    83.33333333333336    500.0   1.7777777777777777   0       
-S4   1        J1     1    20.000000000000004   100.0   5.088435374149661    0       
+;;   Raingage Outlet Area PercImperv           Width PercSlope            CurbLength
+S1   1        J1     5    25.0                 500   10.0                 0       
+S2   1        J1     12   65.00000000000004    500   5.000000000000001    0       
+S3   1        J1     6    83.33333333333336    500   1.7777777777777777   0       
+S4   1        J1     3    15.000000000000004   500   37.33333333333336    0       
+S5   1        J1     16   65.00000000000004    500   5.000000000000001    0       
 
 [SUBAREAS]
 ;;Subcatchment   N-Imperv   N-Perv     S-Imperv   S-Perv     PctZero    RouteTo    PctRouted 
@@ -93,18 +94,18 @@ C4               CIRCULAR     1.2              0          0          0          
 [TIMESERIES]
 ;;Name           Date       Time       Value     
 ;;-------------- ---------- ---------- ----------
-test_series                 1          1
-test_series                 2          2         
-test_series                 3          4         
-test_series                 4          4         
-test_series                 5          12        
-test_series                 6          13        
-test_series                 7          11        
-test_series                 8          20        
-test_series                 9          15        
-test_series                 10         10        
-test_series                 11         5         
-test_series                 12         3         
+test_series                 1:00       1
+test_series                 2:00       2
+test_series                 3:00       4
+test_series                 4:00       4
+test_series                 5:00       12
+test_series                 6:00       13
+test_series                 7:00       11
+test_series                 8:00       20
+test_series                 9:00       15
+test_series                 10:00      10
+test_series                 11:00      5
+test_series                 12:00      3
 
 [REPORT]
 ;;Reporting Options

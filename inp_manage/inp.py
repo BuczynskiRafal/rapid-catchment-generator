@@ -1,3 +1,4 @@
+import math
 import os
 import swmmio
 import pandas as pd
@@ -68,6 +69,48 @@ class BuildCatchments:
             "PercImperv": calculate.impervious_result,
         }
 
+    def _add_timeseries(self):
+        timeseries = pd.DataFrame(
+            data={
+                "Date": [None for _ in range(12)],
+                "Time": ["1:00", "2:00", "3:00", "4:00", "5:00", "6:00", "7:00", "8:00", "9:00", "10:00", "11:00", "12:00"],
+                "Value": ["1", "2", "4", "4", "12", "13", "11", "20", "15", "10", "5", "3"],
+            },
+            index=["generator_series" for _ in range(12)])
+        timeseries.index.names = ['Name']
+        pd.concat([self.model.inp.timeseries, timeseries])
+
+    def _get_timeseries(self):
+        if len(self.model.inp.timeseries) == 0:
+            self._add_timeseries()
+        return self.model.inp.timeseries.index[0]
+
+    def _add_raingage(self) -> str:
+        raingage = pd.DataFrame(data=
+            {
+                "RainType": ["INTENSITY"],
+                "TimeIntrvl": ["1:00"],
+                "SnowCatch": ["1.0"],
+                "DataSource": ["TIMESERIES"],
+                "DataSourceName": [self._get_timeseries()],
+            }, index=["RG1"])
+        raingage.index.names = ['Name']
+        self.model.inp.raingages = raingage
+
+    def _get_raingage(self) -> str:
+        """
+        This function returns the name of the rain gage.
+        :return: The name of the rain gage.
+        """
+        if len(self.model.inp.raingages) == 0:
+            self._add_raingage()
+        return self.model.inp.raingages.index[0]
+
+    def _get_outlet(self):
+        if len(self.model.inp.junctions) == 0:
+            return None
+        return self.model.inp.junctions.index[0]
+
     def _add_subcatchment(self) -> None:
         """
         Adds a new subcatchment to the model.
@@ -76,13 +119,17 @@ class BuildCatchments:
         """
         subcatchment_id = self._get_new_subcatchment_id()
         catchment_values = self._get_subcatchment_values()
+        if self._get_outlet() is None:
+            outlet = subcatchment_id
+        else:
+            outlet = self._get_outlet()
         self.model.inp.subcatchments.loc[subcatchment_id] = {
             "Name": subcatchment_id,
-            "Raingage": "1",
-            "Outlet": "J1",
+            "Raingage": self._get_raingage(),
+            "Outlet": outlet,
             "Area": catchment_values["Area"],
             "PercImperv": catchment_values["PercImperv"],
-            "Width": 500,
+            "Width": math.sqrt((float(catchment_values["Area"]) * 10_000)),
             "PercSlope": catchment_values["PercSlope"],
             "CurbLength": 0,
         }
@@ -109,3 +156,24 @@ class BuildCatchments:
         """
         self._add_subcatchment()
         return None
+
+# m = swmmio.Model("example.inp")
+# print(m.inp.junctions)
+# print(m.subcatchments.dataframe)
+# print(m.inp.options)
+# print(m.inp.timeseries)
+# print(m.inp.timeseries.values)
+# print(m.inp.vertices)
+# print(m.inp.subareas)
+# print(m.inp.coordinates)
+# print(len(m.inp.raingages))
+# print(m.inp.raingages.values)
+# rain = m.inp.raingages
+# rain.to_excel("raingage.xlsx")
+
+
+o = BuildCatchments("example.inp")
+# print(o._get_timeseries())
+# o.add_subcatchment()
+# print(o.model.inp.subcatchments)
+print(o.model.subcatchments.dataframe)
