@@ -33,7 +33,7 @@ class BuildCatchments:
             counter += 1
             return self._get_new_subcatchment_id(counter=counter)
 
-    def _get_subcatchment_values(self) -> dict:
+    def _get_subcatchment_values(self):
         """
         The function takes the user input and returns a dictionary with the area, slope and imperviousness of the
         subcatchment
@@ -62,12 +62,8 @@ class BuildCatchments:
                           "meadows\n"
                           "arable \n"
                           "marshes\n:")
-        calculate = Prototype(land_use=getattr(LandUse, land_use), land_form=getattr(LandForm, land_form))
-        return {
-            "Area": area,
-            "PercSlope": calculate.slope_result,
-            "PercImperv": calculate.impervious_result,
-        }
+        prototype_result = Prototype(land_use=getattr(LandUse, land_use), land_form=getattr(LandForm, land_form))
+        return (area, prototype_result)
 
     def _add_timeseries(self):
         timeseries = pd.DataFrame(
@@ -111,14 +107,12 @@ class BuildCatchments:
             return None
         return self.model.inp.junctions.index[0]
 
-    def _add_subcatchment(self) -> None:
+    def _add_subcatchment(self, subcatchment_id, catchment_values) -> None:
         """
         Adds a new subcatchment to the model.
         The function adds values such as subcatchment id, area, percent slope, percent impervious.
         :return: None
         """
-        subcatchment_id = self._get_new_subcatchment_id()
-        catchment_values = self._get_subcatchment_values()
         if self._get_outlet() is None:
             outlet = subcatchment_id
         else:
@@ -127,14 +121,56 @@ class BuildCatchments:
             "Name": subcatchment_id,
             "Raingage": self._get_raingage(),
             "Outlet": outlet,
-            "Area": catchment_values["Area"],
-            "PercImperv": catchment_values["PercImperv"],
-            "Width": math.sqrt((float(catchment_values["Area"]) * 10_000)),
-            "PercSlope": catchment_values["PercSlope"],
+            "Area": catchment_values[0],
+            "PercImperv": catchment_values[1].impervious_result,
+            "Width": math.sqrt((float(catchment_values[0]) * 10_000)),
+            "PercSlope": catchment_values[1].slope_result,
             "CurbLength": 0,
         }
         replace_inp_section(self.model.inp.path, "[SUBCATCHMENTS]", self.model.inp.subcatchments)
         return None
+
+    def _add_subarea(self, subcatchment_id: str, prototype: Prototype) -> None:
+        map_mannings = {
+            "urban": (0.013, 0.15),
+            "suburban": (0.013, 0.24),
+            "rural": (0.013, 0.41),
+            "forests": (0.40, 0.80),
+            "meadows": (0.15, 0.41),
+            "arable": (0.06, 0.17),
+            "mountains": (0.013, 0.05),
+        }
+        map_depression = {
+            "urban": (0.05, 0.20, 90),
+            "suburban": (0.05, 0.20, 80),
+            "rural": (0.05, 0.20, 70),
+            "forests": (0.05, 0.30, 5),
+            "meadows": (0.05, 0.20, 10),
+            "arable": (0.05, 0.20, 10),
+            "mountains": (0.05, 0.20, 80),
+        }
+        self.model.inp.subareas.loc[subcatchment_id] = {
+            "N-Imperv": map_mannings[Prototype.get_populate(prototype.catchment_result)][0],
+            "N-Perv": map_mannings[Prototype.get_populate(prototype.catchment_result)][1],
+            "S-Imperv": map_depression[Prototype.get_populate(prototype.catchment_result)][0] * 25.4,
+            "S-Perv": map_depression[Prototype.get_populate(prototype.catchment_result)][1] * 25.4,
+            "PctZero": map_depression[Prototype.get_populate(prototype.catchment_result)][2],
+            "RouteTo": "OUTLET",
+        }
+        replace_inp_section(self.model.inp.path, "[SUBAREAS]", self.model.inp.subareas)
+
+    def _add_coords(self, subcatchment_id):
+        exist = [(self.model.inp.polygons["X"][-3], self.model.inp.polygons["Y"][-3]), (self.model.inp.polygons["X"][-1], self.model.inp.polygons["Y"][-1])]
+        coords = pd.DataFrame(
+            data={
+                "X": [exist[0][0], exist[1][0], exist[0][0], exist[1][0]],
+                "Y": [exist[0][1], exist[1][1], exist[0][1] - 2.00, exist[1][1] - 2.00],
+            },
+            index=[subcatchment_id for _ in range(4)]
+        )
+        coords.index.names = ['Name']
+        result = pd.concat([self.model.inp.polygons, coords])
+        replace_inp_section(self.model.inp.path, "[Polygons]", result)
 
     def get_subcatchment_name(self, name) -> pd.DataFrame:
         """
@@ -154,26 +190,29 @@ class BuildCatchments:
         Add new subcatchment to the project:
         :return: None
         """
-        self._add_subcatchment()
+        subcatchment_id = self._get_new_subcatchment_id()
+        catchment_values = self._get_subcatchment_values()
+        self._add_subcatchment(subcatchment_id, catchment_values)
+        self._add_subarea(subcatchment_id, catchment_values[1])
+        self._add_coords(subcatchment_id)
         return None
 
 # m = swmmio.Model("example.inp")
-# print(m.inp.junctions)
+# print(m.inp.headers)
 # print(m.subcatchments.dataframe)
 # print(m.inp.options)
 # print(m.inp.timeseries)
-# print(m.inp.timeseries.values)
 # print(m.inp.vertices)
 # print(m.inp.subareas)
+# print(m.inp.polygons)
 # print(m.inp.coordinates)
 # print(len(m.inp.raingages))
-# print(m.inp.raingages.values)
-# rain = m.inp.raingages
-# rain.to_excel("raingage.xlsx")
 
 
 o = BuildCatchments("example.inp")
 # print(o._get_timeseries())
 # o.add_subcatchment()
 # print(o.model.inp.subcatchments)
+# print(o.model.subcatchments.dataframe)
+print(o.add_subcatchment())
 print(o.model.subcatchments.dataframe)
