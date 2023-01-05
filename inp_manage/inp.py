@@ -40,40 +40,73 @@ class BuildCatchments:
         :return (dict): The area, slope and imperviousness of the subcatchment.
         """
         area = input("Enter the area of the subcatchment: ")
-        land_use = input("Enter the land use type (choose:\nmarshes_and_lowlands\n"
-                         "flats_and_plateaus\n"
-                         "flats_and_plateaus_in_combination_with_hills\n"
-                         "hills_with_gentle_slopes\n"
-                         "steeper_hills_and_foothills\n"
-                         "hills_and_outcrops_of_mountain_ranges\n"
-                         "higher_hills\n"
-                         "mountains\n"
-                         "highest_mountains\n:")
-        land_form = input("Enter the land form type (choose: medium_conditions\n"
-                          "permeable_areas\n"
-                          "permeable_terrain_on_plains\n"
-                          "hilly\n"
-                          "mountains\n"
-                          "bare_rocky_slopes\n"
-                          "urban\n"
-                          "suburban\n"
-                          "rural\n"
-                          "forests\n"
-                          "meadows\n"
-                          "arable \n"
-                          "marshes\n:")
-        prototype_result = Prototype(land_use=getattr(LandUse, land_use), land_form=getattr(LandForm, land_form))
+        land_use = input(
+            "Enter the land use type (choose:\nmarshes_and_lowlands\n"
+            "flats_and_plateaus\n"
+            "flats_and_plateaus_in_combination_with_hills\n"
+            "hills_with_gentle_slopes\n"
+            "steeper_hills_and_foothills\n"
+            "hills_and_outcrops_of_mountain_ranges\n"
+            "higher_hills\n"
+            "mountains\n"
+            "highest_mountains\n:"
+        )
+        land_form = input(
+            "Enter the land form type (choose: medium_conditions\n"
+            "permeable_areas\n"
+            "permeable_terrain_on_plains\n"
+            "hilly\n"
+            "mountains\n"
+            "bare_rocky_slopes\n"
+            "urban\n"
+            "suburban\n"
+            "rural\n"
+            "forests\n"
+            "meadows\n"
+            "arable \n"
+            "marshes\n:"
+        )
+        prototype_result = Prototype(
+            land_use=getattr(LandUse, land_use), land_form=getattr(LandForm, land_form)
+        )
         return (area, prototype_result)
 
     def _add_timeseries(self):
         timeseries = pd.DataFrame(
             data={
                 "Date": [None for _ in range(12)],
-                "Time": ["1:00", "2:00", "3:00", "4:00", "5:00", "6:00", "7:00", "8:00", "9:00", "10:00", "11:00", "12:00"],
-                "Value": ["1", "2", "4", "4", "12", "13", "11", "20", "15", "10", "5", "3"],
+                "Time": [
+                    "1:00",
+                    "2:00",
+                    "3:00",
+                    "4:00",
+                    "5:00",
+                    "6:00",
+                    "7:00",
+                    "8:00",
+                    "9:00",
+                    "10:00",
+                    "11:00",
+                    "12:00",
+                ],
+                "Value": [
+                    "1",
+                    "2",
+                    "4",
+                    "4",
+                    "12",
+                    "13",
+                    "11",
+                    "20",
+                    "15",
+                    "10",
+                    "5",
+                    "3",
+                ],
             },
-            index=["generator_series" for _ in range(12)])
-        timeseries.index.names = ['Name']
+            index=["generator_series" for _ in range(12)],
+        )
+        timeseries.index.names = ["Name"]
         pd.concat([self.model.inp.timeseries, timeseries])
 
     def _get_timeseries(self):
@@ -82,15 +115,17 @@ class BuildCatchments:
         return self.model.inp.timeseries.index[0]
 
     def _add_raingage(self) -> str:
-        raingage = pd.DataFrame(data=
-            {
+        raingage = pd.DataFrame(
+            data={
                 "RainType": ["INTENSITY"],
                 "TimeIntrvl": ["1:00"],
                 "SnowCatch": ["1.0"],
                 "DataSource": ["TIMESERIES"],
                 "DataSourceName": [self._get_timeseries()],
-            }, index=["RG1"])
-        raingage.index.names = ['Name']
+            },
+            index=["RG1"],
+        )
+        raingage.index.names = ["Name"]
         self.model.inp.raingages = raingage
 
     def _get_raingage(self) -> str:
@@ -127,7 +162,9 @@ class BuildCatchments:
             "PercSlope": catchment_values[1].slope_result,
             "CurbLength": 0,
         }
-        replace_inp_section(self.model.inp.path, "[SUBCATCHMENTS]", self.model.inp.subcatchments)
+        replace_inp_section(
+            self.model.inp.path, "[SUBCATCHMENTS]", self.model.inp.subcatchments
+        )
         return None
 
     def _add_subarea(self, subcatchment_id: str, prototype: Prototype) -> None:
@@ -150,11 +187,23 @@ class BuildCatchments:
             "mountains": (0.05, 0.20, 80),
         }
         self.model.inp.subareas.loc[subcatchment_id] = {
-            "N-Imperv": map_mannings[Prototype.get_populate(prototype.catchment_result)][0],
-            "N-Perv": map_mannings[Prototype.get_populate(prototype.catchment_result)][1],
-            "S-Imperv": map_depression[Prototype.get_populate(prototype.catchment_result)][0] * 25.4,
-            "S-Perv": map_depression[Prototype.get_populate(prototype.catchment_result)][1] * 25.4,
-            "PctZero": map_depression[Prototype.get_populate(prototype.catchment_result)][2],
+            "N-Imperv": map_mannings[
+                Prototype.get_populate(prototype.catchment_result)
+            ][0],
+            "N-Perv": map_mannings[Prototype.get_populate(prototype.catchment_result)][
+                1
+            ],
+            "S-Imperv": map_depression[
+                Prototype.get_populate(prototype.catchment_result)
+            ][0]
+            * 25.4,
+            "S-Perv": map_depression[
+                Prototype.get_populate(prototype.catchment_result)
+            ][1]
+            * 25.4,
+            "PctZero": map_depression[
+                Prototype.get_populate(prototype.catchment_result)
+            ][2],
             "RouteTo": "OUTLET",
         }
         replace_inp_section(self.model.inp.path, "[SUBAREAS]", self.model.inp.subareas)
@@ -169,11 +218,16 @@ class BuildCatchments:
         coords = pd.DataFrame(
             data={
                 "X": [exist[0][0], exist[1][0], exist[2][0], exist[3][0]],
-                "Y": [exist[0][1] - 5, exist[1][1] - 5, exist[2][1] - 5, exist[3][1] - 5],
+                "Y": [
+                    exist[0][1] - 5,
+                    exist[1][1] - 5,
+                    exist[2][1] - 5,
+                    exist[3][1] - 5,
+                ],
             },
-            index=[subcatchment_id for _ in range(4)]
+            index=[subcatchment_id for _ in range(4)],
         )
-        coords.index.names = ['Name']
+        coords.index.names = ["Name"]
         self.model.inp.polygons = pd.concat([self.model.inp.polygons, coords])
         replace_inp_section(self.model.inp.path, "[POLYGONS]", self.model.inp.polygons)
 
@@ -199,7 +253,9 @@ class BuildCatchments:
             "Param5": 0,
         }
         self.model.inp.infiltration.index.names = ["Subcatchment"]
-        replace_inp_section(self.model.inp.path, "[INFILTRATION]", self.model.inp.infiltration)
+        replace_inp_section(
+            self.model.inp.path, "[INFILTRATION]", self.model.inp.infiltration
+        )
 
     def add_subcatchment(self) -> None:
         """
@@ -213,14 +269,3 @@ class BuildCatchments:
         self._add_coords(subcatchment_id)
         self._add_infiltration(subcatchment_id)
         return None
-
-
-o = BuildCatchments("example.inp")
-# print(o._get_timeseries())
-# o.add_subcatchment()
-# print(o.model.inp.subcatchments)
-# print(o.model.subcatchments.dataframe)
-print(o.add_subcatchment())
-print(o.model.inp.polygons)
-# print(o.model.subcatchments.dataframe)
-# print(o.model.inp.infiltration)
