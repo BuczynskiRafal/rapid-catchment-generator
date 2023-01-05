@@ -160,17 +160,22 @@ class BuildCatchments:
         replace_inp_section(self.model.inp.path, "[SUBAREAS]", self.model.inp.subareas)
 
     def _add_coords(self, subcatchment_id):
-        exist = [(self.model.inp.polygons["X"][-3], self.model.inp.polygons["Y"][-3]), (self.model.inp.polygons["X"][-1], self.model.inp.polygons["Y"][-1])]
+        exist = [
+            (self.model.inp.polygons["X"][-1], self.model.inp.polygons["Y"][-1]),
+            (self.model.inp.polygons["X"][-2], self.model.inp.polygons["Y"][-2]),
+            (self.model.inp.polygons["X"][-3], self.model.inp.polygons["Y"][-3]),
+            (self.model.inp.polygons["X"][-4], self.model.inp.polygons["Y"][-4]),
+        ]
         coords = pd.DataFrame(
             data={
-                "X": [exist[0][0], exist[1][0], exist[0][0], exist[1][0]],
-                "Y": [exist[0][1], exist[1][1], exist[0][1] - 2.00, exist[1][1] - 2.00],
+                "X": [exist[0][0], exist[1][0], exist[2][0], exist[3][0]],
+                "Y": [exist[0][1] - 5, exist[1][1] - 5, exist[2][1] - 5, exist[3][1] - 5],
             },
             index=[subcatchment_id for _ in range(4)]
         )
         coords.index.names = ['Name']
-        result = pd.concat([self.model.inp.polygons, coords])
-        replace_inp_section(self.model.inp.path, "[Polygons]", result)
+        self.model.inp.polygons = pd.concat([self.model.inp.polygons, coords])
+        replace_inp_section(self.model.inp.path, "[POLYGONS]", self.model.inp.polygons)
 
     def get_subcatchment_name(self, name) -> pd.DataFrame:
         """
@@ -185,6 +190,17 @@ class BuildCatchments:
         except KeyError:
             raise KeyError(f"Subcatchment with name: {name} doesn't exist")
 
+    def _add_infiltration(self, subcatchment_id: str) -> None:
+        self.model.inp.infiltration.loc[subcatchment_id] = {
+            "Suction": 3.5,
+            "Ksat": 0.5,
+            "IMD": 0.25,
+            "Param4": 7,
+            "Param5": 0,
+        }
+        self.model.inp.infiltration.index.names = ["Subcatchment"]
+        replace_inp_section(self.model.inp.path, "[INFILTRATION]", self.model.inp.infiltration)
+
     def add_subcatchment(self) -> None:
         """
         Add new subcatchment to the project:
@@ -195,18 +211,8 @@ class BuildCatchments:
         self._add_subcatchment(subcatchment_id, catchment_values)
         self._add_subarea(subcatchment_id, catchment_values[1])
         self._add_coords(subcatchment_id)
+        self._add_infiltration(subcatchment_id)
         return None
-
-# m = swmmio.Model("example.inp")
-# print(m.inp.headers)
-# print(m.subcatchments.dataframe)
-# print(m.inp.options)
-# print(m.inp.timeseries)
-# print(m.inp.vertices)
-# print(m.inp.subareas)
-# print(m.inp.polygons)
-# print(m.inp.coordinates)
-# print(len(m.inp.raingages))
 
 
 o = BuildCatchments("example.inp")
@@ -215,4 +221,6 @@ o = BuildCatchments("example.inp")
 # print(o.model.inp.subcatchments)
 # print(o.model.subcatchments.dataframe)
 print(o.add_subcatchment())
-print(o.model.subcatchments.dataframe)
+print(o.model.inp.polygons)
+# print(o.model.subcatchments.dataframe)
+# print(o.model.inp.infiltration)
