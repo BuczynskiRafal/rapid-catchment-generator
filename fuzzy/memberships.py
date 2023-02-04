@@ -119,9 +119,7 @@ class Memberships:
         self.slope[slope_ctgr.higher_hills] = fuzz.trimf(
             self.slope.universe, [30, 45, 60]
         )
-        self.slope[slope_ctgr.mountains] = fuzz.trimf(
-            self.slope.universe, [45, 60, 80]
-        )
+        self.slope[slope_ctgr.mountains] = fuzz.trimf(self.slope.universe, [45, 60, 80])
         self.slope[slope_ctgr.highest_mountains] = fuzz.trimf(
             self.slope.universe, [60, 80, 100]
         )

@@ -41,7 +41,8 @@ class BuildCatchments:
         """
         area = input("Enter the area of the subcatchment: ")
         land_use = input(
-            "Enter the land use type (choose:\nmarshes_and_lowlands\n"
+            "Enter the land use type (choose:\n"
+            "marshes_and_lowlands\n"
             "flats_and_plateaus\n"
             "flats_and_plateaus_in_combination_with_hills\n"
             "hills_with_gentle_slopes\n"
@@ -52,7 +53,8 @@ class BuildCatchments:
             "highest_mountains\n:"
         )
         land_form = input(
-            "Enter the land form type (choose: medium_conditions\n"
+            "Enter the land form type (choose:\n"
+            "medium_conditions\n"
             "permeable_areas\n"
             "permeable_terrain_on_plains\n"
             "hilly\n"

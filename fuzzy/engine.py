@@ -21,11 +21,6 @@ class FuzzyEngine:
         """
         The function takes in two inputs, land use and land form, and then uses the rules defined in the rules.py file to
         calculate the slope, impervious, and catchment values.
-
-        :param land_use: categories.LandUse
-        :type land_use: categories.LandUse
-        :param land_form: categories.LandForm
-        :type land_form: categories.LandForm
         """
         self.slope_simulation_ctrl = ctrl.ControlSystem(slope_rules)
         self.impervious_simulation_ctrl = ctrl.ControlSystem(impervious_rules)
@@ -45,7 +40,6 @@ engine = FuzzyEngine()
 
 
 class Prototype:
-
     def __init__(self, land_use: categories.LandUse, land_form: categories.LandForm):
         """The function takes in two inputs, land use and land form, and then uses the rules defined in the rules.py file to
         calculate the slope, impervious, and catchment values.
@@ -53,7 +47,8 @@ class Prototype:
         :param land_use: categories.LandUse
         :type land_use: categories.LandUse
         :param land_form: categories.LandForm
-        :type land_form: categories.LandForm"""
+        :type land_form: categories.LandForm
+        """
 
         # calculate
         engine.slope_simulation.input[membership.land_use_type.label] = land_use
