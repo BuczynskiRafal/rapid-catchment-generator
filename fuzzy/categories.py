@@ -126,8 +126,8 @@ class Impervious:
         self.rural = "rural"
         self.suburban = "suburban"
         self.urban = "urban"
-        self.hilly = "hilly"
         self.mountains = "mountains"
+        self.hilly = "hilly"
 
 
 class Catchments:

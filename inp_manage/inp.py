@@ -1,5 +1,4 @@
 import math
-import os
 import swmmio
 import pandas as pd
 import numpy as np
