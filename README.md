@@ -27,70 +27,257 @@ For the construction of the catchment generator, the type of land use was divide
 the landform according to Table 2. 
 The categories were determined on the basis of the data presented by (Dołęga, Rogala, 1973), given below in Table 3. 
 
-### Table 1: Land use categories	
-| Number  | Land Use                                     |
-|---------|----------------------------------------------|
-| 1       | marshes and lowlands                         |
-| 2       | flats and plateaus                           |
-| 3       | flats and plateaus in combination with hills |
-| 4       | hills with gentle slopes                     |
-| 5       | steeper hills and foothills                  |
-| 6       | hills and outcrops of mountain ranges        |
-| 7       | higher hills                                 |
-| 8       | mountains                                    |
-| 9       | highest mountains                            |
+
+<h3 id="table-1-land-use-categories">Table 1: Land use categories</h3>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Land Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>marshes and lowlands</td>
+</tr>
+<tr>
+<td>2</td>
+<td>flats and plateaus</td>
+</tr>
+<tr>
+<td>3</td>
+<td>flats and plateaus in combination with hills</td>
+</tr>
+<tr>
+<td>4</td>
+<td>hills with gentle slopes</td>
+</tr>
+<tr>
+<td>5</td>
+<td>steeper hills and foothills</td>
+</tr>
+<tr>
+<td>6</td>
+<td>hills and outcrops of mountain ranges</td>
+</tr>
+<tr>
+<td>7</td>
+<td>higher hills</td>
+</tr>
+<tr>
+<td>8</td>
+<td>mountains</td>
+</tr>
+<tr>
+<td>9</td>
+<td>highest mountains</td>
+</tr>
+</tbody></table>
 
 
+<h3 id="table-2-landform-categories">Table 2 Landform categories</h3>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Landform</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>medium conditions</td>
+</tr>
+<tr>
+<td>2</td>
+<td>permeable areas</td>
+</tr>
+<tr>
+<td>3</td>
+<td>permeable terrain on plains</td>
+</tr>
+<tr>
+<td>4</td>
+<td>hilly</td>
+</tr>
+<tr>
+<td>5</td>
+<td>mountains</td>
+</tr>
+<tr>
+<td>6</td>
+<td>bare rocky slopes</td>
+</tr>
+<tr>
+<td>7</td>
+<td>urban</td>
+</tr>
+<tr>
+<td>8</td>
+<td>suburban</td>
+</tr>
+<tr>
+<td>9</td>
+<td>rural</td>
+</tr>
+<tr>
+<td>10</td>
+<td>forests</td>
+</tr>
+<tr>
+<td>11</td>
+<td>meadows</td>
+</tr>
+<tr>
+<td>12</td>
+<td>arable</td>
+</tr>
+<tr>
+<td>13</td>
+<td>marshes</td>
+</tr>
+</tbody></table>
 
-### Table 2 Landform categories	
-| Number | Landform                    |
-|--------|-----------------------------|
-| 1      | medium conditions           |
-| 2      | permeable areas             |
-| 3      | permeable terrain on plains |
-| 4      | hilly                       |
-| 5      | mountains                   |
-| 6      | bare rocky slopes           |
-| 7      | urban                       |
-| 8      | suburban                    |
-| 9      | rural                       |
-| 10     | forests                     |
-| 11     | meadows                     |
-| 12     | arable                      |
-| 13     | marshes                     |
 
-### Table 3. Runoff coefficients o according to Iszkowski
+<h3 id="table-3-runoff-coefficients-o-according-to-iszkowski">Table 3. Runoff coefficients o according to Iszkowski</h3>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Topographic terrain definition</th>
+<th>Drainage coefficient ϕ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>marshes and lowlands</td>
+<td>0.20</td>
+</tr>
+<tr>
+<td>2</td>
+<td>flats and plateaus</td>
+<td>0.25</td>
+</tr>
+<tr>
+<td>3</td>
+<td>flats and plateaus in combination with hills</td>
+<td>0.30</td>
+</tr>
+<tr>
+<td>4</td>
+<td>hills with gentle slopes</td>
+<td>0.35</td>
+</tr>
+<tr>
+<td>5</td>
+<td>steeper hills and foothills</td>
+<td>0.40</td>
+</tr>
+<tr>
+<td>6</td>
+<td>hills and outcrops of mountain ranges</td>
+<td>0.45</td>
+</tr>
+<tr>
+<td>7</td>
+<td>higher hills</td>
+<td>0.50</td>
+</tr>
+<tr>
+<td>8</td>
+<td>mountains</td>
+<td>0.55</td>
+</tr>
+<tr>
+<td>9</td>
+<td>highest mountains</td>
+<td>0.60-0.70</td>
+</tr>
+</tbody></table>
 
-| Number | Topographic terrain definition  | Drainage coefficient ϕ |
-|------|---------------------------------|----------------------|
-| 1    | marshes and lowlands                         | 0.20                 |
-| 2    | flats and plateaus                           | 0.25                 |
-| 3    | flats and plateaus in combination with hills | 0.30                 |
-| 4    | hills with gentle slopes                     | 0.35                 |
-| 5    | steeper hills and foothills                  | 0.40                 |
-| 6    | hills and outcrops of mountain ranges        | 0.45                 |
-| 7    | higher hills                                 | 0.50                 |
-| 8    | mountains                                    | 0.55                 |
-| 9    | highest mountains                            | 0.60-0.70            |
+
 
 
 
 ##
 Table 4 shows what and how feature values are generated. The "Value" column contains example data. 
-### Table 4 SWMM catchment data.
-| Parameter name      | Value      | Explanation                                                                                                                                                                                                                               |
-| ------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name                | S1 [-]     | Catchment names (ID) are generated by adding a number.<br>                                                                                                                                                                                |
-| Raingage            | 1 [-]      | When "raingage exists in the uploaded file, it will be assigned to the catchment area being built. If it does not exist, it will be added to the file along with the "timeseries" and assigned to the catchment area being generated.<br> |
-| Outlet              | J1 [-]     | If there are receivers in the transferred file, the program will automatically assign it to the catchment area, if there are none, the name of the generated catchment area will be assigned.<br>                                         |
-| Area                | 5 [ha]     | A parameter passed by the user.<br>                                                                                                                                                                                                       |
-| Percent Imperv      | 25 [-]     | Parameter calculated as described above and assigned to the catchment area.<br>                                                                                                                                                           |
-| Width               | 500 [m]    | The generated catchment areas are square in shape therefore the length of the side of the catchment area is assigned.<br>                                                                                                                 |
-| Percent Slope       | 10 [-]     | Parameter calculated as described above and assigned to the catchment area.<br>                                                                                                                                                           |
-| N-Imperv            | 0.15 [-]   | The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with Manning coefficients.<br>                                                                                        |
-| N-Perv              | 1 [-]      |The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with Manning coefficients.
-| Dstore-Imperv       | 1.27 [mm]  | The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.<br>                                                                                      |
-| Dstore-Perv         | 5.08 [mm]  |The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.
-| Percent Zero Imperv | 50 [-]     |The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.
-| RouteTo             | outlet [-] | Odpływ z obszarów imperv i perv spływa bezpośrednio do wylotu<br>                                                                                                                                                                         |
-| Coordinate          | [-]        | Square-shaped catchments are generated, located so that one side is the edge of the contact.<br>                                                                                                                                          |
+
+<h3 id="table-4-swmm-catchment-data">Table 4 SWMM catchment data.</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter name</th>
+<th>Value</th>
+<th>Explanation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Name</td>
+<td>S1 [-]</td>
+<td>Catchment names (ID) are generated by adding a number.<br></td>
+</tr>
+<tr>
+<td>Raingage</td>
+<td>1 [-]</td>
+<td>When &quot;raingage exists in the uploaded file, it will be assigned to the catchment area being built. If it does not exist, it will be added to the file along with the &quot;timeseries&quot; and assigned to the catchment area being generated.<br></td>
+</tr>
+<tr>
+<td>Outlet</td>
+<td>J1 [-]</td>
+<td>If there are receivers in the transferred file, the program will automatically assign it to the catchment area, if there are none, the name of the generated catchment area will be assigned.<br></td>
+</tr>
+<tr>
+<td>Area</td>
+<td>5 [ha]</td>
+<td>A parameter passed by the user.<br></td>
+</tr>
+<tr>
+<td>Percent Imperv</td>
+<td>25 [-]</td>
+<td>Parameter calculated as described above and assigned to the catchment area.<br></td>
+</tr>
+<tr>
+<td>Width</td>
+<td>500 [m]</td>
+<td>The generated catchment areas are square in shape therefore the length of the side of the catchment area is assigned.<br></td>
+</tr>
+<tr>
+<td>Percent Slope</td>
+<td>10 [-]</td>
+<td>Parameter calculated as described above and assigned to the catchment area.<br></td>
+</tr>
+<tr>
+<td>N-Imperv</td>
+<td>0.15 [-]</td>
+<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with Manning coefficients.<br></td>
+</tr>
+<tr>
+<td>N-Perv</td>
+<td>1 [-]</td>
+<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with Manning coefficients.</td>
+</tr>
+<tr>
+<td>Dstore-Imperv</td>
+<td>1.27 [mm]</td>
+<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.<br></td>
+</tr>
+<tr>
+<td>Dstore-Perv</td>
+<td>5.08 [mm]</td>
+<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.</td>
+</tr>
+<tr>
+<td>Percent Zero Imperv</td>
+<td>50 [-]</td>
+<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.</td>
+</tr>
+<tr>
+<td>RouteTo</td>
+<td>outlet [-]</td>
+<td>Odpływ z obszarów imperv i perv spływa bezpośrednio do wylotu<br></td>
+</tr>
+<tr>
+<td>Coordinate</td>
+<td>[-]</td>
+<td>Square-shaped catchments are generated, located so that one side is the edge of the contact.<br></td>
+</tr>
+</tbody></table>
