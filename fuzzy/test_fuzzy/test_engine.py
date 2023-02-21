@@ -42,8 +42,8 @@ class TestFuzzyEngine(unittest.TestCase):
 class TestPrototype(unittest.TestCase):
     def setUp(self) -> None:
         self.prototype = Prototype(
-            land_use=categories.LandUse.flats_and_plateaus,
-            land_form=categories.LandForm.rural,
+            land_form=categories.LandForm.flats_and_plateaus,
+            land_cover=categories.LandCover.rural,
         )
 
     def test_slope_result(self):

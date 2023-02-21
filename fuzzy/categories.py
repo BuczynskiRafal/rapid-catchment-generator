@@ -20,8 +20,8 @@ class Categories(ABC):
         self.highest_mountains = "highest_mountains"
 
 
-class LandUse:
-    """LandUse is a Categories class that has 9 categories of land use type.
+class LandForm:
+    """LandForm is a Categories class that has 9 categories of land use type.
     Class attribute is for return numeric value for fuzzy engine.
     Attribute in init return string value categories of land use type.
     """
@@ -53,7 +53,7 @@ class LandUse:
         self.highest_mountains = "highest_mountains"
 
 
-class LandForm:
+class LandCover:
     """LandType is a categories class that has 13 categories of land form type.
     Class attribute is for return numeric value for fuzzy engine.
     Attribute in init return string value categories of land form type.
@@ -145,8 +145,8 @@ class Catchments:
         self.mountains = "mountains"
 
 
-land_use = LandUse()
 land_form = LandForm()
+land_cover = LandCover()
 slope_ctgr = Slope()
 impervious_ctgr = Impervious()
 catchment_ctgr = Catchments()

@@ -2,8 +2,8 @@ import unittest
 from abc import ABC
 from fuzzy.categories import (
     Categories,
-    LandUse,
     LandForm,
+    LandCover,
     Slope,
     Impervious,
     Catchments,
@@ -63,117 +63,117 @@ class TestCategories(unittest.TestCase):
 
 class TestLandUse(unittest.TestCase):
     def setUp(self):
-        self.land_use = LandUse()
+        self.land_form = LandForm()
 
     def test_marshes_and_lowlands_value(self):
-        self.assertEqual(LandUse.marshes_and_lowlands, 1)
+        self.assertEqual(LandForm.marshes_and_lowlands, 1)
 
     def test_flats_and_plateaus_value(self):
-        self.assertEqual(LandUse.flats_and_plateaus, 2)
+        self.assertEqual(LandForm.flats_and_plateaus, 2)
 
     def test_flats_and_plateaus_in_combination_with_hills_value(self):
-        self.assertEqual(LandUse.flats_and_plateaus_in_combination_with_hills, 3)
+        self.assertEqual(LandForm.flats_and_plateaus_in_combination_with_hills, 3)
 
     def test_hills_with_gentle_slopes_value(self):
-        self.assertEqual(LandUse.hills_with_gentle_slopes, 4)
+        self.assertEqual(LandForm.hills_with_gentle_slopes, 4)
 
     def test_steeper_hills_and_foothills_value(self):
-        self.assertEqual(LandUse.steeper_hills_and_foothills, 5)
+        self.assertEqual(LandForm.steeper_hills_and_foothills, 5)
 
     def test_hills_and_outcrops_of_mountain_ranges_value(self):
-        self.assertEqual(LandUse.hills_and_outcrops_of_mountain_ranges, 6)
+        self.assertEqual(LandForm.hills_and_outcrops_of_mountain_ranges, 6)
 
     def test_higher_hills_value(self):
-        self.assertEqual(LandUse.higher_hills, 7)
+        self.assertEqual(LandForm.higher_hills, 7)
 
     def test_mountains_value(self):
-        self.assertEqual(LandUse.mountains, 8)
+        self.assertEqual(LandForm.mountains, 8)
 
     def test_highest_mountains_value(self):
-        self.assertEqual(LandUse.highest_mountains, 9)
+        self.assertEqual(LandForm.highest_mountains, 9)
 
     def test_marshes_and_lowlands(self):
-        self.assertEqual(self.land_use.marshes_and_lowlands, "marshes_and_lowlands")
+        self.assertEqual(self.land_form.marshes_and_lowlands, "marshes_and_lowlands")
 
     def test_flats_and_plateaus(self):
-        self.assertEqual(self.land_use.flats_and_plateaus, "flats_and_plateaus")
+        self.assertEqual(self.land_form.flats_and_plateaus, "flats_and_plateaus")
 
     def test_flats_and_plateaus_in_combination_with_hills(self):
         self.assertEqual(
-            self.land_use.flats_and_plateaus_in_combination_with_hills,
+            self.land_form.flats_and_plateaus_in_combination_with_hills,
             "flats_and_plateaus_in_combination_with_hills",
         )
 
     def test_hills_with_gentle_slopes(self):
         self.assertEqual(
-            self.land_use.hills_with_gentle_slopes, "hills_with_gentle_slopes"
+            self.land_form.hills_with_gentle_slopes, "hills_with_gentle_slopes"
         )
 
     def test_steeper_hills_and_foothills(self):
         self.assertEqual(
-            self.land_use.steeper_hills_and_foothills, "steeper_hills_and_foothills"
+            self.land_form.steeper_hills_and_foothills, "steeper_hills_and_foothills"
         )
 
     def test_hills_and_outcrops_of_mountain_ranges(self):
         self.assertEqual(
-            self.land_use.hills_and_outcrops_of_mountain_ranges,
+            self.land_form.hills_and_outcrops_of_mountain_ranges,
             "hills_and_outcrops_of_mountain_ranges",
         )
 
     def test_higher_hills(self):
-        self.assertEqual(self.land_use.higher_hills, "higher_hills")
-
-    def test_mountains(self):
-        self.assertEqual(self.land_use.mountains, "mountains")
-
-    def test_highest_mountains(self):
-        self.assertEqual(self.land_use.highest_mountains, "highest_mountains")
-
-
-class TestLandForm(unittest.TestCase):
-    def setUp(self) -> None:
-        self.land_form = LandForm()
-
-    def test_medium_conditions(self):
-        self.assertEqual(self.land_form.medium_conditions, "medium_conditions")
-
-    def test_permeable_areas(self):
-        self.assertEqual(self.land_form.permeable_areas, "permeable_areas")
-
-    def test_permeable_terrain_on_plains(self):
-        self.assertEqual(
-            self.land_form.permeable_terrain_on_plains, "permeable_terrain_on_plains"
-        )
-
-    def test_hilly(self):
-        self.assertEqual(self.land_form.hilly, "hilly")
+        self.assertEqual(self.land_form.higher_hills, "higher_hills")
 
     def test_mountains(self):
         self.assertEqual(self.land_form.mountains, "mountains")
 
+    def test_highest_mountains(self):
+        self.assertEqual(self.land_form.highest_mountains, "highest_mountains")
+
+
+class TestLandForm(unittest.TestCase):
+    def setUp(self) -> None:
+        self.land_cover = LandCover()
+
+    def test_medium_conditions(self):
+        self.assertEqual(self.land_cover.medium_conditions, "medium_conditions")
+
+    def test_permeable_areas(self):
+        self.assertEqual(self.land_cover.permeable_areas, "permeable_areas")
+
+    def test_permeable_terrain_on_plains(self):
+        self.assertEqual(
+            self.land_cover.permeable_terrain_on_plains, "permeable_terrain_on_plains"
+        )
+
+    def test_hilly(self):
+        self.assertEqual(self.land_cover.hilly, "hilly")
+
+    def test_mountains(self):
+        self.assertEqual(self.land_cover.mountains, "mountains")
+
     def test_bare_rocky_slopes(self):
-        self.assertEqual(self.land_form.bare_rocky_slopes, "bare_rocky_slopes")
+        self.assertEqual(self.land_cover.bare_rocky_slopes, "bare_rocky_slopes")
 
     def test_urban(self):
-        self.assertEqual(self.land_form.urban, "urban")
+        self.assertEqual(self.land_cover.urban, "urban")
 
     def test_suburban(self):
-        self.assertEqual(self.land_form.suburban, "suburban")
+        self.assertEqual(self.land_cover.suburban, "suburban")
 
     def test_rural(self):
-        self.assertEqual(self.land_form.rural, "rural")
+        self.assertEqual(self.land_cover.rural, "rural")
 
     def test_forests(self):
-        self.assertEqual(self.land_form.forests, "forests")
+        self.assertEqual(self.land_cover.forests, "forests")
 
     def test_meadows(self):
-        self.assertEqual(self.land_form.meadows, "meadows")
+        self.assertEqual(self.land_cover.meadows, "meadows")
 
     def test_arable(self):
-        self.assertEqual(self.land_form.arable, "arable")
+        self.assertEqual(self.land_cover.arable, "arable")
 
     def test_marshes(self):
-        self.assertEqual(self.land_form.marshes, "marshes")
+        self.assertEqual(self.land_cover.marshes, "marshes")
 
 
 class TestSlope(unittest.TestCase):

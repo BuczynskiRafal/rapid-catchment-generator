@@ -1,4 +1,4 @@
-# run script with python3 main.py file_path
+# run script with python3 runner.py file_path
 import sys
 from inp_manage.inp import BuildCatchments
 

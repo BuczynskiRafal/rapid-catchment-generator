@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 from fuzzy.engine import Prototype
-from fuzzy.categories import LandUse, LandForm
+from fuzzy.categories import LandForm, LandCover
 from swmmio.utils.modify_model import replace_inp_section
 
 desired_width = 500
@@ -39,7 +39,7 @@ class BuildCatchments:
         :return (dict): The area, slope and imperviousness of the subcatchment.
         """
         area = input("Enter the area of the subcatchment: ")
-        land_use = input(
+        land_form = input(
             "Enter the land use type (choose:\n"
             "marshes_and_lowlands\n"
             "flats_and_plateaus\n"
@@ -51,7 +51,7 @@ class BuildCatchments:
             "mountains\n"
             "highest_mountains\n:"
         )
-        land_form = input(
+        land_cover = input(
             "Enter the land form type (choose:\n"
             "medium_conditions\n"
             "permeable_areas\n"
@@ -68,7 +68,7 @@ class BuildCatchments:
             "marshes\n:"
         )
         prototype_result = Prototype(
-            land_use=getattr(LandUse, land_use), land_form=getattr(LandForm, land_form)
+            land_form=getattr(LandForm, land_form), land_cover=getattr(LandCover, land_cover)
         )
         return (area, prototype_result)
 

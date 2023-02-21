@@ -24,7 +24,7 @@ Then enter the catchment area and select the land use and land form categories.
 
 ## About
 For the construction of the catchment generator, the type of land use was divided according to Table 1, 
-the landform according to Table 2. 
+the land cover according to Table 2. 
 The categories were determined on the basis of the data presented by (Dołęga, Rogala, 1973), given below in Table 3. 
 
 
@@ -75,12 +75,12 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 </tbody></table>
 
 
-<h3 id="table-2-landform-categories">Table 2 Landform categories</h3>
+<h3 id="table-2-land cover - categories">Table 2 Land cover categories</h3>
 <table>
 <thead>
 <tr>
 <th>Number</th>
-<th>Landform</th>
+<th>Land cover</th>
 </tr>
 </thead>
 <tbody><tr>

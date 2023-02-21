@@ -3,8 +3,8 @@ from fuzzy import categories
 
 from fuzzy.rules import slope_rules, impervious_rules, catchment_rules
 from fuzzy.categories import (
-    land_use,
     land_form,
+    land_cover,
     slope_ctgr,
     impervious_ctgr,
     catchment_ctgr,
@@ -40,25 +40,25 @@ engine = FuzzyEngine()
 
 
 class Prototype:
-    def __init__(self, land_use: categories.LandUse, land_form: categories.LandForm):
+    def __init__(self, land_form: categories.LandForm, land_cover: categories.LandCover):
         """The function takes in two inputs, land use and land form, and then uses the rules defined in the rules.py file to
         calculate the slope, impervious, and catchment values.
 
-        :param land_use: categories.LandUse
-        :type land_use: categories.LandUse
         :param land_form: categories.LandForm
         :type land_form: categories.LandForm
+        :param land_cover: categories.LandCover
+        :type land_cover: categories.LandCover
         """
 
         # calculate
-        engine.slope_simulation.input[membership.land_use_type.label] = land_use
         engine.slope_simulation.input[membership.land_form_type.label] = land_form
+        engine.slope_simulation.input[membership.land_cover_type.label] = land_cover
 
-        engine.impervious_simulation.input[membership.land_use_type.label] = land_use
         engine.impervious_simulation.input[membership.land_form_type.label] = land_form
+        engine.impervious_simulation.input[membership.land_cover_type.label] = land_cover
 
-        engine.catchment_simulation.input[membership.land_use_type.label] = land_use
         engine.catchment_simulation.input[membership.land_form_type.label] = land_form
+        engine.catchment_simulation.input[membership.land_cover_type.label] = land_cover
 
         # get slope result
         engine.slope_simulation.compute()

@@ -3,8 +3,8 @@ import skfuzzy as fuzz
 
 from skfuzzy import control as ctrl
 from fuzzy.categories import (
-    land_use,
     land_form,
+    land_cover,
     slope_ctgr,
     impervious_ctgr,
     catchment_ctgr,
@@ -14,8 +14,8 @@ from fuzzy.categories import (
 class Memberships:
     def __init__(self):
         """Ready for use members."""
-        self.land_use_type = ctrl.Antecedent(np.arange(0, 10, 1), "land_use")
-        self.land_form_type = ctrl.Antecedent(np.arange(0, 14, 1), "land_form")
+        self.land_form_type = ctrl.Antecedent(np.arange(0, 10, 1), "land_form")
+        self.land_cover_type = ctrl.Antecedent(np.arange(0, 14, 1), "land_cover")
         self.slope = ctrl.Consequent(np.arange(1, 101, 1), "slope")
         self.impervious = ctrl.Consequent(np.arange(1, 101, 1), "impervious")
         self.catchment = ctrl.Consequent(np.arange(1, 101, 1), "catchment")
@@ -24,76 +24,76 @@ class Memberships:
         """
         Populate land use type with membership functions.
         """
-        self.land_use_type[land_use.marshes_and_lowlands] = fuzz.trimf(
-            self.land_use_type.universe, [0, 1, 2]
+        self.land_form_type[land_form.marshes_and_lowlands] = fuzz.trimf(
+            self.land_form_type.universe, [0, 1, 2]
         )
-        self.land_use_type[land_use.flats_and_plateaus] = fuzz.trimf(
-            self.land_use_type.universe, [1, 2, 3]
+        self.land_form_type[land_form.flats_and_plateaus] = fuzz.trimf(
+            self.land_form_type.universe, [1, 2, 3]
         )
-        self.land_use_type[
-            land_use.flats_and_plateaus_in_combination_with_hills
-        ] = fuzz.trimf(self.land_use_type.universe, [2, 3, 4])
-        self.land_use_type[land_use.hills_with_gentle_slopes] = fuzz.trimf(
-            self.land_use_type.universe, [3, 4, 5]
+        self.land_form_type[
+            land_form.flats_and_plateaus_in_combination_with_hills
+        ] = fuzz.trimf(self.land_form_type.universe, [2, 3, 4])
+        self.land_form_type[land_form.hills_with_gentle_slopes] = fuzz.trimf(
+            self.land_form_type.universe, [3, 4, 5]
         )
-        self.land_use_type[land_use.steeper_hills_and_foothills] = fuzz.trimf(
-            self.land_use_type.universe, [4, 5, 6]
+        self.land_form_type[land_form.steeper_hills_and_foothills] = fuzz.trimf(
+            self.land_form_type.universe, [4, 5, 6]
         )
-        self.land_use_type[land_use.hills_and_outcrops_of_mountain_ranges] = fuzz.trimf(
-            self.land_use_type.universe, [5, 6, 7]
+        self.land_form_type[land_form.hills_and_outcrops_of_mountain_ranges] = fuzz.trimf(
+            self.land_form_type.universe, [5, 6, 7]
         )
-        self.land_use_type[land_use.higher_hills] = fuzz.trimf(
-            self.land_use_type.universe, [6, 7, 8]
+        self.land_form_type[land_form.higher_hills] = fuzz.trimf(
+            self.land_form_type.universe, [6, 7, 8]
         )
-        self.land_use_type[land_use.mountains] = fuzz.trimf(
-            self.land_use_type.universe, [7, 8, 9]
+        self.land_form_type[land_form.mountains] = fuzz.trimf(
+            self.land_form_type.universe, [7, 8, 9]
         )
-        self.land_use_type[land_use.highest_mountains] = fuzz.trimf(
-            self.land_use_type.universe, [8, 9, 10]
+        self.land_form_type[land_form.highest_mountains] = fuzz.trimf(
+            self.land_form_type.universe, [8, 9, 10]
         )
 
     def populate_land_form(self):
         """
         Populate land form type with membership functions.
         """
-        self.land_form_type[land_form.medium_conditions] = fuzz.trimf(
-            self.land_form_type.universe, [0, 1, 2]
+        self.land_cover_type[land_cover.medium_conditions] = fuzz.trimf(
+            self.land_cover_type.universe, [0, 1, 2]
         )
-        self.land_form_type[land_form.permeable_areas] = fuzz.trimf(
-            self.land_form_type.universe, [1, 2, 3]
+        self.land_cover_type[land_cover.permeable_areas] = fuzz.trimf(
+            self.land_cover_type.universe, [1, 2, 3]
         )
-        self.land_form_type[land_form.permeable_terrain_on_plains] = fuzz.trimf(
-            self.land_form_type.universe, [2, 3, 4]
+        self.land_cover_type[land_cover.permeable_terrain_on_plains] = fuzz.trimf(
+            self.land_cover_type.universe, [2, 3, 4]
         )
-        self.land_form_type[land_form.hilly] = fuzz.trimf(
-            self.land_form_type.universe, [3, 4, 5]
+        self.land_cover_type[land_cover.hilly] = fuzz.trimf(
+            self.land_cover_type.universe, [3, 4, 5]
         )
-        self.land_form_type[land_form.mountains] = fuzz.trimf(
-            self.land_form_type.universe, [4, 5, 6]
+        self.land_cover_type[land_cover.mountains] = fuzz.trimf(
+            self.land_cover_type.universe, [4, 5, 6]
         )
-        self.land_form_type[land_form.bare_rocky_slopes] = fuzz.trimf(
-            self.land_form_type.universe, [5, 6, 7]
+        self.land_cover_type[land_cover.bare_rocky_slopes] = fuzz.trimf(
+            self.land_cover_type.universe, [5, 6, 7]
         )
-        self.land_form_type[land_form.urban] = fuzz.trimf(
-            self.land_form_type.universe, [6, 7, 8]
+        self.land_cover_type[land_cover.urban] = fuzz.trimf(
+            self.land_cover_type.universe, [6, 7, 8]
         )
-        self.land_form_type[land_form.suburban] = fuzz.trimf(
-            self.land_form_type.universe, [7, 8, 9]
+        self.land_cover_type[land_cover.suburban] = fuzz.trimf(
+            self.land_cover_type.universe, [7, 8, 9]
         )
-        self.land_form_type[land_form.rural] = fuzz.trimf(
-            self.land_form_type.universe, [8, 9, 10]
+        self.land_cover_type[land_cover.rural] = fuzz.trimf(
+            self.land_cover_type.universe, [8, 9, 10]
         )
-        self.land_form_type[land_form.forests] = fuzz.trimf(
-            self.land_form_type.universe, [9, 10, 11]
+        self.land_cover_type[land_cover.forests] = fuzz.trimf(
+            self.land_cover_type.universe, [9, 10, 11]
         )
-        self.land_form_type[land_form.meadows] = fuzz.trimf(
-            self.land_form_type.universe, [10, 11, 12]
+        self.land_cover_type[land_cover.meadows] = fuzz.trimf(
+            self.land_cover_type.universe, [10, 11, 12]
         )
-        self.land_form_type[land_form.arable] = fuzz.trimf(
-            self.land_form_type.universe, [11, 12, 13]
+        self.land_cover_type[land_cover.arable] = fuzz.trimf(
+            self.land_cover_type.universe, [11, 12, 13]
         )
-        self.land_form_type[land_form.marshes] = fuzz.trimf(
-            self.land_form_type.universe, [12, 13, 14]
+        self.land_cover_type[land_cover.marshes] = fuzz.trimf(
+            self.land_cover_type.universe, [12, 13, 14]
         )
 
     def populate_slope(self):
