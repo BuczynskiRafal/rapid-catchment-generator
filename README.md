@@ -1,4 +1,4 @@
-# Catchment generator
+# Rapid catchment generator
 Tool for rapid prototyping of a hydraulic model that can be read and edited with SWMM.
 The generator was created using feature analysis and surface runoff research from the literature. 
 Fuzzy logic controller rules were developed using parameterized categories of soil, slope, 
