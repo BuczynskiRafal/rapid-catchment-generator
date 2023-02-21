@@ -17,7 +17,7 @@ To run the script, use the following command:
 
 ```python3 pip install -r requirements``` 
 
-```python3 main.py file_path``` where `file_path` is the path to the SWMM model file.
+```python3 runner.py file_path``` where `file_path` is the path to the SWMM model file.
 
 Then enter the catchment area and select the land use and land form categories.
 
