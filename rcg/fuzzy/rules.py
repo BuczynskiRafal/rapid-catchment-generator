@@ -1,12 +1,21 @@
-from fuzzy import categories
-
+"""
+The module contains a class with specific rules for class members and the consequences of their combinations. 
+"""
 from skfuzzy import control as ctrl
-
-from fuzzy.memberships import membership
+from . import categories
+from .memberships import membership
 
 
 class RulesSet:
-    def __init__(self):
+    """
+    RulesSet is a class representing a set of rules for all antecedent combinations.
+
+    Attributes:
+        - rules (ctrl.Rule): Rules for all possible combinations.
+    """
+
+    def __init__(self) -> None:
+        """Initialize a RulesSet object with predefined rules as string attributes."""
         self.rule1 = ctrl.Rule(
             antecedent=(
                 (
@@ -572,7 +581,6 @@ class RulesSet:
                 )
             )
         )
-        # skały i przepuszczalne
         self.rule42 = ctrl.Rule(
             antecedent=(
                 (
@@ -807,6 +815,9 @@ class RulesSet:
 
 
 class SlopeRule(RulesSet):
+    """
+    SlopeRule is a class representing a set of consequences for all slope combinations.
+    """
     def __init__(self):
         super().__init__()
         self.rule1.consequent = membership.slope[
@@ -945,6 +956,9 @@ class SlopeRule(RulesSet):
 
 
 class ImperviousRule(RulesSet):
+    """
+    ImperviousRule is a class representing a set of consequences for all slope combinations.
+    """
     def __init__(self):
         super().__init__()
         self.rule1.consequent = membership.impervious[
@@ -1065,6 +1079,9 @@ class ImperviousRule(RulesSet):
 
 
 class CatchmentsRule(RulesSet):
+    """
+    CatchmentsRule is a class representing a set of consequences for all slope combinations.
+    """
     def __init__(self):
         super().__init__()
         self.rule1.consequent = membership.catchment[

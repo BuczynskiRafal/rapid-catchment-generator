@@ -1,16 +1,17 @@
 import os
-import unittest
+import pytest
 import tempfile
-import swmmio
-from inp_manage.inp import BuildCatchments
+from swmmio import Model
+from rcg.inp_manage.inp import BuildCatchments
 
 
-class TestBuildCatchments(unittest.TestCase):
-    def setUp(self):
-        self.model_path = "test_file.inp"
+class TestBuildCatchments:
+    @pytest.fixture
+    def model_path(self):
+        return r"C:\Users\Dell\Documents\Git\rapid-catchment-generator\rcg\inp_manage\test_inp_manage\test_file.inp"
 
-    def test_get_new_subcatchment_id(self):
-        model = swmmio.Model(self.model_path)
+    def test_get_new_subcatchment_id(self, model_path):
+        model = Model(model_path)
         with tempfile.TemporaryDirectory() as tempdir:
             inp_path = os.path.join(tempdir, f"{model.inp.name}.inp")
             model.inp.save(inp_path)
@@ -19,8 +20,8 @@ class TestBuildCatchments(unittest.TestCase):
 
             with open(inp_path, "r") as file:
                 data = file.read()
-                self.assertEqual(data.count(subcatchment_id), 0)
+                assert data.count(subcatchment_id) == 0
 
-            with open(self.model_path, "r") as file:
+            with open(model_path, "r") as file:
                 data = file.read()
-                self.assertEqual(data.count(subcatchment_id), 0)
+                assert data.count(subcatchment_id) == 0

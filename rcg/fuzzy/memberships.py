@@ -1,8 +1,11 @@
+"""
+The module contains a class with specified fuzzy set membership limits.
+"""
 import numpy as np
 import skfuzzy as fuzz
 
 from skfuzzy import control as ctrl
-from fuzzy.categories import (
+from .categories import (
     land_form,
     land_cover,
     slope_ctgr,
@@ -12,8 +15,23 @@ from fuzzy.categories import (
 
 
 class Memberships:
-    def __init__(self):
-        """Ready for use members."""
+    """
+    Memberships is a class that defines fuzzy membership functions for land use types,
+    land cover types, slope, imperviousness, and catchment.
+    """
+
+    def __init__(self) -> None:
+        """
+        Memberships is a class that defines fuzzy membership functions for land use types,
+        land cover types, slope, imperviousness, and catchment.
+
+        Attributes:
+            - land_form_type (Antecedent): Fuzzy input variable for land form types.
+            - land_cover_type (Antecedent): Fuzzy input variable for land cover types.
+            - slope (Consequent): Fuzzy output variable for slope.
+            - impervious (Consequent): Fuzzy output variable for imperviousness.
+            - catchment (Consequent): Fuzzy output variable for catchment.
+        """
         self.land_form_type = ctrl.Antecedent(np.arange(0, 10, 1), "land_form")
         self.land_cover_type = ctrl.Antecedent(np.arange(0, 14, 1), "land_cover")
         self.slope = ctrl.Consequent(np.arange(1, 101, 1), "slope")
@@ -39,9 +57,9 @@ class Memberships:
         self.land_form_type[land_form.steeper_hills_and_foothills] = fuzz.trimf(
             self.land_form_type.universe, [4, 5, 6]
         )
-        self.land_form_type[land_form.hills_and_outcrops_of_mountain_ranges] = fuzz.trimf(
-            self.land_form_type.universe, [5, 6, 7]
-        )
+        self.land_form_type[
+            land_form.hills_and_outcrops_of_mountain_ranges
+        ] = fuzz.trimf(self.land_form_type.universe, [5, 6, 7])
         self.land_form_type[land_form.higher_hills] = fuzz.trimf(
             self.land_form_type.universe, [6, 7, 8]
         )
@@ -52,7 +70,7 @@ class Memberships:
             self.land_form_type.universe, [8, 9, 10]
         )
 
-    def populate_land_form(self):
+    def populate_land_form(self) -> None:
         """
         Populate land form type with membership functions.
         """
@@ -96,7 +114,7 @@ class Memberships:
             self.land_cover_type.universe, [12, 13, 14]
         )
 
-    def populate_slope(self):
+    def populate_slope(self) -> None:
         """Populate slope with membership functions."""
         self.slope[slope_ctgr.marshes_and_lowlands] = fuzz.trimf(
             self.slope.universe, [0, 0, 5]
@@ -124,7 +142,7 @@ class Memberships:
             self.slope.universe, [60, 80, 100]
         )
 
-    def populate_impervious(self):
+    def populate_impervious(self) -> None:
         """Populate impervious with membership functions."""
         self.impervious[impervious_ctgr.marshes] = fuzz.trimf(
             self.impervious.universe, [0, 0, 5]
@@ -154,7 +172,7 @@ class Memberships:
             self.impervious.universe, [50, 100, 100]
         )
 
-    def populate_catchment(self):
+    def populate_catchment(self) -> None:
         """Populate catchment with membership functions."""
         self.catchment[catchment_ctgr.urban] = fuzz.trimf(
             self.catchment.universe, [0, 0, 15]

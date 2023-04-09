@@ -1,8 +1,8 @@
 import skfuzzy as fuzz
-from fuzzy import categories
+from . import categories
 
-from fuzzy.rules import slope_rules, impervious_rules, catchment_rules
-from fuzzy.categories import (
+from .rules import slope_rules, impervious_rules, catchment_rules
+from .categories import (
     land_form,
     land_cover,
     slope_ctgr,
@@ -11,7 +11,7 @@ from fuzzy.categories import (
 )
 
 from skfuzzy import control as ctrl
-from fuzzy.memberships import membership
+from .memberships import membership
 
 
 class FuzzyEngine:

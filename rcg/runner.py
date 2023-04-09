@@ -1,7 +1,9 @@
 # run script with python3 runner.py file_path
 import sys
-from inp_manage.inp import BuildCatchments
+from rcg.inp_manage.inp import BuildCatchments
+import os
 
+filepath = os.path.abspath("example.inp")
 
 def add_multiple_subcatchments(model):
     """Add a multiple subcatchments to the model.
@@ -14,5 +16,9 @@ def add_multiple_subcatchments(model):
 
 # This is a way to run the script from the command line.
 if __name__ == "__main__":
-    model = BuildCatchments(file_path=sys.argv[1])
+    print(filepath)
+
+    model = BuildCatchments(file_path=filepath)
+
+#     model = BuildCatchments(file_path=sys.argv[1])
     add_multiple_subcatchments(model)
