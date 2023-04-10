@@ -82,6 +82,9 @@ class BuildCatchments:
             except ValueError:
                 print("Area must be a number.")
                 area = input("Enter the area of the subcatchment: ")
+            if float(area) < 0:
+                print("Area must be greater than zero.")
+                area = input("Enter the area of the subcatchment: ")
 
         return area
 
@@ -298,10 +301,6 @@ class BuildCatchments:
         if len(self.model.inp.junctions) == 0:
             return None
         return self.model.inp.junctions.index[0]
-
-    from typing import Tuple
-
-    # ...
 
     def _add_subcatchment(self, subcatchment_id: str, catchment_values: Tuple[float, Prototype]) -> None:
         """
