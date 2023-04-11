@@ -1,42 +1,43 @@
 # Rapid catchment generator
-Tool for rapid prototyping of a hydraulic model that can be read and edited with SWMM.
-The generator was created using feature analysis and surface runoff research from the literature. 
-Fuzzy logic controller rules were developed using parameterized categories of soil, slope, 
-and permeability. The catchment configuration procedure was simplified by mapping typical 
-storage and Manning's coefficients. The use of fuzzy logic rules allows the system to be modified 
-to adjust the categories to certain situations. The use of membership functions allows us to increase 
-computation accuracy and customize the tool to diverse applications. Following alteration 
-of the catchment in the SWMM GUI allows for accurate portrayal of the real condition of the catchment; 
-no issues were encountered in altering the *inp file.
+Tool for rapid prototyping of a hydraulic model that can be read and edited with SWMM. The generator was created using feature analysis and surface runoff research from the literature. Fuzzy logic controller rules were developed using parameterized categories of soil, slope, and permeability. The catchment configuration procedure was simplified by mapping typical storage and Manning's coefficients. The use of fuzzy logic rules allows the system to be modified to adjust the categories to certain situations. The use of membership functions allows us to increase computation accuracy and customize the tool to diverse applications. Following alteration of the catchment in the SWMM GUI allows for accurate portrayal of the real condition of the catchment.
 
 ## Requirements
 * Python 3
 
 ## Usage
-To run the script, use the following command: 
+Create a virtual environment:
+```
+python3 -m venv venv
+```
+Download and install the required dependencies: 
 
-```python3 pip install -r requirements``` 
+```
+python3 pip install -r requirements
+``` 
+To run the script, use the following command:
+```
+python3 rcg.runner file path
+``` 
+where `file path` is the path to the SWMM model file.
 
-```python3 runner.py file_path``` where `file_path` is the path to the SWMM model file.
-
-Then enter the catchment area and select the land use and land form categories.
-
+Enter data into the terminal according to the instructions it displays.
+The file is automatically saved in the same directory.  
 
 ## About
 For the construction of the catchment generator, the type of land use was divided according to Table 1, 
 the land cover according to Table 2. 
 The categories were determined on the basis of the data presented by (Dołęga, Rogala, 1973), given below in Table 3. 
 
-
-<h3 id="table-1-land-use-categories">Table 1: Land use categories</h3>
-<table>
+<h3 style="text-align: left;">Table 1. Land use categories</h3>
+<table style="margin-left:auto; margin-right:auto; text-align:center;">
 <thead>
 <tr>
 <th>Number</th>
 <th>Land Use</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>1</td>
 <td>marshes and lowlands</td>
 </tr>
@@ -72,18 +73,19 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 <td>9</td>
 <td>highest mountains</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 
-
-<h3 id="table-2-land cover - categories">Table 2 Land cover categories</h3>
-<table>
+<h3 style="text-align: left;">Table 2. Land cover categories</h3>
+<table style="margin-left:auto; margin-right:auto; text-align:center;">
 <thead>
 <tr>
 <th>Number</th>
 <th>Land cover</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>1</td>
 <td>medium conditions</td>
 </tr>
@@ -137,9 +139,8 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 </tr>
 </tbody></table>
 
-
-<h3 id="table-3-runoff-coefficients-o-according-to-iszkowski">Table 3. Runoff coefficients o according to Iszkowski</h3>
-<table>
+<h3 style="text-align: left;">Table 3. Runoff coefficients o according to Iszkowski</h3>
+<table style="margin-left:auto; margin-right:auto; text-align:center;">
 <thead>
 <tr>
 <th>Number</th>
@@ -147,7 +148,8 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 <th>Drainage coefficient ϕ</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>1</td>
 <td>marshes and lowlands</td>
 <td>0.20</td>
@@ -192,92 +194,75 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 <td>highest mountains</td>
 <td>0.60-0.70</td>
 </tr>
-</tbody></table>
-
-
-
-
+</tbody>
+</table>
 
 ##
-Table 4 shows what and how feature values are generated. The "Value" column contains example data. 
-
-<h3 id="table-4-swmm-catchment-data">Table 4 SWMM catchment data.</h3>
-<table>
+Table 4 shows what and how feature values are generated.
+<h3 align="left">Table 4. SWMM catchment data.</h3>
+<table align="center">
 <thead>
 <tr>
 <th>Parameter name</th>
-<th>Value</th>
 <th>Explanation</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>Name</td>
-<td>S1 [-]</td>
-<td>Catchment names (ID) are generated by adding a number.<br></td>
+<td>Catchment names (ID) are generated by adding a number.</td>
 </tr>
 <tr>
 <td>Raingage</td>
-<td>1 [-]</td>
-<td>When &quot;raingage exists in the uploaded file, it will be assigned to the catchment area being built. If it does not exist, it will be added to the file along with the &quot;timeseries&quot; and assigned to the catchment area being generated.<br></td>
+<td>When "raingage exists in the uploaded file, it will be assigned to the catchment area being built. If it does not exist, it will be added to the file along with the "timeseries" and assigned to the catchment area being generated.</td>
 </tr>
 <tr>
 <td>Outlet</td>
-<td>J1 [-]</td>
-<td>If there are receivers in the transferred file, the program will automatically assign it to the catchment area, if there are none, the name of the generated catchment area will be assigned.<br></td>
+<td>If there are receivers in the transferred file, the program will automatically assign it to the catchment area, if there are none, the name of the generated catchment area will be assigned.</td>
 </tr>
 <tr>
 <td>Area</td>
-<td>5 [ha]</td>
-<td>A parameter passed by the user.<br></td>
+<td>A parameter passed by the user.</td>
 </tr>
 <tr>
 <td>Percent Imperv</td>
-<td>25 [-]</td>
-<td>Parameter calculated as described above and assigned to the catchment area.<br></td>
+<td>Parameter calculated as described above and assigned to the catchment area.</td>
 </tr>
 <tr>
 <td>Width</td>
-<td>500 [m]</td>
-<td>The generated catchment areas are square in shape therefore the length of the side of the catchment area is assigned.<br></td>
+<td>The generated catchment areas are square in shape therefore the length of the side of the catchment area is assigned.</td>
 </tr>
 <tr>
 <td>Percent Slope</td>
-<td>10 [-]</td>
-<td>Parameter calculated as described above and assigned to the catchment area.<br></td>
+<td>Parameter calculated as described above and assigned to the catchment area.</td>
 </tr>
 <tr>
 <td>N-Imperv</td>
-<td>0.15 [-]</td>
-<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with Manning coefficients.<br></td>
+<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with Manning coefficients.</td>
 </tr>
 <tr>
 <td>N-Perv</td>
-<td>1 [-]</td>
 <td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with Manning coefficients.</td>
 </tr>
 <tr>
 <td>Dstore-Imperv</td>
-<td>1.27 [mm]</td>
-<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.<br></td>
+<td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.</td>
 </tr>
 <tr>
 <td>Dstore-Perv</td>
-<td>5.08 [mm]</td>
 <td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.</td>
 </tr>
 <tr>
 <td>Percent Zero Imperv</td>
-<td>50 [-]</td>
 <td>The value taken based on the linguistic variables passed to the fuzzy logic controller which were previously mapped with typical storage values.</td>
 </tr>
 <tr>
 <td>RouteTo</td>
-<td>outlet [-]</td>
-<td>Odpływ z obszarów imperv i perv spływa bezpośrednio do wylotu<br></td>
+<td>Odpływ z obszarów imperv i perv spływa bezpośrednio do wylotu</td>
 </tr>
 <tr>
 <td>Coordinate</td>
-<td>[-]</td>
-<td>Square-shaped catchments are generated, located so that one side is the edge of the contact.<br></td>
+<td>Square-shaped catchments are generated, located so that one side is the edge of the contact.</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>

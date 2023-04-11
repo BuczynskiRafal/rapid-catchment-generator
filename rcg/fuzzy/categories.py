@@ -1,8 +1,6 @@
 """The module contains classes specified in the RCG divided into categories. """
-
 from abc import ABC
 from typing import List
-from enum import Enum
 
 
 class Categories(ABC):
@@ -27,9 +25,10 @@ class Categories(ABC):
         self.highest_mountains = "highest_mountains"
 
 
-class LandForm(Enum):
+class LandForm:
     """
     LandForm is a class representing various categories of land use types.
+
     Enum Attributes:
         - marshes_and_lowlands (int): Numeric value for marshes and lowlands land use type.
         - flats_and_plateaus (int): Numeric value for flats and plateaus land use type.
@@ -42,8 +41,8 @@ class LandForm(Enum):
           for hills and outcrops of mountain ranges land use type.
         - higher_hills (int): Numeric value for higher hills land use type.
         - mountains (int): Numeric value for mountains land use type.
-        - highest_mountains (int): Numeric value for highest mountains land use type.    """
-
+        - highest_mountains (int): Numeric value for highest mountains land use type.
+    """
     marshes_and_lowlands = 1
     flats_and_plateaus = 2
     flats_and_plateaus_in_combination_with_hills = 3
