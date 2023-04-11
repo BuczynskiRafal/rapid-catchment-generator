@@ -1,5 +1,5 @@
 scikit-fuzzy~=0.4.2
-numpy>=1.23.4
+numpy>=1.21.6
 setuptools>=57.0.0
 pip>=21.1.2
 swmmio>=0.6.0
