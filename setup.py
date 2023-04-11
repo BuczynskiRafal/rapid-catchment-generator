@@ -26,6 +26,7 @@ setup(
         "pandas",
         "swmmio",
         "pyswmm",
+        "matplotlib"
     ],
     project_urls={
         "Homepage": "https://github.com/BuczynskiRafal/rapid-catchment-generator"
