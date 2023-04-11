@@ -2,6 +2,7 @@ import os
 import pytest
 import tempfile
 import unittest.mock
+import pandas as pd
 
 from unittest.mock import patch
 from swmmio import Model
@@ -170,7 +171,10 @@ class TestBuildCatchments:
         assert test_model.model.inp.raingages.loc["RG1", "TimeIntrvl"] == "1:00"
         assert test_model.model.inp.raingages.loc["RG1", "SnowCatch"] == "1.0"
         assert test_model.model.inp.raingages.loc["RG1", "DataSource"] == "TIMESERIES"
-        assert test_model.model.inp.raingages.loc["RG1", "DataSourceName"] == test_model._get_timeseries()
+        assert (
+            test_model.model.inp.raingages.loc["RG1", "DataSourceName"]
+            == test_model._get_timeseries()
+        )
 
     def test_get_raingage_no_existing_raingages(self, model_path):
         model = Model(model_path)
@@ -194,7 +198,6 @@ class TestBuildCatchments:
     def test_get_outlet_no_existing_junctions(self, model_path):
         test_model = BuildCatchments(model_path)
 
-        # Usuń istniejące junctions
         test_model.model.inp.junctions = test_model.model.inp.junctions.iloc[0:0]
 
         assert len(test_model.model.inp.junctions) == 0
@@ -208,3 +211,127 @@ class TestBuildCatchments:
         outlet = test_model._get_outlet()
         assert outlet == existing_junction_name
 
+    def test_add_subarea(self, model_path):
+        test_model = BuildCatchments(model_path)
+
+        subcatchment_id = "test_subcatchment"
+        prototype = Prototype(LandForm.mountains, LandCover.urban)
+
+        test_model._add_subcatchment(subcatchment_id, (1.0, prototype))
+
+        test_model._add_subarea(subcatchment_id, prototype)
+
+        assert subcatchment_id in test_model.model.inp.subareas.index
+        new_subarea = test_model.model.inp.subareas.loc[subcatchment_id]
+
+        map_mannings = {
+            "urban": (0.013, 0.15),
+            "suburban": (0.013, 0.24),
+            "rural": (0.013, 0.41),
+            "forests": (0.40, 0.80),
+            "meadows": (0.15, 0.41),
+            "arable": (0.06, 0.17),
+            "mountains": (0.013, 0.05),
+        }
+        map_depression = {
+            "urban": (0.05, 0.20, 90),
+            "suburban": (0.05, 0.20, 80),
+            "rural": (0.05, 0.20, 70),
+            "forests": (0.05, 0.30, 5),
+            "meadows": (0.05, 0.20, 10),
+            "arable": (0.05, 0.20, 10),
+            "mountains": (0.05, 0.20, 80),
+        }
+
+        populate_key = Prototype.get_populate(prototype.catchment_result)
+
+        expected_values = {
+            "N-Imperv": map_mannings[populate_key][0],
+            "N-Perv": map_mannings[populate_key][1],
+            "S-Imperv": map_depression[populate_key][0] * 25.4,
+            "S-Perv": map_depression[populate_key][1] * 25.4,
+            "PctZero": map_depression[populate_key][2],
+            "RouteTo": "OUTLET",
+        }
+
+        for key, value in expected_values.items():
+            assert new_subarea[key] == pytest.approx(value)
+
+    def test_get_existing_coordinates_no_polygons(self, model_path):
+        test_model = BuildCatchments(model_path)
+        test_model.model.inp.polygons = pd.DataFrame(columns=["X", "Y", "Subcatch"])
+
+        expected_coordinates = [
+            (0, 0),
+            (0, 5),
+            (5, 5),
+            (5, 0),
+        ]
+
+        coordinates = test_model._get_existing_coordinates()
+        assert coordinates == expected_coordinates
+
+    def test_get_existing_coordinates_with_polygons(self, model_path):
+        test_model = BuildCatchments(model_path)
+        test_model.model.inp.polygons = pd.DataFrame(
+            data={
+                "X": [0, 0, 5, 5, 10, 10, 15, 15],
+                "Y": [0, 5, 5, 0, 0, 5, 5, 0],
+                "Subcatch": ["S1", "S1", "S1", "S1", "S2", "S2", "S2", "S2"],
+            }
+        )
+
+        expected_coordinates = [
+            (15, 0),
+            (15, 5),
+            (10, 5),
+            (10, 0),
+        ]
+
+        coordinates = test_model._get_existing_coordinates()
+        assert coordinates == expected_coordinates
+
+    def test_add_coords_no_existing_polygons(self, model_path):
+        test_model = BuildCatchments(model_path)
+        test_model.model.inp.polygons = pd.DataFrame(columns=["X", "Y", "Name"])
+        test_model.model.inp.polygons.set_index("Name", inplace=True)
+
+        subcatchment_id = "S1"
+        test_model._add_coords(subcatchment_id)
+
+        expected_polygons = pd.DataFrame(
+            data={
+                "X": [0, 0, 5, 5],
+                "Y": [-5, 0, 0, -5],
+            },
+            index=[subcatchment_id for _ in range(4)],
+        )
+        expected_polygons.index.names = ["Name"]
+        expected_polygons["X"] = expected_polygons["X"].astype(object)
+        expected_polygons["Y"] = expected_polygons["Y"].astype(object)
+        pd.testing.assert_frame_equal(test_model.model.inp.polygons, expected_polygons)
+
+    def test_add_coords_with_existing_polygons(self, model_path):
+        test_model = BuildCatchments(model_path)
+        test_model.model.inp.polygons = pd.DataFrame(
+            data={
+                "X": [0, 0, 5, 5],
+                "Y": [0, 5, 5, 0],
+                "Name": ["S1"] * 4,
+            }
+        )
+        test_model.model.inp.polygons.set_index("Name", inplace=True)
+
+        subcatchment_id = "S2"
+        test_model._add_coords(subcatchment_id)
+
+        expected_polygons = pd.DataFrame(
+            data={
+                "X": [0, 0, 5, 5, 5, 5, 0, 0],
+                "Y": [0, 5, 5, 0, -5, 0, 0, -5],
+                "Name": ["S1"] * 4 + ["S2"] * 4,
+            }
+        )
+        expected_polygons.set_index("Name", inplace=True)
+
+        pd.testing.assert_frame_equal(test_model.model.inp.polygons, expected_polygons)
