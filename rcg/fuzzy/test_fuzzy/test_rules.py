@@ -1,6 +1,6 @@
 import unittest
 from skfuzzy import control as ctrl
-from fuzzy.rules import slope_rules, impervious_rules, catchment_rules, RulesSet
+from rcg.fuzzy.rules import slope_rules, impervious_rules, catchment_rules, RulesSet
 
 
 class TestSlopeRules(unittest.TestCase):

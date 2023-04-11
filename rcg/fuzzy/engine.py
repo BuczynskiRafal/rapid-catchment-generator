@@ -15,12 +15,13 @@ from .memberships import membership
 
 
 class FuzzyEngine:
-    """FuzzyEngine returns result of calculation the slope, impervious, and catchment values."""
+    """
+    FuzzyEngine returns the result of calculating the slope, impervious, and catchment values.
+    """
 
     def __init__(self):
         """
-        The function takes in two inputs, land use and land form, and then uses the rules defined in the rules.py file to
-        calculate the slope, impervious, and catchment values.
+        Initializes FuzzyEngine with the control systems and simulations for slope, impervious, and catchment.
         """
         self.slope_simulation_ctrl = ctrl.ControlSystem(slope_rules)
         self.impervious_simulation_ctrl = ctrl.ControlSystem(impervious_rules)
@@ -40,14 +41,20 @@ engine = FuzzyEngine()
 
 
 class Prototype:
+    """
+    Prototype is a class that calculates the slope, impervious, and catchment values based on given land form and
+    land cover categories using fuzzy logic rules defined in rules.py.
+    """
     def __init__(self, land_form: categories.LandForm, land_cover: categories.LandCover):
-        """The function takes in two inputs, land use and land form, and then uses the rules defined in the rules.py file to
-        calculate the slope, impervious, and catchment values.
+        """
+        Initializes a Prototype instance with the given land_form and land_cover.
 
-        :param land_form: categories.LandForm
-        :type land_form: categories.LandForm
-        :param land_cover: categories.LandCover
-        :type land_cover: categories.LandCover
+        Parameters
+        ----------
+        land_form : categories.LandForm
+            Land form category to be used for the fuzzy logic calculation.
+        land_cover : categories.LandCover
+            Land cover category to be used for the fuzzy logic calculation.
         """
 
         # calculate
@@ -79,13 +86,19 @@ class Prototype:
     @staticmethod
     def get_populate(result: float, member: membership = membership.catchment):
         """
-        > get_populate takes a result and a membership, and returns the lingustic variable of member category.
+        Returns the linguistic variable of the given member category based on the result.
 
-        :param result: the result of the fuzzy logic calculation
-        :type result: float
-        :param member: membership = membership.catchment
-        :type member: membership
-        :return: Lingustic variable, member category
+        Parameters
+        ----------
+        result : float
+            The result of the fuzzy logic calculation.
+        member : membership, optional
+            Membership category to be used, by default membership.catchment.
+
+        Returns
+        -------
+        str
+            Linguistic variable of the member category.
         """
         populate = {
             key: fuzz.interp_membership(member.universe, member[key].mf, result)

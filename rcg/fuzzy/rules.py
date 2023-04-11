@@ -9,9 +9,6 @@ from .memberships import membership
 class RulesSet:
     """
     RulesSet is a class representing a set of rules for all antecedent combinations.
-
-    Attributes:
-        - rules (ctrl.Rule): Rules for all possible combinations.
     """
 
     def __init__(self) -> None:

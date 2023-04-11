@@ -24,13 +24,6 @@ class Memberships:
         """
         Memberships is a class that defines fuzzy membership functions for land use types,
         land cover types, slope, imperviousness, and catchment.
-
-        Attributes:
-            - land_form_type (Antecedent): Fuzzy input variable for land form types.
-            - land_cover_type (Antecedent): Fuzzy input variable for land cover types.
-            - slope (Consequent): Fuzzy output variable for slope.
-            - impervious (Consequent): Fuzzy output variable for imperviousness.
-            - catchment (Consequent): Fuzzy output variable for catchment.
         """
         self.land_form_type = ctrl.Antecedent(np.arange(0, 10, 1), "land_form")
         self.land_cover_type = ctrl.Antecedent(np.arange(0, 14, 1), "land_cover")

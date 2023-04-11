@@ -2,24 +2,12 @@
 
 from abc import ABC
 from typing import List
+from enum import Enum
 
 
 class Categories(ABC):
     """
     Categories is an abstract base class that defines the interface for a category.
-
-    Attributes:
-        - marshes_and_lowlands (str): Marshes and lowlands category.
-        - flats_and_plateaus (str): Flats and plateaus category.
-        - flats_and_plateaus_in_combination_with_hills (str): Flats and plateaus
-          in combination with hills category.
-        - hills_with_gentle_slopes (str): Hills with gentle slopes category.
-        - steeper_hills_and_foothills (str): Steeper hills and foothills category.
-        - hills_and_outcrops_of_mountain_ranges (str): Hills and outcrops
-          of mountain ranges category.
-        - higher_hills (str): Higher hills category.
-        - mountains (str): Mountains category.
-        - highest_mountains (str): Highest mountains category.
     """
 
     def __init__(self) -> None:
@@ -39,14 +27,10 @@ class Categories(ABC):
         self.highest_mountains = "highest_mountains"
 
 
-class LandForm:
+class LandForm(Enum):
     """
     LandForm is a class representing various categories of land use types.
-
-    Class attributes are used for returning numeric values for the fuzzy engine, while attributes
-    defined in the __init__ method return string values for each land use type.
-
-    Class Attributes:
+    Enum Attributes:
         - marshes_and_lowlands (int): Numeric value for marshes and lowlands land use type.
         - flats_and_plateaus (int): Numeric value for flats and plateaus land use type.
         - flats_and_plateaus_in_combination_with_hills (int): Numeric value
@@ -58,20 +42,7 @@ class LandForm:
           for hills and outcrops of mountain ranges land use type.
         - higher_hills (int): Numeric value for higher hills land use type.
         - mountains (int): Numeric value for mountains land use type.
-        - highest_mountains (int): Numeric value for highest mountains land use type.
-
-    Attributes:
-        - marshes_and_lowlands (str): Marshes and lowlands land use type.
-        - flats_and_plateaus (str): Flats and plateaus land use type.
-        - flats_and_plateaus_in_combination_with_hills (str): Flats and
-          plateaus in combination with hills land use type.
-        - hills_with_gentle_slopes (str): Hills with gentle slopes land use type.
-        - steeper_hills_and_foothills (str): Steeper hills and foothills land use type.
-        - hills_and_outcrops_of_mountain_ranges (str): Hills and outcrops of mountain ranges land use type.
-        - higher_hills (str): Higher hills land use type.
-        - mountains (str): Mountains land use type.
-        - highest_mountains (str): Highest mountains land use type.
-    """
+        - highest_mountains (int): Numeric value for highest mountains land use type.    """
 
     marshes_and_lowlands = 1
     flats_and_plateaus = 2

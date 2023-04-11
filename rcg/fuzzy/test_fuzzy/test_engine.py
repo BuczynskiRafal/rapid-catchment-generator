@@ -1,8 +1,8 @@
 import unittest
 from skfuzzy.control import ControlSystem, ControlSystemSimulation
-from fuzzy import categories
-from fuzzy.engine import FuzzyEngine, Prototype
-from fuzzy.memberships import membership
+from rcg.fuzzy import categories
+from rcg.fuzzy.engine import FuzzyEngine, Prototype
+from rcg.fuzzy.memberships import membership
 
 
 class TestFuzzyEngine(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 from abc import ABC
-from fuzzy.categories import (
+from rcg.fuzzy.categories import (
     Categories,
     LandForm,
     LandCover,
