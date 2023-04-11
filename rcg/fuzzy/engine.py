@@ -1,5 +1,5 @@
 import skfuzzy as fuzz
-from . import categories
+from rcg.fuzzy import categories
 
 from .rules import slope_rules, impervious_rules, catchment_rules
 from .categories import (
@@ -11,7 +11,7 @@ from .categories import (
 )
 
 from skfuzzy import control as ctrl
-from .memberships import membership
+from rcg.fuzzy.memberships import Memberships, membership
 
 
 class FuzzyEngine:
@@ -84,7 +84,7 @@ class Prototype:
         ]
 
     @staticmethod
-    def get_populate(result: float, member: membership = membership.catchment):
+    def get_populate(result: float, member: Memberships = membership.catchment):
         """
         Returns the linguistic variable of the given member category based on the result.
 
