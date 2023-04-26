@@ -30,11 +30,11 @@ One of the most user-friendly ways to utilize the capabilities of RCG is through
 
 ## Getting Started
 To get started with the RCG GUI, simply follow these steps:
-1. Ensure that you have the latest version of RCG installed on your system. If you haven't already, you can download it from the official repository.
-2. Open the RCG GUI by running the RCG.exe executable file (on Windows) or the RCG script (on macOS and Linux) located in the installation folder.
-3. Once the GUI has launched, you can begin setting up your catchment model by entering the required data and parameters in the designated fields.
-4. After configuring your model, you can use the built-in visualization tools to explore the catchment's characteristics, such as its drainage network, topography, and land use.
-5. When you're satisfied with your model, you can export it in a variety of formats for further analysis or integration with other software tools.
+1. Click the file "RCG.exe", gitchub will take you to "https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG.exe". On the right side of the window is the "download" button, download the file. 
+2. Double-click on the file downloaded to the desired location. After installation, the RCG window will appear. 
+3. Fill in the data and generate the catchment with the "Run" button.
+![RCG GUI](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG_GUI.png)
+
 
 ## About
 For the construction of the catchment generator, the type of land use was divided according to Table 1, 
