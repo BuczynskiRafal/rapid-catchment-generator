@@ -21,6 +21,24 @@ import sys
 from rcg.inp_manage.inp import BuildCatchments
 
 
+def generate_subcatchment(file_path: str, area: float, land_form: str, land_cover: str):
+    """
+    Adds a subcatchment to an existing SWMM model.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the SWMM input file (INP) to which subcatchments will be added.
+    area : float
+        The area of the subcatchment [ha].
+    land_use_type : str
+        The land use type of the subcatchment.
+    land_form_type : str
+        The land form type of the subcatchment.
+    """
+    model = BuildCatchments(file_path)
+    model.add_subcatchment_form_gui(area, land_form, land_cover)
+
 def add_multiple_subcatchments(model):
     """
     Add multiple subcatchments to the given model recursively. The function calls itself

@@ -445,7 +445,7 @@ class BuildCatchments:
         )
         coords.index.names = ["Name"]
         self.model.inp.polygons = pd.concat([self.model.inp.polygons, coords])
-        replace_inp_section(self.model.inp.path, "[POLYGONS]", self.model.inp.polygons)
+        replace_inp_section(self.model.inp.path, "[Polygons]", self.model.inp.polygons)
 
     def get_subcatchment_name(self, name: str) -> pd.DataFrame:
         """
@@ -507,6 +507,25 @@ class BuildCatchments:
         """
         subcatchment_id = self._get_new_subcatchment_id()
         catchment_values = self._get_subcatchment_values()
+        self._add_subcatchment(subcatchment_id, catchment_values)
+        self._add_subarea(subcatchment_id, catchment_values[1])
+        self._add_coords(subcatchment_id)
+        self._add_infiltration(subcatchment_id)
+
+    def add_subcatchment_form_gui(self, area: float, land_form: str, land_cover: str) -> None:
+        """
+        Adds a new subcatchment to the project, including its subarea, coordinates, and infiltration parameters.
+
+        Returns
+        -------
+        None
+        """
+        subcatchment_id = self._get_new_subcatchment_id()
+        prototype_result = Prototype(
+            land_form=getattr(LandForm, land_form),
+            land_cover=getattr(LandCover, land_cover),
+        )
+        catchment_values = (area, prototype_result)
         self._add_subcatchment(subcatchment_id, catchment_values)
         self._add_subarea(subcatchment_id, catchment_values[1])
         self._add_coords(subcatchment_id)
