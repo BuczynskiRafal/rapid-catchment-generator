@@ -33,8 +33,10 @@ To get started with the RCG GUI, simply follow these steps:
 1. Click the file "RCG.exe", gitchub will take you to "https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG.exe". On the right side of the window is the "download" button, download the file. 
 2. Double-click on the file downloaded to the desired location. After installation, the RCG window will appear. 
 3. Fill in the data and generate the catchment with the "Run" button.
-![RCG GUI](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG_GUI.png)
 
+<div align="center">
+  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG_GUI.png">
+</div>
 
 ## About
 For the construction of the catchment generator, the type of land use was divided according to Table 1, 
