@@ -3,10 +3,24 @@
 # Rapid catchment generator
 Tool for rapid prototyping of a hydraulic model that can be read and edited with SWMM. The generator was created using feature analysis and surface runoff research from the literature. Fuzzy logic controller rules were developed using parameterized categories of soil, slope, and permeability. The catchment configuration procedure was simplified by mapping typical storage and Manning's coefficients. The use of fuzzy logic rules allows the system to be modified to adjust the categories to certain situations. The use of membership functions allows us to increase computation accuracy and customize the tool to diverse applications. Following alteration of the catchment in the SWMM GUI allows for accurate portrayal of the real condition of the catchment.
 
+
+## Using the Graphical User Interface (GUI)
+One of the most user-friendly ways to utilize the capabilities of RCG is through its intuitive graphical user interface (GUI) application. The GUI provides an easy-to-navigate environment where users can input parameters, manipulate data, and visualize results, all without the need for complex coding or scripting.
+
+## Getting Started
+To get started with the RCG GUI, simply follow these steps:
+1. Click the file "RCG.exe", gitchub will take you to "https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG.exe". On the right side of the window is the "download" button, download the file. 
+2. Double-click on the file downloaded to the desired location. After installation, the RCG window will appear. 
+3. Fill in the data and generate the catchment with the "Run" button.
+
+<div align="center">
+  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/img/RCG_GUI.png">
+</div>
+
 ## Requirements
 * Python 3
 
-## Usage
+## Usage from terminal
 Create a virtual environment:
 ```
 python3 -m venv venv
@@ -25,17 +39,12 @@ where `file path` is the path to the SWMM model file.
 Enter data into the terminal according to the instructions it displays.
 The file is automatically saved in the same directory.  
 
-## Using the Graphical User Interface (GUI)
-One of the most user-friendly ways to utilize the capabilities of RCG is through its intuitive graphical user interface (GUI) application. The GUI provides an easy-to-navigate environment where users can input parameters, manipulate data, and visualize results, all without the need for complex coding or scripting.
+## How it is built
 
-## Getting Started
-To get started with the RCG GUI, simply follow these steps:
-1. Click the file "RCG.exe", gitchub will take you to "https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG.exe". On the right side of the window is the "download" button, download the file. 
-2. Double-click on the file downloaded to the desired location. After installation, the RCG window will appear. 
-3. Fill in the data and generate the catchment with the "Run" button.
+The diagram below shows the construction of the Rapid Catchment Generator. The modular form of the system allows easy adaptation to specific user needs and tuning to achieve greater accuracy. 
 
 <div align="center">
-  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG_GUI.png">
+  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/img/rcg_schema.png">
 </div>
 
 ## About
