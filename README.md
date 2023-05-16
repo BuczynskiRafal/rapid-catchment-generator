@@ -1,4 +1,8 @@
 [![Documentation Status](https://readthedocs.org/projects/rapid-catchment-generator/badge/?version=latest)](https://rapid-catchment-generator.readthedocs.io/en/latest/?badge=latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/BuczynskiRafal/catchments_simulation/blob/main/LICENSE)
+[![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.org/project/rcg/)
+[![GitHub Actions Build Status](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yml/badge.svg?branch=main)](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yml)
+
 
 # Rapid catchment generator
 Tool for rapid prototyping of a hydraulic model that can be read and edited with SWMM. The generator was created using feature analysis and surface runoff research from the literature. Fuzzy logic controller rules were developed using parameterized categories of soil, slope, and permeability. The catchment configuration procedure was simplified by mapping typical storage and Manning's coefficients. The use of fuzzy logic rules allows the system to be modified to adjust the categories to certain situations. The use of membership functions allows us to increase computation accuracy and customize the tool to diverse applications. Following alteration of the catchment in the SWMM GUI allows for accurate portrayal of the real condition of the catchment.
@@ -290,3 +294,35 @@ Table 4 shows what and how feature values are generated.
 </tr>
 </tbody>
 </table>
+
+
+# Bugs
+
+If you encounter any bugs or issues while using our software, please feel free to report them on the project's [issue tracker](https://github.com/BuczynskiRafal/rapid-catchment-generator/issues). When reporting a bug, please provide as much information as possible to help us reproduce and resolve the issue, including:
+
+* A clear and concise description of the issue
+* Steps to reproduce the problem
+* Expected behavior and actual behavior
+* Any error messages or logs that may be relevant
+
+Your feedback is invaluable and will help us improve the software for all users.
+
+# Contributing
+
+We welcome and appreciate contributions from the community! If you're interested in contributing to this project, please follow these steps:
+
+1. Fork the repository on GitHub.
+2. Create a new branch for your changes.
+3. Make your changes, including updates to documentation if needed.
+4. Write tests to ensure your changes are working as expected.
+5. Ensure all tests pass and there are no linting or code style issues.
+6. Commit your changes and create a pull request, providing a detailed description of your changes.
+
+We will review your pull request as soon as possible and provide feedback. Once your contribution is approved, it will be merged into the main branch.
+
+For more information about contributing to the project, please see our [contributing guide](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/CONTRIBUTING.md).
+
+# License
+
+License
+This project is licensed under the [MIT License](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE). By using, distributing, or contributing to this project, you agree to the terms and conditions of the license. Please refer to the [LICENSE.md](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE) file for the full text of the license.
