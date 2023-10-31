@@ -152,5 +152,6 @@ class RcgApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.iconbitmap("gui\icon.png")
     app = RcgApp(root)
     root.mainloop()
