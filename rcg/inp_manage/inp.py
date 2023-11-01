@@ -331,7 +331,8 @@ class BuildCatchments:
             "Outlet": outlet,
             "Area": catchment_values[0],
             "PercImperv": catchment_values[1].impervious_result,
-            "Width": math.sqrt((float(catchment_values[0]) * 10_000)),
+            # "Width": math.sqrt((float(catchment_values[0]) * 10_000)),
+            "Width": (float(catchment_values[0]) * 10_000) / (math.sqrt(float(catchment_values[0]) * 10_000) * math.sqrt(2)),
             "PercSlope": catchment_values[1].slope_result,
             "CurbLength": 0,
         }
