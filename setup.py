@@ -8,7 +8,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
     long_description = "\n" + fh.read()
 
-VERSION = "0.0.11"
+VERSION = "0.1.0"
 DESCRIPTION = "Rapid catchment generator - is a tool for rapid prototyping of a hydraulic model catchments that can be read and edited with SWMM."
 
 # Setting up
