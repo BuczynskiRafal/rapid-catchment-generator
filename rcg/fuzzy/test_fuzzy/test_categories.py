@@ -61,7 +61,7 @@ class TestCategories(unittest.TestCase):
         del self.categories
 
 
-class TestLandUse(unittest.TestCase):
+class TestLandForm(unittest.TestCase):
     def setUp(self):
         self.land_form = LandForm()
 
@@ -130,12 +130,9 @@ class TestLandUse(unittest.TestCase):
         self.assertEqual(self.land_form.highest_mountains, "highest_mountains")
 
 
-class TestLandForm(unittest.TestCase):
+class TestLandCover(unittest.TestCase):
     def setUp(self) -> None:
         self.land_cover = LandCover()
-
-    def test_medium_conditions(self):
-        self.assertEqual(self.land_cover.medium_conditions, "medium_conditions")
 
     def test_permeable_areas(self):
         self.assertEqual(self.land_cover.permeable_areas, "permeable_areas")
@@ -145,20 +142,26 @@ class TestLandForm(unittest.TestCase):
             self.land_cover.permeable_terrain_on_plains, "permeable_terrain_on_plains"
         )
 
-    def test_hilly(self):
-        self.assertEqual(self.land_cover.hilly, "hilly")
+    def test_mountains_vegetated(self):
+        self.assertEqual(self.land_cover.mountains_vegetated, "mountains_vegetated")
 
-    def test_mountains(self):
-        self.assertEqual(self.land_cover.mountains, "mountains")
+    def test_mountains_rocky(self):
+        self.assertEqual(self.land_cover.mountains_rocky, "mountains_rocky")
 
-    def test_bare_rocky_slopes(self):
-        self.assertEqual(self.land_cover.bare_rocky_slopes, "bare_rocky_slopes")
+    def test_urban_weakly_impervious(self):
+        self.assertEqual(self.land_cover.urban_weakly_impervious, "urban_weakly_impervious")
 
-    def test_urban(self):
-        self.assertEqual(self.land_cover.urban, "urban")
+    def test_urban_moderately_impervious(self):
+        self.assertEqual(self.land_cover.urban_moderately_impervious, "urban_moderately_impervious")
 
-    def test_suburban(self):
-        self.assertEqual(self.land_cover.suburban, "suburban")
+    def test_urban_highly_impervious(self):
+        self.assertEqual(self.land_cover.urban_highly_impervious, "urban_highly_impervious")
+
+    def test_suburban_weakly_impervious(self):
+        self.assertEqual(self.land_cover.suburban_weakly_impervious, "suburban_weakly_impervious")
+
+    def test_suburban_highly_impervious(self):
+        self.assertEqual(self.land_cover.suburban_highly_impervious, "suburban_highly_impervious")
 
     def test_rural(self):
         self.assertEqual(self.land_cover.rural, "rural")
@@ -237,17 +240,26 @@ class TestImpervious(unittest.TestCase):
     def test_rural_attribute(self):
         self.assertEqual(self.impervious.rural, "rural")
 
-    def test_suburban_attribute(self):
-        self.assertEqual(self.impervious.suburban, "suburban")
+    def test_suburban_weakly_imperviousattribute(self):
+        self.assertEqual(self.impervious.suburban_weakly_impervious, "suburban_weakly_impervious")
 
-    def test_urban_attribute(self):
-        self.assertEqual(self.impervious.urban, "urban")
+    def test_suburban_highly_impervious_attribute(self):
+        self.assertEqual(self.impervious.suburban_highly_impervious, "suburban_highly_impervious")
 
-    def test_hilly_attribute(self):
-        self.assertEqual(self.impervious.hilly, "hilly")
+    def test_urban_weakly_impervious_attribute(self):
+        self.assertEqual(self.impervious.urban_weakly_impervious, "urban_weakly_impervious")
 
-    def test_mountains_attribute(self):
-        self.assertEqual(self.impervious.mountains, "mountains")
+    def test_urban_moderately_impervious_attribute(self):
+        self.assertEqual(self.impervious.urban_moderately_impervious, "urban_moderately_impervious")
+
+    def test_urban_highly_impervious_attribute(self):
+        self.assertEqual(self.impervious.urban_highly_impervious, "urban_highly_impervious")
+
+    def test_mountains_rocky_attribute(self):
+        self.assertEqual(self.impervious.mountains_rocky, "mountains_rocky")
+
+    def test_mountains_vegetated_attribute(self):
+        self.assertEqual(self.impervious.mountains_vegetated, "mountains_vegetated")
 
 
 class TestCatchments(unittest.TestCase):

@@ -1,9 +1,10 @@
 import math
-import swmmio
-import pandas as pd
-import numpy as np
+from typing import List, Optional, Tuple
 
-from typing import List, Tuple, Optional
+import numpy as np
+import pandas as pd
+import swmmio
+
 from rcg.fuzzy.engine import Prototype
 from rcg.fuzzy.categories import LandForm, LandCover
 from swmmio.utils.modify_model import replace_inp_section
@@ -102,22 +103,13 @@ class BuildCatchments:
         str
             The land use type for the subcatchment entered by the user.
         """
-        land_form_options = [
-            "marshes_and_lowlands",
-            "flats_and_plateaus",
-            "flats_and_plateaus_in_combination_with_hills",
-            "hills_with_gentle_slopes",
-            "steeper_hills_and_foothills",
-            "hills_and_outcrops_of_mountain_ranges",
-            "higher_hills",
-            "mountains",
-            "highest_mountains",
-        ]
+        land_form_options = LandForm.get_all_categories()
+
         land_form = ""
         while land_form not in land_form_options:
             land_form = input(
-                "Enter the land use type (choose one):\n{}\n:".format(
-                    "\n".join(land_form_options)
+                "Enter the land use type (choose one):\n\t{}\n:".format(
+                    "\n\t".join(land_form_options)
                 )
             )
         return land_form
@@ -136,26 +128,12 @@ class BuildCatchments:
         str
             The land cover type for the subcatchment entered by the user.
         """
-        land_cover_options = [
-            "medium_conditions",
-            "permeable_areas",
-            "permeable_terrain_on_plains",
-            "hilly",
-            "mountains",
-            "bare_rocky_slopes",
-            "urban",
-            "suburban",
-            "rural",
-            "forests",
-            "meadows",
-            "arable",
-            "marshes",
-        ]
+        land_cover_options = LandCover.get_all_categories()
         land_cover = ""
         while land_cover not in land_cover_options:
             land_cover = input(
-                "Enter the land cover type (choose one):\n{}\n:".format(
-                    "\n".join(land_cover_options)
+                "Enter the land cover type (choose one):\n\t{}\n:".format(
+                    "\n\t".join(land_cover_options)
                 )
             )
         return land_cover
@@ -177,7 +155,6 @@ class BuildCatchments:
         area = self._get_area()
         land_form = self._get_land_form()
         land_cover = self._get_land_cover()
-
         prototype_result = Prototype(
             land_form=getattr(LandForm, land_form),
             land_cover=getattr(LandCover, land_cover),
@@ -261,7 +238,7 @@ class BuildCatchments:
         raingage = pd.DataFrame(
             data={
                 "RainType": ["INTENSITY"],
-                "TimeIntrvl": ["1:00"],
+                "TimeIntrvl": ["0:01"],
                 "SnowCatch": ["1.0"],
                 "DataSource": ["TIMESERIES"],
                 "DataSourceName": [self._get_timeseries()],
@@ -287,7 +264,7 @@ class BuildCatchments:
             self._add_raingage()
         return self.model.inp.raingages.index[0]
 
-    def _get_outlet(self) -> Optional[str]:
+    def _get_outlet(self, subcatchment_id: str) -> Optional[str]:
         """
         Get the name of the first junction in the SWMM model's input data.
 
@@ -298,11 +275,16 @@ class BuildCatchments:
         Optional[str]
             The name of the first junction in the model's input data, or None if there are no junctions.
         """
-        if len(self.model.inp.junctions) == 0:
-            return None
-        return self.model.inp.junctions.index[0]
+        if len(self.model.inp.outfalls) != 0:
+            return self.model.inp.outfalls.index[-1]
+        else:
+            if len(self.model.inp.junctions) != 0:
+                return self.model.inp.junctions.index[-1]
+        return subcatchment_id
 
-    def _add_subcatchment(self, subcatchment_id: str, catchment_values: Tuple[float, Prototype]) -> None:
+    def _add_subcatchment(
+        self, subcatchment_id: str, catchment_values: Tuple[float, Prototype]
+    ) -> None:
         """
         Add a new subcatchment to the SWMM model's input data.
 
@@ -320,20 +302,19 @@ class BuildCatchments:
         -------
         None
         """
-        if self._get_outlet() is None:
+        if self._get_outlet(subcatchment_id) is None:
             outlet = subcatchment_id
         else:
-            outlet = self._get_outlet()
+            outlet = self._get_outlet(subcatchment_id)
 
         self.model.inp.subcatchments.loc[subcatchment_id] = {
             "Name": subcatchment_id,
             "Raingage": self._get_raingage(),
             "Outlet": outlet,
             "Area": catchment_values[0],
-            "PercImperv": catchment_values[1].impervious_result,
-            # "Width": math.sqrt((float(catchment_values[0]) * 10_000)),
-            "Width": (float(catchment_values[0]) * 10_000) / (math.sqrt(float(catchment_values[0]) * 10_000) * math.sqrt(2)),
-            "PercSlope": catchment_values[1].slope_result,
+            "PercImperv": round(catchment_values[1].impervious_result, 2),
+            "Width": round(math.sqrt((float(catchment_values[0]) * 10_000)), 2),
+            "PercSlope": round(catchment_values[1].slope_result, 2),
             "CurbLength": 0,
         }
         replace_inp_section(
@@ -369,13 +350,13 @@ class BuildCatchments:
             "mountains": (0.013, 0.05),
         }
         map_depression = {
-            "urban": (0.05, 0.20, 90),
-            "suburban": (0.05, 0.20, 80),
-            "rural": (0.05, 0.20, 70),
+            "urban": (0.05, 0.20, 50),
+            "suburban": (0.05, 0.20, 40),
+            "rural": (0.05, 0.20, 35),
             "forests": (0.05, 0.30, 5),
             "meadows": (0.05, 0.20, 10),
             "arable": (0.05, 0.20, 10),
-            "mountains": (0.05, 0.20, 80),
+            "mountains": (0.05, 0.20, 10),
         }
 
         populate_key = Prototype.get_populate(prototype.catchment_result)
@@ -390,57 +371,28 @@ class BuildCatchments:
         }
         replace_inp_section(self.model.inp.path, "[SUBAREAS]", self.model.inp.subareas)
 
-    def _get_existing_coordinates(self) -> List[Tuple[float, float]]:
+    def _add_coords(self, subcatchment_id: str, area: float) -> None:
         """
-        Retrieves the existing coordinates for the last subcatchment in the SWMM model's input data.
-
-        Returns
-        -------
-        List[Tuple[float, float]]
-            A list of tuples containing the X and Y coordinates of the existing polygons.
-        """
-        if len(self.model.inp.polygons) < 4:
-            return [
-                (0, 0),
-                (0, 5),
-                (5, 5),
-                (5, 0),
-            ]
-        else:
-            return [
-                (self.model.inp.polygons["X"].iloc[-1], self.model.inp.polygons["Y"].iloc[-1]),
-                (self.model.inp.polygons["X"].iloc[-2], self.model.inp.polygons["Y"].iloc[-2]),
-                (self.model.inp.polygons["X"].iloc[-3], self.model.inp.polygons["Y"].iloc[-3]),
-                (self.model.inp.polygons["X"].iloc[-4], self.model.inp.polygons["Y"].iloc[-4]),
-            ]
-
-    def _add_coords(self, subcatchment_id: str) -> None:
-        """
-        Adds coordinates for a subcatchment to the SWMM model's input data.
-
-        If existing polygons don't exist, it generates new coordinates for the subcatchment.
-        The new coordinates are based on the existing polygons or created with a default offset.
+        Add coordinates for a square-shaped subcatchment based on the given area.
 
         Parameters
         ----------
-        subcatchment_id : str
-            The unique ID of the subcatchment to add the coordinates to.
-
-        Returns
-        -------
-        None
+            subcatchment_id : str
+                The unique ID of the subcatchment to add the coordinates to.
+            area : float
+                The area of the subcatchment [ha].
         """
-        exist = self._get_existing_coordinates()
+        side_length = math.sqrt(area * 10_000)
+        if len(self.model.inp.polygons) == 0:
+            base_x, base_y = 0, 0
+        else:
+            base_x = self.model.inp.polygons["X"].iloc[-1]
+            base_y = self.model.inp.polygons["Y"].iloc[-1]
 
         coords = pd.DataFrame(
             data={
-                "X": [exist[0][0], exist[1][0], exist[2][0], exist[3][0]],
-                "Y": [
-                    exist[0][1] - 5,
-                    exist[1][1] - 5,
-                    exist[2][1] - 5,
-                    exist[3][1] - 5,
-                ],
+                "X": [base_x, base_x + side_length, base_x + side_length, base_x],
+                "Y": [base_y, base_y, base_y - side_length, base_y - side_length],
             },
             index=[subcatchment_id for _ in range(4)],
         )
@@ -510,10 +462,12 @@ class BuildCatchments:
         catchment_values = self._get_subcatchment_values()
         self._add_subcatchment(subcatchment_id, catchment_values)
         self._add_subarea(subcatchment_id, catchment_values[1])
-        self._add_coords(subcatchment_id)
+        self._add_coords(subcatchment_id, catchment_values[0])
         self._add_infiltration(subcatchment_id)
 
-    def add_subcatchment_form_gui(self, area: float, land_form: str, land_cover: str) -> None:
+    def add_subcatchment_form_gui(
+        self, area: float, land_form: str, land_cover: str
+    ) -> None:
         """
         Adds a new subcatchment to the project, including its subarea, coordinates, and infiltration parameters.
 
@@ -529,5 +483,6 @@ class BuildCatchments:
         catchment_values = (area, prototype_result)
         self._add_subcatchment(subcatchment_id, catchment_values)
         self._add_subarea(subcatchment_id, catchment_values[1])
-        self._add_coords(subcatchment_id)
+        self._add_coords(subcatchment_id, area)
+        self._add_infiltration(subcatchment_id)
         self._add_infiltration(subcatchment_id)

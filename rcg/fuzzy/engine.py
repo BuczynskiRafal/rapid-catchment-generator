@@ -1,18 +1,9 @@
 import skfuzzy as fuzz
 from rcg.fuzzy import categories
-
 from .rules import slope_rules, impervious_rules, catchment_rules
-from .categories import (
-    land_form,
-    land_cover,
-    slope_ctgr,
-    impervious_ctgr,
-    catchment_ctgr,
-)
 
 from skfuzzy import control as ctrl
 from rcg.fuzzy.memberships import Memberships, membership
-
 
 class FuzzyEngine:
     """

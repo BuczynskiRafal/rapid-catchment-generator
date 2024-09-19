@@ -51,7 +51,6 @@ def add_multiple_subcatchments(model):
         to which the subcatchments will be added.
     """
     model.add_subcatchment()
-
     user_input = input("Do you want to add another subcatchment? (y/n): ").lower()
     if user_input == "y":
         add_multiple_subcatchments(model)

@@ -9,7 +9,7 @@ class TestMemberships(unittest.TestCase):
     def setUp(self):
         self.memberships = Memberships()
         self.memberships.populate_land_use()
-        self.memberships.populate_land_form()
+        self.memberships.populate_land_cover()
         self.memberships.populate_slope()
         self.memberships.populate_impervious()
         self.memberships.populate_catchment()
