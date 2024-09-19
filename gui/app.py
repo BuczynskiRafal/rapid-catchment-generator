@@ -1,9 +1,7 @@
 import os
 import sys
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
-from tkinter import filedialog
+from tkinter import filedialog, messagebox, ttk
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -11,7 +9,7 @@ from rcg.runner import generate_subcatchment
 
 
 def get_help_file_path():
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         base_path = sys._MEIPASS
     else:
         base_path = os.path.abspath(".")
@@ -36,23 +34,24 @@ class RcgApp:
         self.land_cover_var = tk.StringVar()
         land_cover_combobox = ttk.Combobox(
             self.root,
-            textvariable=self.land_cover_var, 
+            textvariable=self.land_cover_var,
             values=[
-                "medium conditions",
-                "permeable areas",
-                "permeable terrain on plains",
-                "hilly",
-                "mountains",
-                "bare rocky slopes",
-                "urban",
-                "suburban",
+                "permeable_areas",
+                "permeable_terrain_on_plains",
+                "mountains_vegetated",
+                "mountains_rocky",
+                "urban_weakly_impervious",
+                "urban_moderately_impervious",
+                "urban_highly_impervious",
+                "suburban_weakly_impervious",
+                "suburban_highly_impervious",
                 "rural",
                 "forests",
                 "meadows",
                 "arable",
                 "marshes",
             ],
-            width=25
+            width=25,
         )
         land_cover_combobox.grid(row=0, column=1, padx=10, pady=10)
 
@@ -61,20 +60,20 @@ class RcgApp:
 
         self.land_form_var = tk.StringVar()
         land_form_combobox = ttk.Combobox(
-            self.root, 
-            textvariable=self.land_form_var, 
+            self.root,
+            textvariable=self.land_form_var,
             values=[
-                "marshes and lowlands",
-                "flats and plateaus",
-                "flats and plateaus in combination with hills",
-                "hills with gentle slopes",
-                "steeper hills and foothills",
-                "hills and outcrops of mountain ranges",
-                "higher hills",
+                "marshes_and_lowlands",
+                "flats_and_plateaus",
+                "flats_and_plateaus_in_combination_with_hills",
+                "hills_with_gentle_slopes",
+                "steeper_hills_and_foothills",
+                "hills_and_outcrops_of_mountain_ranges",
+                "higher_hills",
                 "mountains",
-                "highest mountains",
-            ], 
-            width=25
+                "highest_mountains",
+            ],
+            width=25,
         )
         land_form_combobox.grid(row=1, column=1, padx=10, pady=10)
 
@@ -88,22 +87,28 @@ class RcgApp:
         file_label = tk.Label(self.root, text="Select file:")
         file_label.grid(row=3, column=0, padx=10, pady=10, sticky="w")
 
-        choose_file_button = tk.Button(self.root, text="Select file", command=self.choose_file, width=23)
+        choose_file_button = tk.Button(
+            self.root, text="Select file", command=self.choose_file, width=23
+        )
         choose_file_button.grid(row=3, column=1, padx=10, pady=10)
 
         selected_label = tk.Label(self.root, text="Selected file:")
         selected_label.grid(row=4, column=0, padx=10, pady=10, sticky="w")
 
-        self.selected_file_label = tk.Entry(self.root, width=28, state='readonly')
+        self.selected_file_label = tk.Entry(self.root, width=28, state="readonly")
         self.selected_file_label.grid(row=4, column=1, padx=10, pady=10, sticky="w")
 
         run_label = tk.Label(self.root, text="Run simulation:")
         run_label.grid(row=5, column=0, padx=10, pady=10, sticky="w")
 
-        run_button = tk.Button(self.root, text="Run", command=self.run_simulation, width=23, bg="#36D7B7")
+        run_button = tk.Button(
+            self.root, text="Run", command=self.run_simulation, width=23, bg="#36D7B7"
+        )
         run_button.grid(row=5, column=1, padx=10, pady=10, sticky="w")
 
-        help_button = tk.Button(self.root, text="Help", command=self.show_help, width=23, bg="#a5d8ff")
+        help_button = tk.Button(
+            self.root, text="Help", command=self.show_help, width=23, bg="#a5d8ff"
+        )
         help_button.grid(row=6, column=1, padx=10, pady=10, sticky="w")
 
     def show_help(self):
@@ -118,23 +123,28 @@ class RcgApp:
             messagebox.showerror("Error", "Help file not found.")
             return
 
-        help_text = tk.Text(help_window, wrap='word', width=50, height=20)
+        help_text = tk.Text(help_window, wrap="word", width=50, height=20)
         help_text.insert(tk.END, text)
         help_text.config(state="disabled")
         help_text.pack(padx=10, pady=10, expand=True, fill=tk.BOTH)
 
     def choose_file(self):
-        file_path = filedialog.askopenfilename(title="Select file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+        file_path = filedialog.askopenfilename(
+            title="Select file",
+            filetypes=(("Text files", "*.txt"), ("All files", "*.*")),
+        )
         if file_path:
             file_extension = os.path.splitext(file_path)[1]
             if file_extension.lower() != ".inp":
-                messagebox.showerror("Error", "Please select a file with the '.inp' extension.")
+                messagebox.showerror(
+                    "Error", "Please select a file with the '.inp' extension."
+                )
                 return
 
-            self.selected_file_label.config(state='normal')
+            self.selected_file_label.config(state="normal")
             self.selected_file_label.delete(0, tk.END)
             self.selected_file_label.insert(0, file_path)
-            self.selected_file_label.config(state='readonly')
+            self.selected_file_label.config(state="readonly")
 
             self.file_path = file_path
 
@@ -148,7 +158,9 @@ class RcgApp:
             return
 
         if not land_cover:
-            messagebox.showerror("Error", "Please select a value for 'Land cover type'.")
+            messagebox.showerror(
+                "Error", "Please select a value for 'Land cover type'."
+            )
             return
 
         if not land_form:
@@ -156,19 +168,26 @@ class RcgApp:
             return
 
         if not area:
-            messagebox.showerror("Error", "Please enter a value for the 'Area' parameter.")
+            messagebox.showerror(
+                "Error", "Please enter a value for the 'Area' parameter."
+            )
             return
 
         try:
             area = area.replace(",", ".")
             area = float(area)
         except ValueError:
-            messagebox.showerror("Error", "Please enter a valid value for the 'Area' parameter.")
+            messagebox.showerror(
+                "Error", "Please enter a valid value for the 'Area' parameter."
+            )
             return
 
         generate_subcatchment(self.file_path, area, land_form, land_cover)
 
-        messagebox.showinfo("Information", f"Simulation has been executed successfully for values: \n\nArea: {area}\nLand cover type: {land_cover}\nLand form type: {land_form}\nFile: {self.file_path}")
+        messagebox.showinfo(
+            "Information",
+            f"Simulation has been executed successfully for values: \n\nArea: {area}\nLand cover type: {land_cover}\nLand form type: {land_form}\nFile: {self.file_path}",
+        )
 
 
 if __name__ == "__main__":
