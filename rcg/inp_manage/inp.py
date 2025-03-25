@@ -313,7 +313,7 @@ class BuildCatchments:
             "Outlet": outlet,
             "Area": catchment_values[0],
             "PercImperv": round(catchment_values[1].impervious_result, 2),
-            "Width": round(math.sqrt((float(catchment_values[0]) * 10_000)), 2),
+            "Width": round((float(catchment_values[0]) * 10_000) / (float(catchment_values[0]) * 10_000 * 1.75), 2),
             "PercSlope": round(catchment_values[1].slope_result, 2),
             "CurbLength": 0,
         }
