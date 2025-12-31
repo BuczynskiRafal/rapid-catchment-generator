@@ -1,7 +1,8 @@
 import os
 import sys
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox
+
+import customtkinter as ctk
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -18,220 +19,244 @@ def get_help_file_path():
     return os.path.join(base_path, "gui", "help_content.txt")
 
 
-class Frame(tk.Frame):
-    """Custom frame with styling"""
-
-    def __init__(self, parent, **kwargs):
-        super().__init__(parent, **kwargs)
-        self.configure(bg="#faf8f3")
-
-
-class RcgApp:
-    def __init__(self, root):
-        self.root = root
+class RcgApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
         self.file_path = None
         self.setup_window()
-        self.setup_styles()
         self.create_widgets()
 
     def setup_window(self):
-        self.root.title("Rapid Catchment Generator")
-        self.root.geometry("480x640")
-        self.root.configure(bg="#faf8f3")
-        self.root.resizable(False, False)
+        self.title("Rapid Catchment Generator")
+        self.geometry("540x840")
+        self.resizable(False, False)
+
+        # Set appearance mode and color theme
+        ctk.set_appearance_mode("light")
+        ctk.set_default_color_theme("blue")
 
         # Center window on screen
-        self.root.update_idletasks()
-        x = (self.root.winfo_screenwidth() - self.root.winfo_width()) // 2
-        y = (self.root.winfo_screenheight() - self.root.winfo_height()) // 2
-        self.root.geometry(f"480x640+{x}+{y}")
-
-    def setup_styles(self):
-        self.style = ttk.Style()
-        self.style.theme_use("clam")
-
-        # Force theme to respect our colors
-        self.root.option_add("*TButton*background", "#d97706")
-        self.root.option_add("*TButton*foreground", "white")
-
-        # Configure Claude.ai inspired styles
-        self.style.configure("Title.TLabel", font=("Segoe UI", 20, "bold"), background="#faf8f3", foreground="#2f1b14")
-
-        self.style.configure("Subtitle.TLabel", font=("Segoe UI", 10), background="#faf8f3", foreground="#8b7355")
-
-        self.style.configure(
-            "CustomStyle.TLabel", font=("Segoe UI", 11), background="#faf8f3", foreground="#5d4e37", padding=(0, 5)
-        )
-
-        self.style.configure("CustomStyle.TCombobox", fieldbackground="white", borderwidth=1, relief="solid", padding=(8, 8))
-
-        self.style.configure("CustomStyle.TEntry", fieldbackground="white", borderwidth=1, relief="solid", padding=(8, 8))
-
-        self.style.configure(
-            "Primary.TButton",
-            font=("Segoe UI", 11, "bold"),
-            padding=(20, 12),
-            background="#d97706",
-            foreground="#ffffff",
-            borderwidth=0,
-            relief="flat",
-            focuscolor="none",
-        )
-
-        self.style.configure(
-            "Success.TButton",
-            font=("Segoe UI", 11, "bold"),
-            padding=(20, 12),
-            background="#2f9e44",
-            foreground="white",
-            borderwidth=0,
-            relief="flat",
-            focuscolor="none",
-        )
-
-        self.style.configure(
-            "Info.TButton",
-            font=("Segoe UI", 10),
-            padding=(15, 12),
-            background="#a78b5c",
-            foreground="white",
-            borderwidth=0,
-            relief="flat",
-            focuscolor="none",
-        )
-
-        # Map colors for hover effects - Claude.ai inspired
-        self.style.map(
-            "Primary.TButton",
-            background=[("active", "#228be6"), ("!active", "#228be6")],
-            foreground=[("active", "#ffffff"), ("!active", "#ffffff")],
-        )
-        self.style.map(
-            "Success.TButton",
-            background=[("active", "#2f9e44"), ("!active", "#2f9e44")],
-            foreground=[("active", "white"), ("!active", "white")],
-        )
-        self.style.map(
-            "Info.TButton",
-            background=[("active", "#fab005"), ("!active", "#fab005")],
-            foreground=[("active", "white"), ("!active", "white")],
-        )
-
-        # Fix combobox - remove all text selection highlighting
-        self.style.map(
-            "CustomStyle.TCombobox",
-            selectbackground=[("readonly", "white"), ("!readonly", "white")],
-            selectforeground=[("readonly", "#5d4e37"), ("!readonly", "#5d4e37")],
-            fieldbackground=[("readonly", "white"), ("!readonly", "white")],
-            highlightcolor=[("readonly", "white"), ("!readonly", "white")],
-        )
+        self.update_idletasks()
+        x = (self.winfo_screenwidth() - 540) // 2
+        y = (self.winfo_screenheight() - 760) // 2
+        self.geometry(f"540x840+{x}+{y}")
 
     def create_widgets(self):
-        main_frame = Frame(self.root)
-        main_frame.pack(fill="both", expand=True, padx=30, pady=30)
+        # Main container with padding
+        main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=40, pady=40)
 
         # Header section
-        header_frame = Frame(main_frame)
+        header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         header_frame.pack(fill="x", pady=(0, 30))
 
-        title_label = ttk.Label(header_frame, text="Rapid Catchment Generator", style="Title.TLabel")
+        title_label = ctk.CTkLabel(
+            header_frame,
+            text="Rapid Catchment Generator",
+            font=ctk.CTkFont(size=28, weight="bold"),
+            text_color=("#1a1a2e", "#e0e0e0"),
+        )
         title_label.pack()
 
-        subtitle_label = ttk.Label(header_frame, text="Generate SWMM subcatchments with fuzzy logic", style="Subtitle.TLabel")
-        subtitle_label.pack(pady=(5, 0))
+        subtitle_label = ctk.CTkLabel(
+            header_frame,
+            text="Generate SWMM subcatchments with fuzzy logic",
+            font=ctk.CTkFont(size=13),
+            text_color=("#6b7280", "#9ca3af"),
+        )
+        subtitle_label.pack(pady=(8, 0))
 
-        # Input section
-        input_frame = Frame(main_frame)
-        input_frame.pack(fill="x", pady=(0, 20))
+        # Input card
+        input_card = ctk.CTkFrame(main_frame, corner_radius=16)
+        input_card.pack(fill="x", pady=(0, 20))
 
-        # Land cover selection - dynamically populated from categories
-        self.create_input_group(input_frame, "Land Cover Type", 0)
-        self.land_cover_var = tk.StringVar()
+        input_inner = ctk.CTkFrame(input_card, fg_color="transparent")
+        input_inner.pack(fill="x", padx=24, pady=24)
+
+        # Land cover selection
+        land_cover_label = ctk.CTkLabel(
+            input_inner,
+            text="Land Cover Type",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            anchor="w",
+        )
+        land_cover_label.pack(fill="x", pady=(0, 8))
+
         land_cover_values = sorted(LandCover.get_all_categories())
-        land_cover_combobox = ttk.Combobox(
-            input_frame,
-            textvariable=self.land_cover_var,
+        self.land_cover_var = ctk.StringVar(value="")
+        self.land_cover_dropdown = ctk.CTkComboBox(
+            input_inner,
+            variable=self.land_cover_var,
             values=land_cover_values,
-            style="CustomStyle.TCombobox",
+            height=42,
+            corner_radius=10,
+            border_width=1,
+            font=ctk.CTkFont(size=13),
+            dropdown_font=ctk.CTkFont(size=12),
             state="readonly",
         )
-        land_cover_combobox.pack(fill="x", pady=(5, 20))
+        self.land_cover_dropdown.pack(fill="x", pady=(0, 20))
+        self.land_cover_dropdown.set("")
 
-        # Land form selection - dynamically populated from categories
-        self.create_input_group(input_frame, "Land Form Type", 1)
-        self.land_form_var = tk.StringVar()
+        # Land form selection
+        land_form_label = ctk.CTkLabel(
+            input_inner,
+            text="Land Form Type",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            anchor="w",
+        )
+        land_form_label.pack(fill="x", pady=(0, 8))
+
         land_form_values = sorted(LandForm.get_all_categories())
-        land_form_combobox = ttk.Combobox(
-            input_frame,
-            textvariable=self.land_form_var,
+        self.land_form_var = ctk.StringVar(value="")
+        self.land_form_dropdown = ctk.CTkComboBox(
+            input_inner,
+            variable=self.land_form_var,
             values=land_form_values,
-            style="CustomStyle.TCombobox",
+            height=42,
+            corner_radius=10,
+            border_width=1,
+            font=ctk.CTkFont(size=13),
+            dropdown_font=ctk.CTkFont(size=12),
             state="readonly",
         )
-        land_form_combobox.pack(fill="x", pady=(5, 20))
+        self.land_form_dropdown.pack(fill="x", pady=(0, 20))
+        self.land_form_dropdown.set("")
 
         # Area input
-        self.create_input_group(input_frame, "Area (hectares)", 2)
-        self.area_var = tk.StringVar()
-        area_entry = ttk.Entry(input_frame, textvariable=self.area_var, style="CustomStyle.TEntry")
-        area_entry.pack(fill="x", pady=(5, 20))
-
-        # File selection section
-        file_frame = Frame(main_frame)
-        file_frame.pack(fill="x", pady=(0, 20))
-
-        self.create_input_group(file_frame, "SWMM Input File (.inp)", 3)
-
-        file_select_frame = Frame(file_frame)
-        file_select_frame.pack(fill="x", pady=(5, 10))
-
-        self.selected_file_var = tk.StringVar()
-        self.selected_file_entry = ttk.Entry(
-            file_select_frame, textvariable=self.selected_file_var, style="CustomStyle.TEntry", state="readonly"
+        area_label = ctk.CTkLabel(
+            input_inner,
+            text="Area (hectares)",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            anchor="w",
         )
-        self.selected_file_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        area_label.pack(fill="x", pady=(0, 8))
 
-        choose_file_button = ttk.Button(file_select_frame, text="Browse", command=self.choose_file, style="Primary.TButton")
+        self.area_entry = ctk.CTkEntry(
+            input_inner,
+            height=42,
+            corner_radius=10,
+            border_width=1,
+            font=ctk.CTkFont(size=13),
+            placeholder_text="Enter area value...",
+        )
+        self.area_entry.pack(fill="x")
+
+        # File selection card
+        file_card = ctk.CTkFrame(main_frame, corner_radius=16)
+        file_card.pack(fill="x", pady=(0, 24))
+
+        file_inner = ctk.CTkFrame(file_card, fg_color="transparent")
+        file_inner.pack(fill="x", padx=24, pady=24)
+
+        file_label = ctk.CTkLabel(
+            file_inner,
+            text="SWMM Input File (.inp)",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            anchor="w",
+        )
+        file_label.pack(fill="x", pady=(0, 8))
+
+        file_select_frame = ctk.CTkFrame(file_inner, fg_color="transparent")
+        file_select_frame.pack(fill="x")
+
+        self.selected_file_var = ctk.StringVar(value="")
+        self.selected_file_entry = ctk.CTkEntry(
+            file_select_frame,
+            textvariable=self.selected_file_var,
+            height=42,
+            corner_radius=10,
+            border_width=1,
+            font=ctk.CTkFont(size=13),
+            state="disabled",
+            placeholder_text="No file selected",
+        )
+        self.selected_file_entry.pack(side="left", fill="x", expand=True, padx=(0, 12))
+
+        choose_file_button = ctk.CTkButton(
+            file_select_frame,
+            text="Browse",
+            command=self.choose_file,
+            width=100,
+            height=42,
+            corner_radius=10,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color=("#3b82f6", "#2563eb"),
+            hover_color=("#2563eb", "#1d4ed8"),
+        )
         choose_file_button.pack(side="right")
 
-        # Action buttons section
-        button_frame = Frame(main_frame)
-        button_frame.pack(fill="x", pady=(20, 0))
+        # Action buttons
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x", pady=(0, 0))
 
-        run_button = ttk.Button(
+        run_button = ctk.CTkButton(
             button_frame,
             text="Run Simulation",
             command=self.run_simulation,
-            style="Success.TButton",
+            height=48,
+            corner_radius=10,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color=("#22c55e", "#16a34a"),
+            hover_color=("#16a34a", "#15803d"),
         )
-        run_button.pack(fill="x", pady=(0, 10))
+        run_button.pack(fill="x", pady=(0, 12))
 
-        help_button = ttk.Button(button_frame, text="Help & Documentation", command=self.show_help, style="Primary.TButton")
-        help_button.pack(
-            fill="x",
+        help_button = ctk.CTkButton(
+            button_frame,
+            text="Help & Documentation",
+            command=self.show_help,
+            height=48,
+            corner_radius=10,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color=("#6366f1", "#4f46e5"),
+            hover_color=("#4f46e5", "#4338ca"),
         )
+        help_button.pack(fill="x", pady=(0, 12))
 
-    def create_input_group(self, parent, text, row):
-        label = ttk.Label(parent, text=text, style="CustomStyle.TLabel")
-        label.pack(anchor="w")
+        # Theme toggle
+        theme_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        theme_frame.pack(fill="x")
+
+        self.theme_switch = ctk.CTkSwitch(
+            theme_frame,
+            text="Dark Mode",
+            command=self.toggle_theme,
+            font=ctk.CTkFont(size=12),
+            progress_color=("#3b82f6", "#2563eb"),
+        )
+        self.theme_switch.pack(anchor="center")
+
+    def toggle_theme(self):
+        if self.theme_switch.get():
+            ctk.set_appearance_mode("dark")
+        else:
+            ctk.set_appearance_mode("light")
 
     def show_help(self):
-        help_window = tk.Toplevel(self.root)
+        help_window = ctk.CTkToplevel(self)
         help_window.title("Help - Categories and Instructions")
-        help_window.geometry("500x600")
-        help_window.configure(bg="#faf8f3")
+        help_window.geometry("560x650")
         help_window.resizable(True, True)
 
         # Center help window
         help_window.update_idletasks()
-        x = (help_window.winfo_screenwidth() - help_window.winfo_width()) // 2
-        y = (help_window.winfo_screenheight() - help_window.winfo_height()) // 2
-        help_window.geometry(f"500x600+{x}+{y}")
+        x = (help_window.winfo_screenwidth() - 560) // 2
+        y = (help_window.winfo_screenheight() - 650) // 2
+        help_window.geometry(f"560x650+{x}+{y}")
 
-        help_frame = Frame(help_window)
-        help_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        # Make it modal
+        help_window.transient(self)
+        help_window.grab_set()
 
-        help_title = ttk.Label(help_frame, text="Help & Documentation", style="Title.TLabel")
+        help_frame = ctk.CTkFrame(help_window, fg_color="transparent")
+        help_frame.pack(fill="both", expand=True, padx=24, pady=24)
+
+        help_title = ctk.CTkLabel(
+            help_frame,
+            text="Help & Documentation",
+            font=ctk.CTkFont(size=24, weight="bold"),
+        )
         help_title.pack(pady=(0, 20))
 
         try:
@@ -279,30 +304,27 @@ USAGE:
 The application will generate subcatchments with appropriate parameters based on fuzzy logic rules.
             """
 
-        # Create scrollable text widget
-        text_frame = tk.Frame(help_frame, bg="#faf8f3")
-        text_frame.pack(fill="both", expand=True)
-
-        scrollbar = ttk.Scrollbar(text_frame)
-        scrollbar.pack(side="right", fill="y")
-
-        help_text = tk.Text(
-            text_frame,
+        # Scrollable text widget
+        help_textbox = ctk.CTkTextbox(
+            help_frame,
+            corner_radius=12,
+            font=ctk.CTkFont(size=13),
             wrap="word",
-            yscrollcommand=scrollbar.set,
-            font=("Segoe UI", 10),
-            bg="#ffffff",
-            fg="#5d4e37",
-            relief="flat",
-            borderwidth=1,
-            padx=15,
-            pady=15,
         )
-        help_text.insert(tk.END, text)
-        help_text.config(state="disabled")
-        help_text.pack(side="left", fill="both", expand=True)
+        help_textbox.pack(fill="both", expand=True)
+        help_textbox.insert("1.0", text.strip())
+        help_textbox.configure(state="disabled")
 
-        scrollbar.config(command=help_text.yview)
+        # Close button
+        close_button = ctk.CTkButton(
+            help_frame,
+            text="Close",
+            command=help_window.destroy,
+            height=42,
+            corner_radius=10,
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        close_button.pack(pady=(16, 0))
 
     def choose_file(self):
         file_path = filedialog.askopenfilename(
@@ -322,7 +344,7 @@ The application will generate subcatchments with appropriate parameters based on
         """Run the subcatchment generation with centralized validation."""
         land_cover_str = self.land_cover_var.get()
         land_form_str = self.land_form_var.get()
-        area_str = self.area_var.get()
+        area_str = self.area_entry.get()
 
         # Basic presence validation
         if not self.file_path:
@@ -377,7 +399,10 @@ The application will generate subcatchments with appropriate parameters based on
             messagebox.showerror("Simulation Error", f"An error occurred during simulation:\n\n{str(e)}")
 
 
+def main():
+    app = RcgApp()
+    app.mainloop()
+
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = RcgApp(root)
-    root.mainloop()
+    main()
