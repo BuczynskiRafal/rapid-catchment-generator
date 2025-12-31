@@ -1,25 +1,96 @@
 """
-This script provides a command-line interface for creating and adding multiple subcatchments
-to an existing SWMM model. The user will be prompted to provide input for each subcatchment's
-area, land use type, and land form type. The subcatchments will be added to the model
-and the updated model will be saved.
+Interactive command-line interface for creating and adding multiple subcatchments
+to an existing SWMM model through step-by-step prompts.
 
 Usage:
     python3 runner.py file_path
 
 Example:
     python3 runner.py example.inp
-
-Arguments:
-    file_path: The path to the SWMM input file (INP) to which subcatchments will be added.
-
-Functions:
-    add_multiple_subcatchments: A recursive function that adds subcatchments to the model.
 """
-
+import logging
 import sys
-from rcg.inp_manage.inp import BuildCatchments
+from pathlib import Path
+from typing import Union
 
+from rcg.inp_manage.inp import BuildCatchments
+from rcg.validation import validate_file_path, validate_area, validate_land_form, validate_land_cover
+from rcg.fuzzy.categories import LandForm, LandCover
+
+
+def setup_logging() -> logging.Logger:
+    """Configure basic logging."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    return logging.getLogger(__name__)
+
+
+def prompt_for_float(prompt: str) -> float:
+    """Prompt user for a float value with validation."""
+    while True:
+        try:
+            value = input(prompt)
+            return validate_area(value)
+        except ValueError as e:
+            print(f"Invalid input: {e}. Try again.")
+
+
+def prompt_for_category(prompt: str, validator, categories) -> Union[LandForm, LandCover]:
+    """Prompt user for a category with validation and list of options."""
+    print(f"Available options: {', '.join(sorted(categories.get_all_categories()))}")
+    while True:
+        try:
+            value = input(prompt).strip()
+            return validator(value)
+        except ValueError as e:
+            print(f"Invalid input: {e}. Try again.")
+
+
+def add_multiple_subcatchments(model: BuildCatchments, logger: logging.Logger) -> None:
+    """Add multiple subcatchments to the model interactively with validation."""
+    subcatchment_count = 0
+    logger.info("Starting interactive subcatchment generator")
+
+    try:
+        while True:
+            logger.info(f"Adding subcatchment #{subcatchment_count + 1}")
+
+            area = prompt_for_float("Enter area in hectares (ha, positive number <=10000): ")
+            land_form = prompt_for_category(
+                "Enter land form: ",
+                validate_land_form,
+                LandForm
+            )
+            land_cover = prompt_for_category(
+                "Enter land cover: ",
+                validate_land_cover,
+                LandCover
+            )
+
+            model.add_subcatchment(area, land_form, land_cover)
+            subcatchment_count += 1
+            logger.info(f"Subcatchment #{subcatchment_count} added successfully")
+
+            while True:
+                user_input = input("\nDo you want to add another subcatchment? (y/n): ").lower().strip()
+                if user_input == "y":
+                    break
+                elif user_input == "n":
+                    logger.info(f"Finished adding {subcatchment_count} subcatchment(s)")
+                    return
+                else:
+                    print("Please enter 'y' or 'n'")
+
+    except KeyboardInterrupt:
+        logger.info("Process interrupted by user")
+        if subcatchment_count > 0:
+            logger.info(f"Added {subcatchment_count} subcatchment(s) before interruption")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise
 
 def generate_subcatchment(file_path: str, area: float, land_form: str, land_cover: str):
     """
@@ -37,32 +108,27 @@ def generate_subcatchment(file_path: str, area: float, land_form: str, land_cove
         The land form type of the subcatchment.
     """
     model = BuildCatchments(file_path)
-    model.add_subcatchment_form_gui(area, land_form, land_cover)
-
-def add_multiple_subcatchments(model):
-    """
-    Add multiple subcatchments to the given model recursively. The function calls itself
-    and adds subcatchments to the model until the user decides to stop.
-
-    Parameters
-    ----------
-    model : BuildCatchments
-        An instance of the BuildCatchments class representing the SWMM model
-        to which the subcatchments will be added.
-    """
-    model.add_subcatchment()
-    user_input = input("Do you want to add another subcatchment? (y/n): ").lower()
-    if user_input == "y":
-        add_multiple_subcatchments(model)
-    elif user_input == "n":
-        print("Finished adding subcatchments.")
-    else:
-        print("Invalid input. Please enter 'y' or 'n'.")
-        add_multiple_subcatchments(model)
+    model.add_subcatchment(area, land_form, land_cover)
 
 
-# When this script is run as the main module, create a BuildCatchments instance using
-# the provided file path, and then add multiple subcatchments to the model.
 if __name__ == "__main__":
-    user_model = BuildCatchments(file_path=sys.argv[1])
-    add_multiple_subcatchments(user_model)
+    logger = setup_logging()
+
+    if len(sys.argv) != 2:
+        logger.error("Usage: python runner.py <path_to_inp_file>")
+        logger.info("For CLI, try: python -m rcg.cli --help")
+        sys.exit(1)
+
+    file_path_str = sys.argv[1]
+    logger.info(f"Validating and loading SWMM model: {file_path_str}")
+
+    try:
+        file_path = validate_file_path(file_path_str)  # Validate before loading
+        user_model = BuildCatchments(str(file_path))
+        add_multiple_subcatchments(user_model, logger)
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Error loading model: {e}")
+        sys.exit(1)
