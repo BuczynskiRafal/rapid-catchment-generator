@@ -5,7 +5,9 @@ from tkinter import filedialog, messagebox, ttk
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from rcg.fuzzy.categories import LandCover, LandForm
 from rcg.runner import generate_subcatchment
+from rcg.validation import validate_area, validate_land_cover, validate_land_form
 
 
 def get_help_file_path():
@@ -18,6 +20,7 @@ def get_help_file_path():
 
 class Frame(tk.Frame):
     """Custom frame with styling"""
+
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.configure(bg="#faf8f3")
@@ -45,85 +48,83 @@ class RcgApp:
 
     def setup_styles(self):
         self.style = ttk.Style()
-        self.style.theme_use('clam')
+        self.style.theme_use("clam")
 
         # Force theme to respect our colors
-        self.root.option_add('*TButton*background', '#d97706')
-        self.root.option_add('*TButton*foreground', 'white')
+        self.root.option_add("*TButton*background", "#d97706")
+        self.root.option_add("*TButton*foreground", "white")
 
         # Configure Claude.ai inspired styles
-        self.style.configure('Title.TLabel',
-                           font=('Segoe UI', 20, 'bold'),
-                           background="#faf8f3",
-                           foreground="#2f1b14")
+        self.style.configure("Title.TLabel", font=("Segoe UI", 20, "bold"), background="#faf8f3", foreground="#2f1b14")
 
-        self.style.configure('Subtitle.TLabel',
-                           font=('Segoe UI', 10),
-                           background="#faf8f3",
-                           foreground="#8b7355")
+        self.style.configure("Subtitle.TLabel", font=("Segoe UI", 10), background="#faf8f3", foreground="#8b7355")
 
-        self.style.configure('CustomStyle.TLabel',
-                           font=('Segoe UI', 11),
-                           background="#faf8f3",
-                           foreground="#5d4e37",
-                           padding=(0, 5))
+        self.style.configure(
+            "CustomStyle.TLabel", font=("Segoe UI", 11), background="#faf8f3", foreground="#5d4e37", padding=(0, 5)
+        )
 
-        self.style.configure('CustomStyle.TCombobox',
-                           fieldbackground="white",
-                           borderwidth=1,
-                           relief="solid",
-                           padding=(8, 8))
+        self.style.configure("CustomStyle.TCombobox", fieldbackground="white", borderwidth=1, relief="solid", padding=(8, 8))
 
-        self.style.configure('CustomStyle.TEntry',
-                           fieldbackground="white",
-                           borderwidth=1,
-                           relief="solid",
-                           padding=(8, 8))
+        self.style.configure("CustomStyle.TEntry", fieldbackground="white", borderwidth=1, relief="solid", padding=(8, 8))
 
-        self.style.configure('Primary.TButton',
-                           font=('Segoe UI', 11, 'bold'),
-                           padding=(20, 12),
-                           background="#d97706",
-                           foreground="#ffffff",
-                           borderwidth=0,
-                           relief="flat",
-                           focuscolor="none")
+        self.style.configure(
+            "Primary.TButton",
+            font=("Segoe UI", 11, "bold"),
+            padding=(20, 12),
+            background="#d97706",
+            foreground="#ffffff",
+            borderwidth=0,
+            relief="flat",
+            focuscolor="none",
+        )
 
-        self.style.configure('Success.TButton',
-                           font=('Segoe UI', 11, 'bold'),
-                           padding=(20, 12),
-                           background="#2f9e44",
-                           foreground="white",
-                           borderwidth=0,
-                           relief="flat",
-                           focuscolor="none")
+        self.style.configure(
+            "Success.TButton",
+            font=("Segoe UI", 11, "bold"),
+            padding=(20, 12),
+            background="#2f9e44",
+            foreground="white",
+            borderwidth=0,
+            relief="flat",
+            focuscolor="none",
+        )
 
-        self.style.configure('Info.TButton',
-                           font=('Segoe UI', 10),
-                           padding=(15, 12),
-                           background="#a78b5c",
-                           foreground="white",
-                           borderwidth=0,
-                           relief="flat",
-                           focuscolor="none")
+        self.style.configure(
+            "Info.TButton",
+            font=("Segoe UI", 10),
+            padding=(15, 12),
+            background="#a78b5c",
+            foreground="white",
+            borderwidth=0,
+            relief="flat",
+            focuscolor="none",
+        )
 
         # Map colors for hover effects - Claude.ai inspired
-        self.style.map('Primary.TButton',
-                      background=[('active', '#228be6'), ('!active', '#228be6')],
-                      foreground=[('active', '#ffffff'), ('!active', '#ffffff')])
-        self.style.map('Success.TButton',
-                      background=[('active', '#2f9e44'), ('!active', '#2f9e44')],
-                      foreground=[('active', 'white'), ('!active', 'white')])
-        self.style.map('Info.TButton',
-                      background=[('active', '#fab005'), ('!active', '#fab005')],
-                      foreground=[('active', 'white'), ('!active', 'white')])
+        self.style.map(
+            "Primary.TButton",
+            background=[("active", "#228be6"), ("!active", "#228be6")],
+            foreground=[("active", "#ffffff"), ("!active", "#ffffff")],
+        )
+        self.style.map(
+            "Success.TButton",
+            background=[("active", "#2f9e44"), ("!active", "#2f9e44")],
+            foreground=[("active", "white"), ("!active", "white")],
+        )
+        self.style.map(
+            "Info.TButton",
+            background=[("active", "#fab005"), ("!active", "#fab005")],
+            foreground=[("active", "white"), ("!active", "white")],
+        )
 
         # Fix combobox - remove all text selection highlighting
-        self.style.map('CustomStyle.TCombobox',
-                      selectbackground=[('readonly', 'white'), ('!readonly', 'white')],
-                      selectforeground=[('readonly', '#5d4e37'), ('!readonly', '#5d4e37')],
-                      fieldbackground=[('readonly', 'white'), ('!readonly', 'white')],
-                      highlightcolor=[('readonly', 'white'), ('!readonly', 'white')])
+        self.style.map(
+            "CustomStyle.TCombobox",
+            selectbackground=[("readonly", "white"), ("!readonly", "white")],
+            selectforeground=[("readonly", "#5d4e37"), ("!readonly", "#5d4e37")],
+            fieldbackground=[("readonly", "white"), ("!readonly", "white")],
+            highlightcolor=[("readonly", "white"), ("!readonly", "white")],
+        )
 
     def create_widgets(self):
         main_frame = Frame(self.root)
@@ -143,52 +144,29 @@ class RcgApp:
         input_frame = Frame(main_frame)
         input_frame.pack(fill="x", pady=(0, 20))
 
-        # Land cover selection
+        # Land cover selection - dynamically populated from categories
         self.create_input_group(input_frame, "Land Cover Type", 0)
         self.land_cover_var = tk.StringVar()
+        land_cover_values = sorted(LandCover.get_all_categories())
         land_cover_combobox = ttk.Combobox(
             input_frame,
             textvariable=self.land_cover_var,
-            values=[
-                "permeable_areas",
-                "permeable_terrain_on_plains",
-                "mountains_vegetated",
-                "mountains_rocky",
-                "urban_weakly_impervious",
-                "urban_moderately_impervious",
-                "urban_highly_impervious",
-                "suburban_weakly_impervious",
-                "suburban_highly_impervious",
-                "rural",
-                "forests",
-                "meadows",
-                "arable",
-                "marshes",
-            ],
+            values=land_cover_values,
             style="CustomStyle.TCombobox",
-            state="readonly"
+            state="readonly",
         )
         land_cover_combobox.pack(fill="x", pady=(5, 20))
 
-        # Land form selection
+        # Land form selection - dynamically populated from categories
         self.create_input_group(input_frame, "Land Form Type", 1)
         self.land_form_var = tk.StringVar()
+        land_form_values = sorted(LandForm.get_all_categories())
         land_form_combobox = ttk.Combobox(
             input_frame,
             textvariable=self.land_form_var,
-            values=[
-                "marshes_and_lowlands",
-                "flats_and_plateaus",
-                "flats_and_plateaus_in_combination_with_hills",
-                "hills_with_gentle_slopes",
-                "steeper_hills_and_foothills",
-                "hills_and_outcrops_of_mountain_ranges",
-                "higher_hills",
-                "mountains",
-                "highest_mountains",
-            ],
+            values=land_form_values,
             style="CustomStyle.TCombobox",
-            state="readonly"
+            state="readonly",
         )
         land_form_combobox.pack(fill="x", pady=(5, 20))
 
@@ -209,19 +187,11 @@ class RcgApp:
 
         self.selected_file_var = tk.StringVar()
         self.selected_file_entry = ttk.Entry(
-            file_select_frame,
-            textvariable=self.selected_file_var,
-            style="CustomStyle.TEntry",
-            state="readonly"
+            file_select_frame, textvariable=self.selected_file_var, style="CustomStyle.TEntry", state="readonly"
         )
         self.selected_file_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
-        choose_file_button = ttk.Button(
-            file_select_frame,
-            text="Browse",
-            command=self.choose_file,
-            style="Primary.TButton"
-        )
+        choose_file_button = ttk.Button(file_select_frame, text="Browse", command=self.choose_file, style="Primary.TButton")
         choose_file_button.pack(side="right")
 
         # Action buttons section
@@ -236,13 +206,10 @@ class RcgApp:
         )
         run_button.pack(fill="x", pady=(0, 10))
 
-        help_button = ttk.Button(
-            button_frame,
-            text="Help & Documentation",
-            command=self.show_help,
-            style="Primary.TButton"
+        help_button = ttk.Button(button_frame, text="Help & Documentation", command=self.show_help, style="Primary.TButton")
+        help_button.pack(
+            fill="x",
         )
-        help_button.pack(fill="x",)
 
     def create_input_group(self, parent, text, row):
         label = ttk.Label(parent, text=text, style="CustomStyle.TLabel")
@@ -268,7 +235,7 @@ class RcgApp:
         help_title.pack(pady=(0, 20))
 
         try:
-            with open(get_help_file_path(), "r") as file:
+            with open(get_help_file_path()) as file:
                 text = file.read()
         except FileNotFoundError:
             text = """
@@ -323,13 +290,13 @@ The application will generate subcatchments with appropriate parameters based on
             text_frame,
             wrap="word",
             yscrollcommand=scrollbar.set,
-            font=('Segoe UI', 10),
+            font=("Segoe UI", 10),
             bg="#ffffff",
             fg="#5d4e37",
             relief="flat",
             borderwidth=1,
             padx=15,
-            pady=15
+            pady=15,
         )
         help_text.insert(tk.END, text)
         help_text.config(state="disabled")
@@ -345,58 +312,66 @@ The application will generate subcatchments with appropriate parameters based on
         if file_path:
             file_extension = os.path.splitext(file_path)[1]
             if file_extension.lower() != ".inp":
-                messagebox.showerror(
-                    "Invalid File Type",
-                    "Please select a file with the '.inp' extension."
-                )
+                messagebox.showerror("Invalid File Type", "Please select a file with the '.inp' extension.")
                 return
 
             self.selected_file_var.set(os.path.basename(file_path))
             self.file_path = file_path
 
     def run_simulation(self):
-        land_cover = self.land_cover_var.get().replace(" ", "_")
-        land_form = self.land_form_var.get().replace(" ", "_")
-        area = self.area_var.get()
+        """Run the subcatchment generation with centralized validation."""
+        land_cover_str = self.land_cover_var.get()
+        land_form_str = self.land_form_var.get()
+        area_str = self.area_var.get()
 
-        # Validation
+        # Basic presence validation
         if not self.file_path:
             messagebox.showerror("Missing File", "Please select a SWMM input file.")
             return
 
-        if not land_cover:
+        if not land_cover_str:
             messagebox.showerror("Missing Selection", "Please select a land cover type.")
             return
 
-        if not land_form:
+        if not land_form_str:
             messagebox.showerror("Missing Selection", "Please select a land form type.")
             return
 
-        if not area:
+        if not area_str:
             messagebox.showerror("Missing Value", "Please enter an area value.")
             return
 
+        # Use centralized validation
         try:
-            area = area.replace(",", ".")
-            area = float(area)
-            if area <= 0:
-                raise ValueError("Area must be positive")
-        except ValueError:
-            messagebox.showerror(
-                "Invalid Area",
-                "Please enter a valid positive number for the area."
-            )
+            # Handle comma as decimal separator
+            area_str = area_str.replace(",", ".")
+            area = validate_area(area_str)
+        except Exception as e:
+            messagebox.showerror("Invalid Area", str(e))
             return
 
         try:
-            generate_subcatchment(self.file_path, area, land_form, land_cover)
+            validate_land_form(land_form_str)
+        except Exception as e:
+            messagebox.showerror("Invalid Land Form", str(e))
+            return
+
+        try:
+            validate_land_cover(land_cover_str)
+        except Exception as e:
+            messagebox.showerror("Invalid Land Cover", str(e))
+            return
+
+        # Generate subcatchment
+        try:
+            generate_subcatchment(self.file_path, area, land_form_str, land_cover_str)
             messagebox.showinfo(
                 "Simulation Complete",
                 f"Subcatchment generated successfully!\n\n"
                 f"Area: {area} ha\n"
-                f"Land Cover: {land_cover.replace('_', ' ').title()}\n"
-                f"Land Form: {land_form.replace('_', ' ').title()}\n"
-                f"File: {os.path.basename(self.file_path)}"
+                f"Land Cover: {land_cover_str.replace('_', ' ').title()}\n"
+                f"Land Form: {land_form_str.replace('_', ' ').title()}\n"
+                f"File: {os.path.basename(self.file_path)}",
             )
         except Exception as e:
             messagebox.showerror("Simulation Error", f"An error occurred during simulation:\n\n{str(e)}")

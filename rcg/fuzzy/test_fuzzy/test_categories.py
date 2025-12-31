@@ -1,10 +1,11 @@
 import unittest
+
 from rcg.fuzzy.categories import (
-    LandForm,
-    LandCover,
-    Slope,
-    Impervious,
     Catchments,
+    Impervious,
+    LandCover,
+    LandForm,
+    Slope,
 )
 
 

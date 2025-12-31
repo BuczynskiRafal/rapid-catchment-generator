@@ -1,13 +1,15 @@
 """
 Module defining fuzzy membership functions for RCG categories.
+
+This module provides the Memberships class and factory functions for creating
+membership function instances with proper dependency injection support.
 """
+
+from typing import Optional
 
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-from typing import Dict, List
-
-from .categories import LandForm, LandCover, Slope, Impervious, Catchments
 
 
 class Memberships:
@@ -36,7 +38,7 @@ class Memberships:
 
     def _populate_land_form(self) -> None:
         """Populate land form memberships with trimf functions."""
-        params: Dict[str, List[int]] = {
+        params: dict[str, list[int]] = {
             "marshes_and_lowlands": [0, 1, 2],
             "flats_and_plateaus": [1, 2, 3],
             "flats_and_plateaus_in_combination_with_hills": [2, 3, 4],
@@ -52,7 +54,7 @@ class Memberships:
 
     def _populate_land_cover(self) -> None:
         """Populate land cover memberships with trimf functions."""
-        params: Dict[str, List[int]] = {
+        params: dict[str, list[int]] = {
             "permeable_areas": [0, 1, 2],
             "permeable_terrain_on_plains": [1, 2, 3],
             "mountains_vegetated": [2, 3, 4],
@@ -73,7 +75,7 @@ class Memberships:
 
     def _populate_slope(self) -> None:
         """Populate slope memberships with trimf functions."""
-        params: Dict[str, List[float]] = {
+        params: dict[str, list[float]] = {
             "marshes_and_lowlands": [0, 0, 1],
             "flats_and_plateaus": [0, 1, 2.5],
             "flats_and_plateaus_in_combination_with_hills": [1, 2.5, 5],
@@ -89,7 +91,7 @@ class Memberships:
 
     def _populate_impervious(self) -> None:
         """Populate impervious memberships with trimf functions."""
-        params: Dict[str, List[int]] = {
+        params: dict[str, list[int]] = {
             "marshes": [0, 0, 2],
             "arable": [0, 2, 4],
             "meadows": [2, 5, 8],
@@ -108,7 +110,7 @@ class Memberships:
 
     def _populate_catchment(self) -> None:
         """Populate catchment memberships with trimf functions."""
-        params: Dict[str, List[int]] = {
+        params: dict[str, list[int]] = {
             "urban": [0, 0, 15],
             "suburban": [0, 15, 30],
             "rural": [15, 30, 45],
@@ -121,4 +123,47 @@ class Memberships:
             self.catchment[name] = fuzz.trimf(self.catchment.universe, param)
 
 
-membership = Memberships()
+# Cache for default memberships instance (lazy initialization)
+_default_memberships: Optional[Memberships] = None
+
+
+def create_memberships() -> Memberships:
+    """
+    Factory function to create a new Memberships instance.
+
+    Use this function when you need an isolated memberships instance,
+    such as in tests or when you need custom configuration.
+
+    Returns
+    -------
+    Memberships
+        A new Memberships instance with all membership functions populated.
+
+    Example
+    -------
+    >>> memberships = create_memberships()
+    >>> # Use memberships.slope, memberships.impervious, etc.
+    """
+    return Memberships()
+
+
+def get_default_memberships() -> Memberships:
+    """
+    Get the default (shared) Memberships instance.
+
+    This function provides lazy initialization of a shared memberships instance.
+    Use this for backward compatibility or when a shared instance is acceptable.
+
+    Returns
+    -------
+    Memberships
+        The shared default Memberships instance.
+    """
+    global _default_memberships
+    if _default_memberships is None:
+        _default_memberships = Memberships()
+    return _default_memberships
+
+
+# Backward compatibility alias (deprecated - use create_memberships() or get_default_memberships())
+membership = get_default_memberships()

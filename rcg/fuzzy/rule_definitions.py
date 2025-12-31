@@ -4,8 +4,9 @@ Fuzzy logic rule definitions for catchment generation.
 This module contains rules that determine slope, impervious surface, and catchment
 characteristics based on land form and land cover combinations.
 """
-from .rule_engine import rule, default_engine
-from .categories import LandForm, LandCover, Slope, Impervious, Catchments
+
+from .categories import Catchments, Impervious, LandCover, LandForm, Slope
+from .rule_engine import default_engine, rule
 
 
 def define_all_rules():
@@ -51,12 +52,16 @@ def define_all_rules():
         (LandCover.arable, LandForm.higher_hills),
         (LandCover.arable, LandForm.mountains),
         (LandCover.arable, LandForm.highest_mountains),
-        (LandCover.marshes, LandForm.higher_hills)
+        (LandCover.marshes, LandForm.higher_hills),
     ]:
         default_engine.add_rule(
             rule(f"steep_terrain_{land_cover_val.name}_{land_form_val.name}")
             .when(land_cover=land_cover_val, land_form=land_form_val)
-            .then(slope=Slope.steeper_hills_and_foothills, impervious=Impervious.mountains_vegetated, catchment=Catchments.mountains)
+            .then(
+                slope=Slope.steeper_hills_and_foothills,
+                impervious=Impervious.mountains_vegetated,
+                catchment=Catchments.mountains,
+            )
             .build()
         )
 
@@ -66,12 +71,16 @@ def define_all_rules():
         LandForm.flats_and_plateaus_in_combination_with_hills,
         LandForm.hills_and_outcrops_of_mountain_ranges,
         LandForm.hills_with_gentle_slopes,
-        LandForm.steeper_hills_and_foothills
+        LandForm.steeper_hills_and_foothills,
     ]:
         default_engine.add_rule(
             rule(f"mountains_vegetated_on_{land_form_val.name}")
             .when(land_cover=LandCover.mountains_vegetated, land_form=land_form_val)
-            .then(slope=Slope.steeper_hills_and_foothills, impervious=Impervious.mountains_vegetated, catchment=Catchments.mountains)
+            .then(
+                slope=Slope.steeper_hills_and_foothills,
+                impervious=Impervious.mountains_vegetated,
+                catchment=Catchments.mountains,
+            )
             .build()
         )
 
@@ -79,7 +88,11 @@ def define_all_rules():
     default_engine.add_rule(
         rule("mountains_vegetated_on_hills_outcrops")
         .when(land_cover=LandCover.mountains_vegetated, land_form=LandForm.hills_and_outcrops_of_mountain_ranges)
-        .then(slope=Slope.hills_and_outcrops_of_mountain_ranges, impervious=Impervious.mountains_vegetated, catchment=Catchments.mountains)
+        .then(
+            slope=Slope.hills_and_outcrops_of_mountain_ranges,
+            impervious=Impervious.mountains_vegetated,
+            catchment=Catchments.mountains,
+        )
         .build()
     )
 
@@ -104,7 +117,11 @@ def define_all_rules():
     default_engine.add_rule(
         rule("mountains_rocky_on_combo_hills")
         .when(land_cover=LandCover.mountains_rocky, land_form=LandForm.flats_and_plateaus_in_combination_with_hills)
-        .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.mountains_rocky, catchment=Catchments.mountains)
+        .then(
+            slope=Slope.flats_and_plateaus_in_combination_with_hills,
+            impervious=Impervious.mountains_rocky,
+            catchment=Catchments.mountains,
+        )
         .build()
     )
 
@@ -128,7 +145,11 @@ def define_all_rules():
     default_engine.add_rule(
         rule("mountains_rocky_on_hills_outcrops")
         .when(land_cover=LandCover.mountains_rocky, land_form=LandForm.hills_and_outcrops_of_mountain_ranges)
-        .then(slope=Slope.hills_and_outcrops_of_mountain_ranges, impervious=Impervious.mountains_rocky, catchment=Catchments.mountains)
+        .then(
+            slope=Slope.hills_and_outcrops_of_mountain_ranges,
+            impervious=Impervious.mountains_rocky,
+            catchment=Catchments.mountains,
+        )
         .build()
     )
 
@@ -163,7 +184,11 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"urban_weak_moderate_{land_form_val.name}")
             .when(land_cover=LandCover.urban_weakly_impervious, land_form=land_form_val)
-            .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.urban_weakly_impervious, catchment=Catchments.urban)
+            .then(
+                slope=Slope.flats_and_plateaus_in_combination_with_hills,
+                impervious=Impervious.urban_weakly_impervious,
+                catchment=Catchments.urban,
+            )
             .build()
         )
 
@@ -172,7 +197,11 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"urban_weak_steep_{land_form_val.name}")
             .when(land_cover=LandCover.urban_weakly_impervious, land_form=land_form_val)
-            .then(slope=Slope.steeper_hills_and_foothills, impervious=Impervious.urban_highly_impervious, catchment=Catchments.urban)
+            .then(
+                slope=Slope.steeper_hills_and_foothills,
+                impervious=Impervious.urban_highly_impervious,
+                catchment=Catchments.urban,
+            )
             .build()
         )
 
@@ -190,25 +219,44 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"urban_moderate_low_{land_form_val.name}")
             .when(land_cover=LandCover.urban_moderately_impervious, land_form=land_form_val)
-            .then(slope=Slope.marshes_and_lowlands, impervious=Impervious.urban_moderately_impervious, catchment=Catchments.urban)
+            .then(
+                slope=Slope.marshes_and_lowlands, impervious=Impervious.urban_moderately_impervious, catchment=Catchments.urban
+            )
             .build()
         )
 
     # Rule 19: Urban moderately impervious on moderate terrain
-    for land_form_val in [LandForm.flats_and_plateaus_in_combination_with_hills, LandForm.hills_with_gentle_slopes, LandForm.steeper_hills_and_foothills]:
+    for land_form_val in [
+        LandForm.flats_and_plateaus_in_combination_with_hills,
+        LandForm.hills_with_gentle_slopes,
+        LandForm.steeper_hills_and_foothills,
+    ]:
         default_engine.add_rule(
             rule(f"urban_moderate_terrain_{land_form_val.name}")
             .when(land_cover=LandCover.urban_moderately_impervious, land_form=land_form_val)
-            .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.urban_moderately_impervious, catchment=Catchments.urban)
+            .then(
+                slope=Slope.flats_and_plateaus_in_combination_with_hills,
+                impervious=Impervious.urban_moderately_impervious,
+                catchment=Catchments.urban,
+            )
             .build()
         )
 
     # Rule 20: Urban moderately impervious on high terrain
-    for land_form_val in [LandForm.hills_and_outcrops_of_mountain_ranges, LandForm.higher_hills, LandForm.mountains, LandForm.highest_mountains]:
+    for land_form_val in [
+        LandForm.hills_and_outcrops_of_mountain_ranges,
+        LandForm.higher_hills,
+        LandForm.mountains,
+        LandForm.highest_mountains,
+    ]:
         default_engine.add_rule(
             rule(f"urban_moderate_high_{land_form_val.name}")
             .when(land_cover=LandCover.urban_moderately_impervious, land_form=land_form_val)
-            .then(slope=Slope.hills_and_outcrops_of_mountain_ranges, impervious=Impervious.urban_moderately_impervious, catchment=Catchments.urban)
+            .then(
+                slope=Slope.hills_and_outcrops_of_mountain_ranges,
+                impervious=Impervious.urban_moderately_impervious,
+                catchment=Catchments.urban,
+            )
             .build()
         )
 
@@ -230,7 +278,7 @@ def define_all_rules():
         (LandForm.hills_and_outcrops_of_mountain_ranges, Slope.hills_and_outcrops_of_mountain_ranges),
         (LandForm.higher_hills, Slope.higher_hills),
         (LandForm.mountains, Slope.mountains),
-        (LandForm.highest_mountains, Slope.highest_mountains)
+        (LandForm.highest_mountains, Slope.highest_mountains),
     ]
 
     for land_form_val, slope_val in rural_mappings:
@@ -255,7 +303,11 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"forests_moderate_{land_form_val.name}")
             .when(land_cover=LandCover.forests, land_form=land_form_val)
-            .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.forests, catchment=Catchments.forests)
+            .then(
+                slope=Slope.flats_and_plateaus_in_combination_with_hills,
+                impervious=Impervious.forests,
+                catchment=Catchments.forests,
+            )
             .build()
         )
 
@@ -264,12 +316,18 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"forests_steep_{land_form_val.name}")
             .when(land_cover=LandCover.forests, land_form=land_form_val)
-            .then(slope=Slope.hills_and_outcrops_of_mountain_ranges, impervious=Impervious.forests, catchment=Catchments.forests)
+            .then(
+                slope=Slope.hills_and_outcrops_of_mountain_ranges, impervious=Impervious.forests, catchment=Catchments.forests
+            )
             .build()
         )
 
     # Rule 34: Marshes on low terrain
-    for land_form_val in [LandForm.marshes_and_lowlands, LandForm.flats_and_plateaus, LandForm.flats_and_plateaus_in_combination_with_hills]:
+    for land_form_val in [
+        LandForm.marshes_and_lowlands,
+        LandForm.flats_and_plateaus,
+        LandForm.flats_and_plateaus_in_combination_with_hills,
+    ]:
         default_engine.add_rule(
             rule(f"marshes_low_{land_form_val.name}")
             .when(land_cover=LandCover.marshes, land_form=land_form_val)
@@ -278,7 +336,11 @@ def define_all_rules():
         )
 
     # Rule 35: Marshes on hilly terrain
-    for land_form_val in [LandForm.hills_with_gentle_slopes, LandForm.steeper_hills_and_foothills, LandForm.hills_and_outcrops_of_mountain_ranges]:
+    for land_form_val in [
+        LandForm.hills_with_gentle_slopes,
+        LandForm.steeper_hills_and_foothills,
+        LandForm.hills_and_outcrops_of_mountain_ranges,
+    ]:
         default_engine.add_rule(
             rule(f"marshes_hilly_{land_form_val.name}")
             .when(land_cover=LandCover.marshes, land_form=land_form_val)
@@ -321,11 +383,19 @@ def define_all_rules():
     )
 
     # Rule 40: Arable on moderate terrain
-    for land_form_val in [LandForm.flats_and_plateaus, LandForm.flats_and_plateaus_in_combination_with_hills, LandForm.hills_with_gentle_slopes]:
+    for land_form_val in [
+        LandForm.flats_and_plateaus,
+        LandForm.flats_and_plateaus_in_combination_with_hills,
+        LandForm.hills_with_gentle_slopes,
+    ]:
         default_engine.add_rule(
             rule(f"arable_moderate_{land_form_val.name}")
             .when(land_cover=LandCover.arable, land_form=land_form_val)
-            .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.arable, catchment=Catchments.arable)
+            .then(
+                slope=Slope.flats_and_plateaus_in_combination_with_hills,
+                impervious=Impervious.arable,
+                catchment=Catchments.arable,
+            )
             .build()
         )
 
@@ -347,11 +417,17 @@ def define_all_rules():
     )
 
     # Rule 43: Urban highly impervious on gentle terrain
-    for land_form_val in [LandForm.hills_with_gentle_slopes, LandForm.steeper_hills_and_foothills, LandForm.hills_and_outcrops_of_mountain_ranges]:
+    for land_form_val in [
+        LandForm.hills_with_gentle_slopes,
+        LandForm.steeper_hills_and_foothills,
+        LandForm.hills_and_outcrops_of_mountain_ranges,
+    ]:
         default_engine.add_rule(
             rule(f"urban_highly_gentle_{land_form_val.name}")
             .when(land_cover=LandCover.urban_highly_impervious, land_form=land_form_val)
-            .then(slope=Slope.hills_with_gentle_slopes, impervious=Impervious.urban_highly_impervious, catchment=Catchments.urban)
+            .then(
+                slope=Slope.hills_with_gentle_slopes, impervious=Impervious.urban_highly_impervious, catchment=Catchments.urban
+            )
             .build()
         )
 
@@ -387,7 +463,11 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"{land_cover_val.name}_on_combo_hills")
             .when(land_cover=land_cover_val, land_form=LandForm.flats_and_plateaus_in_combination_with_hills)
-            .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.arable, catchment=Catchments.meadows)
+            .then(
+                slope=Slope.flats_and_plateaus_in_combination_with_hills,
+                impervious=Impervious.arable,
+                catchment=Catchments.meadows,
+            )
             .build()
         )
 
@@ -422,7 +502,9 @@ def define_all_rules():
     default_engine.add_rule(
         rule("suburban_weak_on_marshes")
         .when(land_cover=LandCover.suburban_weakly_impervious, land_form=LandForm.marshes_and_lowlands)
-        .then(slope=Slope.marshes_and_lowlands, impervious=Impervious.suburban_weakly_impervious, catchment=Catchments.suburban)
+        .then(
+            slope=Slope.marshes_and_lowlands, impervious=Impervious.suburban_weakly_impervious, catchment=Catchments.suburban
+        )
         .build()
     )
 
@@ -430,7 +512,9 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"suburban_weak_flat_{land_form_val.name}")
             .when(land_cover=LandCover.suburban_weakly_impervious, land_form=land_form_val)
-            .then(slope=Slope.flats_and_plateaus, impervious=Impervious.suburban_weakly_impervious, catchment=Catchments.suburban)
+            .then(
+                slope=Slope.flats_and_plateaus, impervious=Impervious.suburban_weakly_impervious, catchment=Catchments.suburban
+            )
             .build()
         )
 
@@ -438,14 +522,22 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"suburban_weak_hilly_{land_form_val.name}")
             .when(land_cover=LandCover.suburban_weakly_impervious, land_form=land_form_val)
-            .then(slope=Slope.hills_with_gentle_slopes, impervious=Impervious.suburban_weakly_impervious, catchment=Catchments.suburban)
+            .then(
+                slope=Slope.hills_with_gentle_slopes,
+                impervious=Impervious.suburban_weakly_impervious,
+                catchment=Catchments.suburban,
+            )
             .build()
         )
 
     default_engine.add_rule(
         rule("suburban_weak_on_outcrops")
         .when(land_cover=LandCover.suburban_weakly_impervious, land_form=LandForm.hills_and_outcrops_of_mountain_ranges)
-        .then(slope=Slope.hills_and_outcrops_of_mountain_ranges, impervious=Impervious.suburban_weakly_impervious, catchment=Catchments.suburban)
+        .then(
+            slope=Slope.hills_and_outcrops_of_mountain_ranges,
+            impervious=Impervious.suburban_weakly_impervious,
+            catchment=Catchments.suburban,
+        )
         .build()
     )
 
@@ -462,22 +554,38 @@ def define_all_rules():
         default_engine.add_rule(
             rule(f"suburban_highly_low_{land_form_val.name}")
             .when(land_cover=LandCover.suburban_highly_impervious, land_form=land_form_val)
-            .then(slope=Slope.marshes_and_lowlands, impervious=Impervious.suburban_highly_impervious, catchment=Catchments.suburban)
+            .then(
+                slope=Slope.marshes_and_lowlands,
+                impervious=Impervious.suburban_highly_impervious,
+                catchment=Catchments.suburban,
+            )
             .build()
         )
 
     default_engine.add_rule(
         rule("suburban_highly_on_combo_hills")
         .when(land_cover=LandCover.suburban_highly_impervious, land_form=LandForm.flats_and_plateaus_in_combination_with_hills)
-        .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.suburban_highly_impervious, catchment=Catchments.suburban)
+        .then(
+            slope=Slope.flats_and_plateaus_in_combination_with_hills,
+            impervious=Impervious.suburban_highly_impervious,
+            catchment=Catchments.suburban,
+        )
         .build()
     )
 
-    for land_form_val in [LandForm.hills_with_gentle_slopes, LandForm.steeper_hills_and_foothills, LandForm.hills_and_outcrops_of_mountain_ranges]:
+    for land_form_val in [
+        LandForm.hills_with_gentle_slopes,
+        LandForm.steeper_hills_and_foothills,
+        LandForm.hills_and_outcrops_of_mountain_ranges,
+    ]:
         default_engine.add_rule(
             rule(f"suburban_highly_hilly_{land_form_val.name}")
             .when(land_cover=LandCover.suburban_highly_impervious, land_form=land_form_val)
-            .then(slope=Slope.hills_with_gentle_slopes, impervious=Impervious.suburban_highly_impervious, catchment=Catchments.suburban)
+            .then(
+                slope=Slope.hills_with_gentle_slopes,
+                impervious=Impervious.suburban_highly_impervious,
+                catchment=Catchments.suburban,
+            )
             .build()
         )
 
@@ -493,7 +601,11 @@ def define_all_rules():
     default_engine.add_rule(
         rule("urban_highly_on_combo_hills")
         .when(land_cover=LandCover.urban_highly_impervious, land_form=LandForm.flats_and_plateaus_in_combination_with_hills)
-        .then(slope=Slope.flats_and_plateaus_in_combination_with_hills, impervious=Impervious.urban_highly_impervious, catchment=Catchments.urban)
+        .then(
+            slope=Slope.flats_and_plateaus_in_combination_with_hills,
+            impervious=Impervious.urban_highly_impervious,
+            catchment=Catchments.urban,
+        )
         .build()
     )
 

@@ -1,8 +1,8 @@
 import unittest
 
 from skfuzzy import control as ctrl
+
 from rcg.fuzzy.memberships import Memberships, membership
-from rcg.fuzzy.categories import LandForm, LandCover, Slope, Impervious, Catchments
 
 
 class TestMemberships(unittest.TestCase):

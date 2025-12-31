@@ -8,24 +8,27 @@ Usage:
 Example:
     python3 runner.py example.inp
 """
+
 import logging
 import sys
-from pathlib import Path
 from typing import Union
 
+from rcg.fuzzy.categories import LandCover, LandForm
 from rcg.inp_manage.inp import BuildCatchments
-from rcg.validation import validate_file_path, validate_area, validate_land_form, validate_land_cover
-from rcg.fuzzy.categories import LandForm, LandCover
+from rcg.logging_config import setup_logging as setup_central_logging
+from rcg.validation import validate_area, validate_file_path, validate_land_cover, validate_land_form
 
 
 def setup_logging() -> logging.Logger:
-    """Configure basic logging."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
-    )
-    return logging.getLogger(__name__)
+    """
+    Configure basic logging using centralized config.
+
+    Returns
+    -------
+    logging.Logger
+        Configured logger instance.
+    """
+    return setup_central_logging(level=logging.INFO, name="rcg.runner")
 
 
 def prompt_for_float(prompt: str) -> float:
@@ -59,16 +62,8 @@ def add_multiple_subcatchments(model: BuildCatchments, logger: logging.Logger) -
             logger.info(f"Adding subcatchment #{subcatchment_count + 1}")
 
             area = prompt_for_float("Enter area in hectares (ha, positive number <=10000): ")
-            land_form = prompt_for_category(
-                "Enter land form: ",
-                validate_land_form,
-                LandForm
-            )
-            land_cover = prompt_for_category(
-                "Enter land cover: ",
-                validate_land_cover,
-                LandCover
-            )
+            land_form = prompt_for_category("Enter land form: ", validate_land_form, LandForm)
+            land_cover = prompt_for_category("Enter land cover: ", validate_land_cover, LandCover)
 
             model.add_subcatchment(area, land_form, land_cover)
             subcatchment_count += 1
@@ -91,6 +86,7 @@ def add_multiple_subcatchments(model: BuildCatchments, logger: logging.Logger) -
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise
+
 
 def generate_subcatchment(file_path: str, area: float, land_form: str, land_cover: str):
     """

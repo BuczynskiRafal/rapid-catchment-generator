@@ -1,13 +1,45 @@
 """Input validation utilities."""
+
 import argparse
 from pathlib import Path
 
-from .fuzzy.categories import LandForm, LandCover
+from .exceptions import ValidationError as RCGValidationError
+from .fuzzy.categories import LandCover, LandForm
 
 
 class ValidationError(argparse.ArgumentTypeError):
-    """Custom validation error for argparse."""
+    """
+    Custom validation error for argparse compatibility.
+
+    This class extends argparse.ArgumentTypeError for CLI compatibility
+    while also being usable as a standalone validation error.
+
+    Note: For non-CLI code, prefer using rcg.exceptions.ValidationError directly.
+    """
+
     pass
+
+
+def _raise_validation_error(message: str, field: str = None, value=None, for_argparse: bool = True):
+    """
+    Raise the appropriate validation error based on context.
+
+    Parameters
+    ----------
+    message : str
+        Error message to display.
+    field : str, optional
+        Name of the field that failed validation.
+    value : any, optional
+        The invalid value.
+    for_argparse : bool
+        If True, raises argparse-compatible ValidationError.
+        If False, raises RCGValidationError.
+    """
+    if for_argparse:
+        raise ValidationError(message)
+    else:
+        raise RCGValidationError(message, field=field, value=value)
 
 
 def validate_file_path(file_path: str) -> Path:
@@ -42,18 +74,18 @@ def validate_file_path(file_path: str) -> Path:
     if not path.is_file():
         raise ValidationError(f"Path is not a file: {file_path}")
 
-    if path.suffix.lower() != '.inp':
+    if path.suffix.lower() != ".inp":
         raise ValidationError(f"File must have .inp extension (case-insensitive), got: {path.suffix}")
 
     try:
-        with path.open('r') as f:
+        with path.open("r") as f:
             content = f.read(10)
             if not content:
                 raise ValidationError(f"File is empty: {file_path}")
-    except PermissionError:
-        raise ValidationError(f"Permission denied reading file: {file_path}")
+    except PermissionError as e:
+        raise ValidationError(f"Permission denied reading file: {file_path}") from e
     except Exception as e:
-        raise ValidationError(f"Error reading file: {e}")
+        raise ValidationError(f"Error reading file: {e}") from e
 
     return path
 
@@ -84,8 +116,8 @@ def validate_area(area_str: str) -> float:
     """
     try:
         area = float(area_str)
-    except ValueError:
-        raise ValidationError(f"Area must be a valid number, got: '{area_str}'")
+    except ValueError as e:
+        raise ValidationError(f"Area must be a valid number, got: '{area_str}'") from e
 
     if area <= 0:
         raise ValidationError(f"Area must be positive, got: {area}")
@@ -112,9 +144,7 @@ def validate_land_form(land_form_str: str) -> LandForm:
             return getattr(LandForm, form_name)
 
     valid_list = sorted(LandForm.get_all_categories())
-    raise ValidationError(
-        f"Invalid land form '{land_form_str}' (case-insensitive). Valid options: {', '.join(valid_list)}"
-    )
+    raise ValidationError(f"Invalid land form '{land_form_str}' (case-insensitive). Valid options: {', '.join(valid_list)}")
 
 
 def validate_land_cover(land_cover_str: str) -> LandCover:
@@ -133,6 +163,4 @@ def validate_land_cover(land_cover_str: str) -> LandCover:
             return getattr(LandCover, cover_name)
 
     valid_list = sorted(LandCover.get_all_categories())
-    raise ValidationError(
-        f"Invalid land cover '{land_cover_str}' (case-insensitive). Valid options: {', '.join(valid_list)}"
-    )
+    raise ValidationError(f"Invalid land cover '{land_cover_str}' (case-insensitive). Valid options: {', '.join(valid_list)}")

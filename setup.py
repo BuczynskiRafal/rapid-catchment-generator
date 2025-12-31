@@ -1,7 +1,7 @@
-import os
-import pip
 import codecs
-from setuptools import setup, find_packages
+import os
+
+from setuptools import find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -20,17 +20,8 @@ setup(
     long_description_content_type="text/markdown",
     long_description=long_description,
     packages=find_packages(),
-    install_requires=[
-        "scikit-fuzzy",
-        "numpy",
-        "pandas",
-        "swmmio",
-        "pyswmm",
-        "matplotlib"
-    ],
-    project_urls={
-        "Homepage": "https://github.com/BuczynskiRafal/rapid-catchment-generator"
-    },
+    install_requires=["scikit-fuzzy", "numpy", "pandas", "swmmio", "pyswmm", "matplotlib"],
+    project_urls={"Homepage": "https://github.com/BuczynskiRafal/rapid-catchment-generator"},
 )
 
 # python setup.py sdist

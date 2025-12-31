@@ -3,13 +3,20 @@ Fuzzy logic engine for SWMM catchment parameter calculation.
 
 This module provides the core fuzzy inference system that calculates slope,
 impervious surface percentage, and catchment type based on land form and land cover inputs.
+
+Supports dependency injection for memberships and rule engine to enable isolated testing.
 """
+
+from typing import TYPE_CHECKING, Optional
+
 import skfuzzy as fuzz
-from typing import Dict
 from skfuzzy import control as ctrl
+
 from rcg.fuzzy import categories
-from rcg.fuzzy.memberships import Memberships, membership
-from .rule_definitions import default_engine as rule_engine
+
+if TYPE_CHECKING:
+    from rcg.fuzzy.memberships import Memberships
+    from rcg.fuzzy.rule_engine import RuleEngine
 
 
 class FuzzyEngine:
@@ -18,6 +25,8 @@ class FuzzyEngine:
 
     Uses fuzzy logic rules to determine appropriate slope, impervious surface percentage,
     and catchment type values based on combinations of land form and land cover characteristics.
+
+    Supports dependency injection for memberships and rule engine to enable isolated testing.
 
     Attributes
     ----------
@@ -33,15 +42,36 @@ class FuzzyEngine:
         Simulation instance for impervious surface inference
     catchment_sim : ctrl.ControlSystemSimulation
         Simulation instance for catchment type inference
+    memberships : Memberships
+        The memberships instance used for fuzzy computations.
     """
 
-    def __init__(self):
+    def __init__(self, memberships: Optional["Memberships"] = None, rule_engine: Optional["RuleEngine"] = None):
         """
         Initialize fuzzy control systems for catchment parameter calculation.
 
         Creates control systems and simulation instances for slope, impervious surface,
         and catchment type calculations using predefined fuzzy rules.
+
+        Parameters
+        ----------
+        memberships : Optional[Memberships]
+            Memberships instance to use. If None, uses the default instance.
+        rule_engine : Optional[RuleEngine]
+            Rule engine to use. If None, uses the default engine from rule_definitions.
         """
+        # Load dependencies
+        if memberships is None:
+            from rcg.fuzzy.memberships import get_default_memberships
+
+            memberships = get_default_memberships()
+        self.memberships = memberships
+
+        if rule_engine is None:
+            from .rule_definitions import default_engine
+
+            rule_engine = default_engine
+
         # Create control systems from rule definitions
         self.slope_ctrl = ctrl.ControlSystem(rule_engine.slope_rules)
         self.impervious_ctrl = ctrl.ControlSystem(rule_engine.impervious_rules)
@@ -68,7 +98,7 @@ class FuzzyEngine:
         float
             Calculated slope value
         """
-        return self._compute_single(self.slope_sim, land_form, land_cover, membership.slope.label)
+        return self._compute_single(self.slope_sim, land_form, land_cover, self.memberships.slope.label)
 
     def compute_impervious(self, land_form: int, land_cover: int) -> float:
         """
@@ -86,13 +116,13 @@ class FuzzyEngine:
         float
             Calculated impervious surface percentage
         """
-        return self._compute_single(self.impervious_sim, land_form, land_cover, membership.impervious.label)
+        return self._compute_single(self.impervious_sim, land_form, land_cover, self.memberships.impervious.label)
 
     def compute_catchment(self, land_form: int, land_cover: int) -> float:
         """Compute catchment type parameter using fuzzy inference."""
-        return self._compute_single(self.catchment_sim, land_form, land_cover, membership.catchment.label)
+        return self._compute_single(self.catchment_sim, land_form, land_cover, self.memberships.catchment.label)
 
-    def compute_all(self, land_form: int, land_cover: int) -> Dict[str, float]:
+    def compute_all(self, land_form: int, land_cover: int) -> dict[str, float]:
         """
         Compute all catchment parameters at once.
 
@@ -106,9 +136,9 @@ class FuzzyEngine:
         self._validate_inputs(land_form, land_cover)
 
         return {
-            'slope': self.compute_slope(land_form, land_cover),
-            'impervious': self.compute_impervious(land_form, land_cover),
-            'catchment': self.compute_catchment(land_form, land_cover)
+            "slope": self.compute_slope(land_form, land_cover),
+            "impervious": self.compute_impervious(land_form, land_cover),
+            "catchment": self.compute_catchment(land_form, land_cover),
         }
 
     def _compute_single(self, sim: ctrl.ControlSystemSimulation, land_form: int, land_cover: int, output_label: str) -> float:
@@ -119,8 +149,8 @@ class FuzzyEngine:
 
     def _set_inputs(self, sim: ctrl.ControlSystemSimulation, land_form: int, land_cover: int):
         """Set inputs for fuzzy simulation."""
-        sim.input[membership.land_form_type.label] = land_form
-        sim.input[membership.land_cover_type.label] = land_cover
+        sim.input[self.memberships.land_form_type.label] = land_form
+        sim.input[self.memberships.land_cover_type.label] = land_cover
 
     def _validate_inputs(self, land_form: int, land_cover: int):
         """Validate input ranges for enum values."""
@@ -138,50 +168,117 @@ class Prototype:
     from land form and land cover inputs using fuzzy logic inference.
     """
 
-    def __init__(self, land_form: categories.LandForm, land_cover: categories.LandCover, engine: FuzzyEngine = None):
+    def __init__(self, land_form: categories.LandForm, land_cover: categories.LandCover, engine: Optional[FuzzyEngine] = None):
         """
         Calculate catchment parameters for given land characteristics.
 
-        Args:
-            land_form: Land form category enum value
-            land_cover: Land cover category enum value
-            engine: FuzzyEngine instance (optional, uses global if None)
+        Parameters
+        ----------
+        land_form : LandForm
+            Land form category enum value.
+        land_cover : LandCover
+            Land cover category enum value.
+        engine : Optional[FuzzyEngine]
+            FuzzyEngine instance. If None, uses the default global engine.
         """
         # Use dependency injection or fall back to global for backward compatibility
         if engine is None:
-            engine = _default_engine
+            engine = get_default_fuzzy_engine()
+
+        # Store reference to engine for get_linguistic
+        self._engine = engine
 
         # Extract enum values and compute results
         results = engine.compute_all(land_form.value, land_cover.value)
 
         # Store results as instance attributes for backward compatibility
-        self.slope_result = results['slope']
-        self.impervious_result = results['impervious']
-        self.catchment_result = results['catchment']
+        self.slope_result = results["slope"]
+        self.impervious_result = results["impervious"]
+        self.catchment_result = results["catchment"]
 
-    @staticmethod
-    def get_linguistic(result: float, member: Memberships = membership.catchment) -> str:
+    def get_linguistic(self, result: float, member=None) -> str:
         """
         Convert numeric fuzzy result to linguistic category name.
 
-        Args:
-            result: Numeric output from fuzzy inference
-            member: Membership function to use for conversion
+        Parameters
+        ----------
+        result : float
+            Numeric output from fuzzy inference.
+        member : Optional
+            Membership function to use for conversion. Defaults to catchment.
 
-        Returns:
-            Name of the category with highest membership value
+        Returns
+        -------
+        str
+            Name of the category with highest membership value.
         """
-        populate: Dict[str, float] = {
-            key: fuzz.interp_membership(member.universe, member[key].mf, result)
-            for key in member.terms
+        if member is None:
+            member = self._engine.memberships.catchment
+
+        populate: dict[str, float] = {
+            key: fuzz.interp_membership(member.universe, member[key].mf, result) for key in member.terms
         }
         if not populate:
             raise ValueError("No terms in the membership function")
         return max(populate, key=populate.get)
 
 
-# Global engine instance for backward compatibility
-_default_engine = FuzzyEngine()
+# Cache for default fuzzy engine instance (lazy initialization)
+_default_fuzzy_engine: Optional[FuzzyEngine] = None
 
-# Legacy alias
+
+def create_fuzzy_engine(
+    memberships: Optional["Memberships"] = None, rule_engine: Optional["RuleEngine"] = None
+) -> FuzzyEngine:
+    """
+    Factory function to create a new FuzzyEngine instance.
+
+    Use this function when you need an isolated fuzzy engine instance,
+    such as in tests or when you need custom configuration.
+
+    Parameters
+    ----------
+    memberships : Optional[Memberships]
+        Memberships instance to use. If None, uses the default instance.
+    rule_engine : Optional[RuleEngine]
+        Rule engine to use. If None, uses the default engine.
+
+    Returns
+    -------
+    FuzzyEngine
+        A new FuzzyEngine instance.
+
+    Example
+    -------
+    >>> from rcg.fuzzy.memberships import create_memberships
+    >>> from rcg.fuzzy.rule_engine import create_rule_engine
+    >>> memberships = create_memberships()
+    >>> rule_engine = create_rule_engine(memberships)
+    >>> # Define rules on rule_engine...
+    >>> rule_engine.build_rule_systems()
+    >>> engine = create_fuzzy_engine(memberships, rule_engine)
+    """
+    return FuzzyEngine(memberships=memberships, rule_engine=rule_engine)
+
+
+def get_default_fuzzy_engine() -> FuzzyEngine:
+    """
+    Get the default (shared) FuzzyEngine instance.
+
+    This function provides lazy initialization of a shared fuzzy engine instance.
+    Use this for backward compatibility or when a shared instance is acceptable.
+
+    Returns
+    -------
+    FuzzyEngine
+        The shared default FuzzyEngine instance.
+    """
+    global _default_fuzzy_engine
+    if _default_fuzzy_engine is None:
+        _default_fuzzy_engine = FuzzyEngine()
+    return _default_fuzzy_engine
+
+
+# Backward compatibility aliases (deprecated - use create_fuzzy_engine() or get_default_fuzzy_engine())
+_default_engine = get_default_fuzzy_engine()
 engine = _default_engine

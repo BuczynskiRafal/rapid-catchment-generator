@@ -1,0 +1,126 @@
+{
+  "version": "1.0",
+  "description": "Fuzzy logic rules for catchment parameter calculation",
+  "rules": [
+    {
+      "name": "mountains_vegetated_on_marshes",
+      "when": {
+        "land_cover": "mountains_vegetated",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "flats_and_plateaus",
+        "impervious": "mountains_vegetated",
+        "catchment": "meadows"
+      }
+    },
+    {
+      "name": "mountains_rocky_on_marshes",
+      "when": {
+        "land_cover": "mountains_rocky",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "flats_and_plateaus",
+        "impervious": "mountains_vegetated",
+        "catchment": "meadows"
+      }
+    },
+    {
+      "name": "rural_on_marshes_and_lowlands",
+      "when": {
+        "land_cover": "rural",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "marshes_and_lowlands",
+        "impervious": "rural",
+        "catchment": "rural"
+      }
+    },
+    {
+      "name": "rural_on_flats_and_plateaus",
+      "when": {
+        "land_cover": "rural",
+        "land_form": "flats_and_plateaus"
+      },
+      "then": {
+        "slope": "flats_and_plateaus",
+        "impervious": "rural",
+        "catchment": "rural"
+      }
+    },
+    {
+      "name": "forests_low_marshes_and_lowlands",
+      "when": {
+        "land_cover": "forests",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "flats_and_plateaus",
+        "impervious": "forests",
+        "catchment": "forests"
+      }
+    },
+    {
+      "name": "urban_weak_on_marshes_and_lowlands",
+      "when": {
+        "land_cover": "urban_weakly_impervious",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "marshes_and_lowlands",
+        "impervious": "urban_weakly_impervious",
+        "catchment": "urban"
+      }
+    },
+    {
+      "name": "urban_moderate_low_marshes_and_lowlands",
+      "when": {
+        "land_cover": "urban_moderately_impervious",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "marshes_and_lowlands",
+        "impervious": "urban_moderately_impervious",
+        "catchment": "urban"
+      }
+    },
+    {
+      "name": "urban_highly_on_marshes",
+      "when": {
+        "land_cover": "urban_highly_impervious",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "marshes_and_lowlands",
+        "impervious": "urban_highly_impervious",
+        "catchment": "urban"
+      }
+    },
+    {
+      "name": "suburban_weak_on_marshes",
+      "when": {
+        "land_cover": "suburban_weakly_impervious",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "marshes_and_lowlands",
+        "impervious": "suburban_weakly_impervious",
+        "catchment": "suburban"
+      }
+    },
+    {
+      "name": "meadows_on_marshes",
+      "when": {
+        "land_cover": "meadows",
+        "land_form": "marshes_and_lowlands"
+      },
+      "then": {
+        "slope": "marshes_and_lowlands",
+        "impervious": "meadows",
+        "catchment": "meadows"
+      }
+    }
+  ]
+}

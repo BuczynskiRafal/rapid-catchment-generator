@@ -1,16 +1,19 @@
 import math
+import shutil
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Union
 from types import TracebackType
+from typing import Optional, Union
 
-import numpy as np
 import pandas as pd
 import swmmio
-
-from rcg.fuzzy.engine import Prototype
-from rcg.fuzzy.categories import LandForm, LandCover
 from swmmio.utils.modify_model import replace_inp_section
+
+from rcg.fuzzy.categories import LandCover, LandForm
+from rcg.fuzzy.engine import Prototype
 
 
 @dataclass
@@ -31,6 +34,7 @@ class SubcatchmentConfig:
     subcatchment_id : Optional[str]
         Generated unique ID
     """
+
     area: float
     land_form: Union[str, LandForm]
     land_cover: Union[str, LandCover]
@@ -55,67 +59,197 @@ class ModelParameters:
     """
     Default parameters for different land use types.
     """
-    manning_coefficients: Dict[str, Tuple[float, float]] = field(default_factory=lambda: {
-        "urban": (0.013, 0.15),
-        "suburban": (0.013, 0.24),
-        "rural": (0.013, 0.41),
-        "forests": (0.40, 0.80),
-        "meadows": (0.15, 0.41),
-        "arable": (0.06, 0.17),
-        "mountains": (0.013, 0.05),
-    })
 
-    depression_storage: Dict[str, Tuple[float, float, int]] = field(default_factory=lambda: {
-        "urban": (0.05, 0.20, 50),
-        "suburban": (0.05, 0.20, 40),
-        "rural": (0.05, 0.20, 35),
-        "forests": (0.05, 0.30, 5),
-        "meadows": (0.05, 0.20, 10),
-        "arable": (0.05, 0.20, 10),
-        "mountains": (0.05, 0.20, 10),
-    })
+    manning_coefficients: dict[str, tuple[float, float]] = field(
+        default_factory=lambda: {
+            "urban": (0.013, 0.15),
+            "suburban": (0.013, 0.24),
+            "rural": (0.013, 0.41),
+            "forests": (0.40, 0.80),
+            "meadows": (0.15, 0.41),
+            "arable": (0.06, 0.17),
+            "mountains": (0.013, 0.05),
+        }
+    )
 
-    infiltration_defaults: Dict[str, Union[float, int]] = field(default_factory=lambda: {
-        "Suction": 3.5,
-        "Ksat": 0.5,
-        "IMD": 0.25,
-        "Param4": 7,
-        "Param5": 0,
-    })
+    depression_storage: dict[str, tuple[float, float, int]] = field(
+        default_factory=lambda: {
+            "urban": (0.05, 0.20, 50),
+            "suburban": (0.05, 0.20, 40),
+            "rural": (0.05, 0.20, 35),
+            "forests": (0.05, 0.30, 5),
+            "meadows": (0.05, 0.20, 10),
+            "arable": (0.05, 0.20, 10),
+            "mountains": (0.05, 0.20, 10),
+        }
+    )
+
+    infiltration_defaults: dict[str, Union[float, int]] = field(
+        default_factory=lambda: {
+            "Suction": 3.5,
+            "Ksat": 0.5,
+            "IMD": 0.25,
+            "Param4": 7,
+            "Param5": 0,
+        }
+    )
 
 
 class BuildCatchments:
     """
     Class for creating and managing catchment areas in a SWMM model.
 
-    Attributes:
-        file_path: The file path of the SWMM input file
-        model: The SWMM model object
-        parameters: Default parameters
+    Provides backup/restore functionality for safe file operations.
+
+    Attributes
+    ----------
+    file_path : Path
+        The file path of the SWMM input file.
+    model : swmmio.Model
+        The SWMM model object.
+    parameters : ModelParameters
+        Default parameters for different land use types.
+    backup_enabled : bool
+        Whether automatic backups are enabled.
+    backup_path : Optional[Path]
+        Path to the current backup file, if any.
     """
 
-    def __init__(self, file_path: str) -> None:
+    def __init__(self, file_path: str, backup: bool = True) -> None:
         """
         Initialize with a SWMM model file.
 
-        Args:
-            file_path: Path to the SWMM input file
+        Parameters
+        ----------
+        file_path : str
+            Path to the SWMM input file.
+        backup : bool, optional
+            Whether to enable automatic backups (default: True).
         """
         self.file_path = Path(file_path)
         self.model: swmmio.Model = swmmio.Model(str(self.file_path))
         self.parameters = ModelParameters()
+        self.backup_enabled = backup
+        self.backup_path: Optional[Path] = None
+        self._backup_history: list[Path] = []
 
-    def __enter__(self) -> 'BuildCatchments':
+    def __enter__(self) -> "BuildCatchments":
+        if self.backup_enabled:
+            self._create_backup()
         return self
 
-    def __exit__(
-        self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
-    ) -> None:
+    def __exit__(self, exc_type: Optional[type], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
         if exc_type is not None:
-            print(f"Error occurred: {exc_val}")  # Simple error handling; add logging if needed
+            print(f"Error occurred: {exc_val}")
+            if self.backup_enabled and self.backup_path:
+                print(f"Backup available at: {self.backup_path}")
+
+    def _create_backup(self) -> Path:
+        """
+        Create a timestamped backup of the current INP file.
+
+        Returns
+        -------
+        Path
+            Path to the created backup file.
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_name = f"{self.file_path.stem}_backup_{timestamp}{self.file_path.suffix}"
+        backup_dir = self.file_path.parent / ".rcg_backups"
+        backup_dir.mkdir(exist_ok=True)
+
+        self.backup_path = backup_dir / backup_name
+        shutil.copy2(self.file_path, self.backup_path)
+        self._backup_history.append(self.backup_path)
+
+        return self.backup_path
+
+    def restore_backup(self, backup_path: Optional[Path] = None) -> None:
+        """
+        Restore the INP file from a backup.
+
+        Parameters
+        ----------
+        backup_path : Optional[Path]
+            Path to the backup file to restore. If None, uses the most recent backup.
+
+        Raises
+        ------
+        FileNotFoundError
+            If no backup is available or the specified backup doesn't exist.
+        """
+        restore_from = backup_path or self.backup_path
+
+        if restore_from is None:
+            raise FileNotFoundError("No backup available to restore.")
+
+        if not restore_from.exists():
+            raise FileNotFoundError(f"Backup file not found: {restore_from}")
+
+        shutil.copy2(restore_from, self.file_path)
+        # Reload the model after restoration
+        self.model = swmmio.Model(str(self.file_path))
+
+    def get_backup_history(self) -> list[Path]:
+        """
+        Get list of all backup files created during this session.
+
+        Returns
+        -------
+        List[Path]
+            List of paths to backup files.
+        """
+        return self._backup_history.copy()
+
+    def cleanup_backups(self, keep_latest: int = 1) -> int:
+        """
+        Remove old backup files, keeping only the specified number of latest backups.
+
+        Parameters
+        ----------
+        keep_latest : int
+            Number of latest backups to keep (default: 1).
+
+        Returns
+        -------
+        int
+            Number of backup files removed.
+        """
+        if not self._backup_history:
+            return 0
+
+        # Sort by modification time (newest first)
+        sorted_backups = sorted(self._backup_history, key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+
+        removed_count = 0
+        for backup in sorted_backups[keep_latest:]:
+            if backup.exists():
+                backup.unlink()
+                removed_count += 1
+                self._backup_history.remove(backup)
+
+        return removed_count
+
+    @contextmanager
+    def transaction(self) -> Generator[None, None, None]:
+        """
+        Context manager for atomic operations on the INP file.
+
+        Creates a backup before operations and restores it if an exception occurs.
+
+        Example
+        -------
+        >>> with builder.transaction():
+        ...     builder.add_subcatchment(10.0, "flats_and_plateaus", "urban_moderately_impervious")
+        ...     # If this fails, the file will be restored to its original state
+        """
+        backup = self._create_backup()
+        try:
+            yield
+        except Exception:
+            # Restore on any error
+            self.restore_backup(backup)
+            raise
 
     def save(self, output_path: Optional[Path] = None) -> None:
         """
@@ -204,7 +338,7 @@ class BuildCatchments:
 
     def _add_subarea(self, config: SubcatchmentConfig) -> None:
         """Add a new subarea to the model."""
-        populate_key = Prototype.get_linguistic(config.prototype.catchment_result)
+        populate_key = config.prototype.get_linguistic(config.prototype.catchment_result)
         manning_coeffs = self.parameters.manning_coefficients[populate_key]
         depression_params = self.parameters.depression_storage[populate_key]
 
@@ -223,7 +357,11 @@ class BuildCatchments:
     def _add_coords(self, config: SubcatchmentConfig) -> None:
         """Add coordinates for a square-shaped subcatchment."""
         side_length = math.sqrt(config.area * 10000)
-        base_x, base_y = (0, 0) if len(self.model.inp.polygons) == 0 else (self.model.inp.polygons["X"].iloc[-1], self.model.inp.polygons["Y"].iloc[-1])
+        base_x, base_y = (
+            (0, 0)
+            if len(self.model.inp.polygons) == 0
+            else (self.model.inp.polygons["X"].iloc[-1], self.model.inp.polygons["Y"].iloc[-1])
+        )
 
         coords = pd.DataFrame(
             {
@@ -243,10 +381,7 @@ class BuildCatchments:
         self.model.inp.infiltration.index.names = ["Subcatchment"]
         replace_inp_section(self.model.inp.path, "[INFILTRATION]", self.model.inp.infiltration)
 
-
-    def add_subcatchment(
-        self, area: float, land_form: Union[str, LandForm], land_cover: Union[str, LandCover]
-    ) -> None:
+    def add_subcatchment(self, area: float, land_form: Union[str, LandForm], land_cover: Union[str, LandCover]) -> None:
         """
         Add a new subcatchment to the model (for CLI/GUI use).
 
@@ -259,11 +394,7 @@ class BuildCatchments:
         land_form_enum = getattr(LandForm, land_form)
         land_cover_enum = getattr(LandCover, land_cover)
 
-        config = SubcatchmentConfig(
-            area=area,
-            land_form=land_form_enum,
-            land_cover=land_cover_enum
-        )
+        config = SubcatchmentConfig(area=area, land_form=land_form_enum, land_cover=land_cover_enum)
         config.subcatchment_id = self._get_new_subcatchment_id()
         config.prototype = Prototype(land_form=land_form_enum, land_cover=land_cover_enum)
 
