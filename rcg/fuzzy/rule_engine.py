@@ -24,13 +24,12 @@ class Condition:
 
     def to_skfuzzy(self) -> Any:
         """Convert condition to skfuzzy format."""
-        match self.variable:
-            case "land_form":
-                return membership.land_form_type[self.value.name]
-            case "land_cover":
-                return membership.land_cover_type[self.value.name]
-            case _:
-                raise ValueError(f"Unknown variable: {self.variable}")
+        if self.variable == "land_form":
+            return membership.land_form_type[self.value.name]
+        elif self.variable == "land_cover":
+            return membership.land_cover_type[self.value.name]
+        else:
+            raise ValueError(f"Unknown variable: {self.variable}")
 
 
 @dataclass
@@ -58,15 +57,14 @@ class FuzzyRule:
 
         consequence_value = self.consequences[output_type]
 
-        match output_type:
-            case "slope":
-                return membership.slope[consequence_value.value]
-            case "impervious":
-                return membership.impervious[consequence_value.value]
-            case "catchment":
-                return membership.catchment[consequence_value.value]
-            case _:
-                raise ValueError(f"Unknown output type: {output_type}")
+        if output_type == "slope":
+            return membership.slope[consequence_value.value]
+        elif output_type == "impervious":
+            return membership.impervious[consequence_value.value]
+        elif output_type == "catchment":
+            return membership.catchment[consequence_value.value]
+        else:
+            raise ValueError(f"Unknown output type: {output_type}")
 
 
 class RuleBuilder:
