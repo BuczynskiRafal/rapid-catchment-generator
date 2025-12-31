@@ -1,30 +1,60 @@
 import unittest
 from skfuzzy import control as ctrl
-from rcg.fuzzy.rules import slope_rules, impervious_rules, catchment_rules, RulesSet
+from rcg.fuzzy.rule_engine import default_engine, RuleEngine, rule, FuzzyRule
+from rcg.fuzzy.categories import LandForm, LandCover, Slope, Impervious, Catchments
 
 
-class TestSlopeRules(unittest.TestCase):
-    def setUp(self):
-        self.rule_set = RulesSet()
-        self.setup_rules = [
-            rule for rule in dir(self.rule_set) if rule.startswith("rule")
-        ]
+class TestRuleEngine(unittest.TestCase):
+    def test_slope_rules_exist(self):
+        self.assertIsInstance(default_engine.slope_rules, list)
+        self.assertGreater(len(default_engine.slope_rules), 0)
 
-    def test_slope_rules(self):
-        self.assertIsInstance(slope_rules, list)
-        self.assertIsInstance(slope_rules[0], ctrl.Rule)
-        self.assertEqual(len(self.setup_rules), len(slope_rules))
+    def test_slope_rules_are_ctrl_rules(self):
+        self.assertIsInstance(default_engine.slope_rules[0], ctrl.Rule)
 
-    def test_impervious_rules(self):
-        self.assertIsInstance(impervious_rules, list)
-        self.assertIsInstance(impervious_rules[0], ctrl.Rule)
-        self.assertEqual(len(self.setup_rules), len(impervious_rules))
+    def test_impervious_rules_exist(self):
+        self.assertIsInstance(default_engine.impervious_rules, list)
+        self.assertGreater(len(default_engine.impervious_rules), 0)
 
-    def test_catchment_rules(self):
-        self.assertIsInstance(catchment_rules, list)
-        self.assertIsInstance(catchment_rules[0], ctrl.Rule)
-        self.assertEqual(len(self.setup_rules), len(catchment_rules))
+    def test_impervious_rules_are_ctrl_rules(self):
+        self.assertIsInstance(default_engine.impervious_rules[0], ctrl.Rule)
 
-    def tearDown(self) -> None:
-        del self.rule_set
-        del self.setup_rules
+    def test_catchment_rules_exist(self):
+        self.assertIsInstance(default_engine.catchment_rules, list)
+        self.assertGreater(len(default_engine.catchment_rules), 0)
+
+    def test_catchment_rules_are_ctrl_rules(self):
+        self.assertIsInstance(default_engine.catchment_rules[0], ctrl.Rule)
+
+    def test_rule_count(self):
+        counts = default_engine.get_rule_count()
+        self.assertIn("total", counts)
+        self.assertIn("slope", counts)
+        self.assertIn("impervious", counts)
+        self.assertIn("catchment", counts)
+        self.assertGreater(counts["total"], 50)
+
+
+class TestRuleBuilder(unittest.TestCase):
+    def test_build_simple_rule(self):
+        test_rule = (
+            rule("test_rule")
+            .when(land_form=LandForm.flats_and_plateaus, land_cover=LandCover.rural)
+            .then(slope=Slope.flats_and_plateaus, impervious=Impervious.rural, catchment=Catchments.rural)
+            .build()
+        )
+        self.assertIsInstance(test_rule, FuzzyRule)
+        self.assertEqual(test_rule.name, "test_rule")
+        self.assertEqual(len(test_rule.conditions), 2)
+
+    def test_rule_requires_conditions(self):
+        with self.assertRaises(ValueError):
+            rule("empty_rule").then(slope=Slope.flats_and_plateaus).build()
+
+    def test_rule_requires_consequences(self):
+        with self.assertRaises(ValueError):
+            rule("no_consequence").when(land_form=LandForm.mountains).build()
+
+
+if __name__ == "__main__":
+    unittest.main()
