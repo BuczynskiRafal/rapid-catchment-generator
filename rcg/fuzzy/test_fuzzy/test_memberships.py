@@ -1,18 +1,13 @@
 import unittest
 
 from skfuzzy import control as ctrl
-from rcg.fuzzy.memberships import Memberships
+from rcg.fuzzy.memberships import Memberships, membership
 from rcg.fuzzy.categories import LandForm, LandCover, Slope, Impervious, Catchments
 
 
 class TestMemberships(unittest.TestCase):
     def setUp(self):
         self.memberships = Memberships()
-        self.memberships.populate_land_use()
-        self.memberships.populate_land_cover()
-        self.memberships.populate_slope()
-        self.memberships.populate_impervious()
-        self.memberships.populate_catchment()
 
     def test_membership_has_attributes(self):
         self.assertIsNotNone(self.memberships.land_form_type)
@@ -37,35 +32,35 @@ class TestMemberships(unittest.TestCase):
         self.assertEqual(self.memberships.impervious.label, "impervious")
         self.assertEqual(self.memberships.catchment.label, "catchment")
 
-    def test_membership_populate_land_use(self):
-        land_use_list = list(vars(LandForm()))
-        self.assertIsNotNone(self.memberships.land_form_type)
-        self.assertIsNotNone(self.memberships.land_form_type.universe)
-        self.assertEqual(list(self.memberships.land_form_type.terms), land_use_list)
+    def test_membership_land_form_terms(self):
+        terms = list(self.memberships.land_form_type.terms)
+        self.assertEqual(len(terms), 9)
+        self.assertIn("marshes_and_lowlands", terms)
+        self.assertIn("highest_mountains", terms)
 
-    def test_membership_populate_land_form(self):
-        land_form_list = list(vars(LandCover()))
-        self.assertIsNotNone(self.memberships.land_cover_type)
-        self.assertIsNotNone(self.memberships.land_cover_type.universe)
-        self.assertEqual(list(self.memberships.land_cover_type.terms), land_form_list)
+    def test_membership_land_cover_terms(self):
+        terms = list(self.memberships.land_cover_type.terms)
+        self.assertEqual(len(terms), 14)
+        self.assertIn("forests", terms)
+        self.assertIn("urban_highly_impervious", terms)
 
-    def test_membership_populate_slope(self):
-        slope_list = list(vars(Slope()))
-        self.assertIsNotNone(self.memberships.slope)
-        self.assertIsNotNone(self.memberships.slope.universe)
-        self.assertEqual(list(self.memberships.slope.terms), slope_list)
+    def test_membership_slope_terms(self):
+        terms = list(self.memberships.slope.terms)
+        self.assertEqual(len(terms), 9)
 
-    def test_membership_populate_impervious(self):
-        impervious_list = list(vars(Impervious()))
-        self.assertIsNotNone(self.memberships.impervious)
-        self.assertIsNotNone(self.memberships.impervious.universe)
-        self.assertEqual(list(self.memberships.impervious.terms), impervious_list)
+    def test_membership_impervious_terms(self):
+        terms = list(self.memberships.impervious.terms)
+        self.assertEqual(len(terms), 12)
 
-    def test_membership_populate_catchment(self):
-        catchment_list = list(vars(Catchments()))
-        self.assertIsNotNone(self.memberships.catchment)
-        self.assertIsNotNone(self.memberships.catchment.universe)
-        self.assertEqual(list(self.memberships.catchment.terms), catchment_list)
+    def test_membership_catchment_terms(self):
+        terms = list(self.memberships.catchment.terms)
+        self.assertEqual(len(terms), 7)
+        self.assertIn("urban", terms)
+        self.assertIn("mountains", terms)
+
+    def test_global_membership_instance(self):
+        self.assertIsNotNone(membership)
+        self.assertIsInstance(membership, Memberships)
 
     def tearDown(self) -> None:
         del self.memberships
