@@ -1,18 +1,19 @@
 import math
 import shutil
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Union, Generator, List
 from types import TracebackType
+from typing import Optional, Union
 
 import pandas as pd
 import swmmio
-
-from rcg.fuzzy.engine import Prototype
-from rcg.fuzzy.categories import LandForm, LandCover
 from swmmio.utils.modify_model import replace_inp_section
+
+from rcg.fuzzy.categories import LandCover, LandForm
+from rcg.fuzzy.engine import Prototype
 
 
 @dataclass
@@ -33,6 +34,7 @@ class SubcatchmentConfig:
     subcatchment_id : Optional[str]
         Generated unique ID
     """
+
     area: float
     land_form: Union[str, LandForm]
     land_cover: Union[str, LandCover]
@@ -57,33 +59,40 @@ class ModelParameters:
     """
     Default parameters for different land use types.
     """
-    manning_coefficients: Dict[str, Tuple[float, float]] = field(default_factory=lambda: {
-        "urban": (0.013, 0.15),
-        "suburban": (0.013, 0.24),
-        "rural": (0.013, 0.41),
-        "forests": (0.40, 0.80),
-        "meadows": (0.15, 0.41),
-        "arable": (0.06, 0.17),
-        "mountains": (0.013, 0.05),
-    })
 
-    depression_storage: Dict[str, Tuple[float, float, int]] = field(default_factory=lambda: {
-        "urban": (0.05, 0.20, 50),
-        "suburban": (0.05, 0.20, 40),
-        "rural": (0.05, 0.20, 35),
-        "forests": (0.05, 0.30, 5),
-        "meadows": (0.05, 0.20, 10),
-        "arable": (0.05, 0.20, 10),
-        "mountains": (0.05, 0.20, 10),
-    })
+    manning_coefficients: dict[str, tuple[float, float]] = field(
+        default_factory=lambda: {
+            "urban": (0.013, 0.15),
+            "suburban": (0.013, 0.24),
+            "rural": (0.013, 0.41),
+            "forests": (0.40, 0.80),
+            "meadows": (0.15, 0.41),
+            "arable": (0.06, 0.17),
+            "mountains": (0.013, 0.05),
+        }
+    )
 
-    infiltration_defaults: Dict[str, Union[float, int]] = field(default_factory=lambda: {
-        "Suction": 3.5,
-        "Ksat": 0.5,
-        "IMD": 0.25,
-        "Param4": 7,
-        "Param5": 0,
-    })
+    depression_storage: dict[str, tuple[float, float, int]] = field(
+        default_factory=lambda: {
+            "urban": (0.05, 0.20, 50),
+            "suburban": (0.05, 0.20, 40),
+            "rural": (0.05, 0.20, 35),
+            "forests": (0.05, 0.30, 5),
+            "meadows": (0.05, 0.20, 10),
+            "arable": (0.05, 0.20, 10),
+            "mountains": (0.05, 0.20, 10),
+        }
+    )
+
+    infiltration_defaults: dict[str, Union[float, int]] = field(
+        default_factory=lambda: {
+            "Suction": 3.5,
+            "Ksat": 0.5,
+            "IMD": 0.25,
+            "Param4": 7,
+            "Param5": 0,
+        }
+    )
 
 
 class BuildCatchments:
@@ -122,19 +131,14 @@ class BuildCatchments:
         self.parameters = ModelParameters()
         self.backup_enabled = backup
         self.backup_path: Optional[Path] = None
-        self._backup_history: List[Path] = []
+        self._backup_history: list[Path] = []
 
-    def __enter__(self) -> 'BuildCatchments':
+    def __enter__(self) -> "BuildCatchments":
         if self.backup_enabled:
             self._create_backup()
         return self
 
-    def __exit__(
-        self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
-    ) -> None:
+    def __exit__(self, exc_type: Optional[type], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
         if exc_type is not None:
             print(f"Error occurred: {exc_val}")
             if self.backup_enabled and self.backup_path:
@@ -186,7 +190,7 @@ class BuildCatchments:
         # Reload the model after restoration
         self.model = swmmio.Model(str(self.file_path))
 
-    def get_backup_history(self) -> List[Path]:
+    def get_backup_history(self) -> list[Path]:
         """
         Get list of all backup files created during this session.
 
@@ -215,11 +219,7 @@ class BuildCatchments:
             return 0
 
         # Sort by modification time (newest first)
-        sorted_backups = sorted(
-            self._backup_history,
-            key=lambda p: p.stat().st_mtime if p.exists() else 0,
-            reverse=True
-        )
+        sorted_backups = sorted(self._backup_history, key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
 
         removed_count = 0
         for backup in sorted_backups[keep_latest:]:
@@ -357,7 +357,11 @@ class BuildCatchments:
     def _add_coords(self, config: SubcatchmentConfig) -> None:
         """Add coordinates for a square-shaped subcatchment."""
         side_length = math.sqrt(config.area * 10000)
-        base_x, base_y = (0, 0) if len(self.model.inp.polygons) == 0 else (self.model.inp.polygons["X"].iloc[-1], self.model.inp.polygons["Y"].iloc[-1])
+        base_x, base_y = (
+            (0, 0)
+            if len(self.model.inp.polygons) == 0
+            else (self.model.inp.polygons["X"].iloc[-1], self.model.inp.polygons["Y"].iloc[-1])
+        )
 
         coords = pd.DataFrame(
             {
@@ -377,10 +381,7 @@ class BuildCatchments:
         self.model.inp.infiltration.index.names = ["Subcatchment"]
         replace_inp_section(self.model.inp.path, "[INFILTRATION]", self.model.inp.infiltration)
 
-
-    def add_subcatchment(
-        self, area: float, land_form: Union[str, LandForm], land_cover: Union[str, LandCover]
-    ) -> None:
+    def add_subcatchment(self, area: float, land_form: Union[str, LandForm], land_cover: Union[str, LandCover]) -> None:
         """
         Add a new subcatchment to the model (for CLI/GUI use).
 
@@ -393,11 +394,7 @@ class BuildCatchments:
         land_form_enum = getattr(LandForm, land_form)
         land_cover_enum = getattr(LandCover, land_cover)
 
-        config = SubcatchmentConfig(
-            area=area,
-            land_form=land_form_enum,
-            land_cover=land_cover_enum
-        )
+        config = SubcatchmentConfig(area=area, land_form=land_form_enum, land_cover=land_cover_enum)
         config.subcatchment_id = self._get_new_subcatchment_id()
         config.prototype = Prototype(land_form=land_form_enum, land_cover=land_cover_enum)
 

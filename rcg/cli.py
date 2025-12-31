@@ -1,13 +1,13 @@
 """Command-line interface for Rapid Catchment Generator."""
+
 import argparse
 import logging
 import sys
-from typing import Tuple
 
-from .fuzzy.categories import LandForm, LandCover
+from .fuzzy.categories import LandCover, LandForm
 from .inp_manage.inp import BuildCatchments
-from .validation import validate_file_path, validate_area, validate_land_form, validate_land_cover
-from .logging_config import setup_logging as setup_central_logging, get_logger
+from .logging_config import setup_logging as setup_central_logging
+from .validation import validate_area, validate_file_path, validate_land_cover, validate_land_form
 
 
 def setup_logging(verbose: bool = False) -> logging.Logger:
@@ -42,49 +42,30 @@ def create_parser() -> argparse.ArgumentParser:
         %(prog)s model.inp --area 2.1 --land-form mountains --land-cover forests --verbose
         %(prog)s --list-options
 
-    Land Form Options (sorted): {', '.join(all_land_forms[:5])}...
-    Land Cover Options (sorted): {', '.join(all_land_covers[:5])}...
+    Land Form Options (sorted): {", ".join(all_land_forms[:5])}...
+    Land Cover Options (sorted): {", ".join(all_land_covers[:5])}...
     (use --list-options for full lists)
-    """
+    """,
+    )
+
+    parser.add_argument("input_file", type=validate_file_path, help="Path to the SWMM input (.inp) file")
+
+    parser.add_argument(
+        "--area", type=validate_area, required=True, help="Area of the subcatchment in hectares (ha), e.g., 5.5"
     )
 
     parser.add_argument(
-        'input_file',
-        type=validate_file_path,
-        help='Path to the SWMM input (.inp) file'
+        "--land-form", type=validate_land_form, required=True, help="Land form type (use --list-options for choices)"
     )
 
     parser.add_argument(
-        '--area',
-        type=validate_area,
-        required=True,
-        help='Area of the subcatchment in hectares (ha), e.g., 5.5'
+        "--land-cover", type=validate_land_cover, required=True, help="Land cover type (use --list-options for choices)"
     )
 
-    parser.add_argument(
-        '--land-form',
-        type=validate_land_form,
-        required=True,
-        help='Land form type (use --list-options for choices)'
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
 
     parser.add_argument(
-        '--land-cover',
-        type=validate_land_cover,
-        required=True,
-        help='Land cover type (use --list-options for choices)'
-    )
-
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose logging'
-    )
-
-    parser.add_argument(
-        '--list-options',
-        action='store_true',
-        help='List all available land form and cover options (sorted alphabetically)'
+        "--list-options", action="store_true", help="List all available land form and cover options (sorted alphabetically)"
     )
 
     return parser
@@ -102,14 +83,12 @@ def list_options() -> None:
 
 
 def add_subcatchment(
-    model: BuildCatchments,
-    area: float,
-    land_form: LandForm,
-    land_cover: LandCover,
-    logger: logging.Logger
+    model: BuildCatchments, area: float, land_form: LandForm, land_cover: LandCover, logger: logging.Logger
 ) -> None:
     """Add subcatchment to the model with logging."""
-    logger.info(f"Starting subcatchment generation: Area={area:.2f} ha, Land form={land_form.name}, Land cover={land_cover.name}")
+    logger.info(
+        f"Starting subcatchment generation: Area={area:.2f} ha, Land form={land_form.name}, Land cover={land_cover.name}"
+    )
 
     try:
         model.add_subcatchment(area, land_form, land_cover)
@@ -119,7 +98,7 @@ def add_subcatchment(
         raise
 
 
-def parse_args() -> Tuple[argparse.Namespace, argparse.ArgumentParser]:
+def parse_args() -> tuple[argparse.Namespace, argparse.ArgumentParser]:
     """Parse command-line arguments."""
     parser = create_parser()
     return parser.parse_args(), parser
@@ -139,13 +118,7 @@ def main() -> int:
         logger.info(f"Loading SWMM model: {args.input_file}")
         model = BuildCatchments(str(args.input_file))
 
-        add_subcatchment(
-            model=model,
-            area=args.area,
-            land_form=args.land_form,
-            land_cover=args.land_cover,
-            logger=logger
-        )
+        add_subcatchment(model=model, area=args.area, land_form=args.land_form, land_cover=args.land_cover, logger=logger)
 
         logger.info("Process completed successfully")
         return 0

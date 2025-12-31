@@ -4,10 +4,11 @@ Configuration loader for RCG.
 This module provides utilities for loading JSON configuration files,
 including rules and default parameters.
 """
+
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any, Optional
 
 from rcg.exceptions import ConfigurationError
 
@@ -26,9 +27,10 @@ class RuleConfig:
     consequences : Dict[str, str]
         Mapping of output types to consequence values (slope, impervious, catchment).
     """
+
     name: str
-    conditions: Dict[str, str]
-    consequences: Dict[str, str]
+    conditions: dict[str, str]
+    consequences: dict[str, str]
 
 
 @dataclass
@@ -47,10 +49,11 @@ class DefaultsConfig:
     validation_limits : Dict[str, Any]
         Validation limits for input parameters.
     """
-    manning_coefficients: Dict[str, Tuple[float, float]] = field(default_factory=dict)
-    depression_storage: Dict[str, Tuple[float, float, int]] = field(default_factory=dict)
-    infiltration_defaults: Dict[str, Any] = field(default_factory=dict)
-    validation_limits: Dict[str, Any] = field(default_factory=dict)
+
+    manning_coefficients: dict[str, tuple[float, float]] = field(default_factory=dict)
+    depression_storage: dict[str, tuple[float, float, int]] = field(default_factory=dict)
+    infiltration_defaults: dict[str, Any] = field(default_factory=dict)
+    validation_limits: dict[str, Any] = field(default_factory=dict)
 
 
 class ConfigLoader:
@@ -72,7 +75,7 @@ class ConfigLoader:
     """
 
     _instance: Optional["ConfigLoader"] = None
-    _rules_cache: Optional[List[RuleConfig]] = None
+    _rules_cache: Optional[list[RuleConfig]] = None
     _defaults_cache: Optional[DefaultsConfig] = None
 
     def __new__(cls, config_dir: Optional[Path] = None) -> "ConfigLoader":
@@ -100,7 +103,7 @@ class ConfigLoader:
         self.config_dir = config_dir
         self._initialized = True
 
-    def load_rules(self, force_reload: bool = False) -> List[RuleConfig]:
+    def load_rules(self, force_reload: bool = False) -> list[RuleConfig]:
         """
         Load fuzzy rules from configuration.
 
@@ -129,33 +132,20 @@ class ConfigLoader:
             return []
 
         try:
-            with open(rules_path, "r", encoding="utf-8") as f:
+            with open(rules_path, encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as e:
-            raise ConfigurationError(
-                f"Invalid JSON in rules file: {e}",
-                config_file=str(rules_path)
-            )
-        except IOError as e:
-            raise ConfigurationError(
-                f"Cannot read rules file: {e}",
-                config_file=str(rules_path)
-            )
+            raise ConfigurationError(f"Invalid JSON in rules file: {e}", config_file=str(rules_path)) from e
+        except OSError as e:
+            raise ConfigurationError(f"Cannot read rules file: {e}", config_file=str(rules_path)) from e
 
         rules = []
         for rule_data in data.get("rules", []):
             try:
-                rule = RuleConfig(
-                    name=rule_data["name"],
-                    conditions=rule_data["when"],
-                    consequences=rule_data["then"]
-                )
+                rule = RuleConfig(name=rule_data["name"], conditions=rule_data["when"], consequences=rule_data["then"])
                 rules.append(rule)
             except KeyError as e:
-                raise ConfigurationError(
-                    f"Missing required field in rule: {e}",
-                    config_file=str(rules_path)
-                )
+                raise ConfigurationError(f"Missing required field in rule: {e}", config_file=str(rules_path)) from e
 
         self._rules_cache = rules
         return rules
@@ -189,18 +179,12 @@ class ConfigLoader:
             return DefaultsConfig()
 
         try:
-            with open(defaults_path, "r", encoding="utf-8") as f:
+            with open(defaults_path, encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as e:
-            raise ConfigurationError(
-                f"Invalid JSON in defaults file: {e}",
-                config_file=str(defaults_path)
-            )
-        except IOError as e:
-            raise ConfigurationError(
-                f"Cannot read defaults file: {e}",
-                config_file=str(defaults_path)
-            )
+            raise ConfigurationError(f"Invalid JSON in defaults file: {e}", config_file=str(defaults_path)) from e
+        except OSError as e:
+            raise ConfigurationError(f"Cannot read defaults file: {e}", config_file=str(defaults_path)) from e
 
         # Convert list values to tuples for manning coefficients and depression storage
         manning = {}
@@ -217,7 +201,7 @@ class ConfigLoader:
             manning_coefficients=manning,
             depression_storage=depression,
             infiltration_defaults=data.get("infiltration_defaults", {}),
-            validation_limits=data.get("validation_limits", {})
+            validation_limits=data.get("validation_limits", {}),
         )
 
         self._defaults_cache = defaults
@@ -231,7 +215,8 @@ class ConfigLoader:
 
 # Module-level convenience functions
 
-def load_rules_config(config_dir: Optional[Path] = None) -> List[RuleConfig]:
+
+def load_rules_config(config_dir: Optional[Path] = None) -> list[RuleConfig]:
     """
     Load fuzzy rules from configuration.
 

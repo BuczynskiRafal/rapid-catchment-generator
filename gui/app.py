@@ -20,6 +20,7 @@ def get_help_file_path():
 
 class Frame(tk.Frame):
     """Custom frame with styling"""
+
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.configure(bg="#faf8f3")
@@ -47,85 +48,83 @@ class RcgApp:
 
     def setup_styles(self):
         self.style = ttk.Style()
-        self.style.theme_use('clam')
+        self.style.theme_use("clam")
 
         # Force theme to respect our colors
-        self.root.option_add('*TButton*background', '#d97706')
-        self.root.option_add('*TButton*foreground', 'white')
+        self.root.option_add("*TButton*background", "#d97706")
+        self.root.option_add("*TButton*foreground", "white")
 
         # Configure Claude.ai inspired styles
-        self.style.configure('Title.TLabel',
-                           font=('Segoe UI', 20, 'bold'),
-                           background="#faf8f3",
-                           foreground="#2f1b14")
+        self.style.configure("Title.TLabel", font=("Segoe UI", 20, "bold"), background="#faf8f3", foreground="#2f1b14")
 
-        self.style.configure('Subtitle.TLabel',
-                           font=('Segoe UI', 10),
-                           background="#faf8f3",
-                           foreground="#8b7355")
+        self.style.configure("Subtitle.TLabel", font=("Segoe UI", 10), background="#faf8f3", foreground="#8b7355")
 
-        self.style.configure('CustomStyle.TLabel',
-                           font=('Segoe UI', 11),
-                           background="#faf8f3",
-                           foreground="#5d4e37",
-                           padding=(0, 5))
+        self.style.configure(
+            "CustomStyle.TLabel", font=("Segoe UI", 11), background="#faf8f3", foreground="#5d4e37", padding=(0, 5)
+        )
 
-        self.style.configure('CustomStyle.TCombobox',
-                           fieldbackground="white",
-                           borderwidth=1,
-                           relief="solid",
-                           padding=(8, 8))
+        self.style.configure("CustomStyle.TCombobox", fieldbackground="white", borderwidth=1, relief="solid", padding=(8, 8))
 
-        self.style.configure('CustomStyle.TEntry',
-                           fieldbackground="white",
-                           borderwidth=1,
-                           relief="solid",
-                           padding=(8, 8))
+        self.style.configure("CustomStyle.TEntry", fieldbackground="white", borderwidth=1, relief="solid", padding=(8, 8))
 
-        self.style.configure('Primary.TButton',
-                           font=('Segoe UI', 11, 'bold'),
-                           padding=(20, 12),
-                           background="#d97706",
-                           foreground="#ffffff",
-                           borderwidth=0,
-                           relief="flat",
-                           focuscolor="none")
+        self.style.configure(
+            "Primary.TButton",
+            font=("Segoe UI", 11, "bold"),
+            padding=(20, 12),
+            background="#d97706",
+            foreground="#ffffff",
+            borderwidth=0,
+            relief="flat",
+            focuscolor="none",
+        )
 
-        self.style.configure('Success.TButton',
-                           font=('Segoe UI', 11, 'bold'),
-                           padding=(20, 12),
-                           background="#2f9e44",
-                           foreground="white",
-                           borderwidth=0,
-                           relief="flat",
-                           focuscolor="none")
+        self.style.configure(
+            "Success.TButton",
+            font=("Segoe UI", 11, "bold"),
+            padding=(20, 12),
+            background="#2f9e44",
+            foreground="white",
+            borderwidth=0,
+            relief="flat",
+            focuscolor="none",
+        )
 
-        self.style.configure('Info.TButton',
-                           font=('Segoe UI', 10),
-                           padding=(15, 12),
-                           background="#a78b5c",
-                           foreground="white",
-                           borderwidth=0,
-                           relief="flat",
-                           focuscolor="none")
+        self.style.configure(
+            "Info.TButton",
+            font=("Segoe UI", 10),
+            padding=(15, 12),
+            background="#a78b5c",
+            foreground="white",
+            borderwidth=0,
+            relief="flat",
+            focuscolor="none",
+        )
 
         # Map colors for hover effects - Claude.ai inspired
-        self.style.map('Primary.TButton',
-                      background=[('active', '#228be6'), ('!active', '#228be6')],
-                      foreground=[('active', '#ffffff'), ('!active', '#ffffff')])
-        self.style.map('Success.TButton',
-                      background=[('active', '#2f9e44'), ('!active', '#2f9e44')],
-                      foreground=[('active', 'white'), ('!active', 'white')])
-        self.style.map('Info.TButton',
-                      background=[('active', '#fab005'), ('!active', '#fab005')],
-                      foreground=[('active', 'white'), ('!active', 'white')])
+        self.style.map(
+            "Primary.TButton",
+            background=[("active", "#228be6"), ("!active", "#228be6")],
+            foreground=[("active", "#ffffff"), ("!active", "#ffffff")],
+        )
+        self.style.map(
+            "Success.TButton",
+            background=[("active", "#2f9e44"), ("!active", "#2f9e44")],
+            foreground=[("active", "white"), ("!active", "white")],
+        )
+        self.style.map(
+            "Info.TButton",
+            background=[("active", "#fab005"), ("!active", "#fab005")],
+            foreground=[("active", "white"), ("!active", "white")],
+        )
 
         # Fix combobox - remove all text selection highlighting
-        self.style.map('CustomStyle.TCombobox',
-                      selectbackground=[('readonly', 'white'), ('!readonly', 'white')],
-                      selectforeground=[('readonly', '#5d4e37'), ('!readonly', '#5d4e37')],
-                      fieldbackground=[('readonly', 'white'), ('!readonly', 'white')],
-                      highlightcolor=[('readonly', 'white'), ('!readonly', 'white')])
+        self.style.map(
+            "CustomStyle.TCombobox",
+            selectbackground=[("readonly", "white"), ("!readonly", "white")],
+            selectforeground=[("readonly", "#5d4e37"), ("!readonly", "#5d4e37")],
+            fieldbackground=[("readonly", "white"), ("!readonly", "white")],
+            highlightcolor=[("readonly", "white"), ("!readonly", "white")],
+        )
 
     def create_widgets(self):
         main_frame = Frame(self.root)
@@ -154,7 +153,7 @@ class RcgApp:
             textvariable=self.land_cover_var,
             values=land_cover_values,
             style="CustomStyle.TCombobox",
-            state="readonly"
+            state="readonly",
         )
         land_cover_combobox.pack(fill="x", pady=(5, 20))
 
@@ -167,7 +166,7 @@ class RcgApp:
             textvariable=self.land_form_var,
             values=land_form_values,
             style="CustomStyle.TCombobox",
-            state="readonly"
+            state="readonly",
         )
         land_form_combobox.pack(fill="x", pady=(5, 20))
 
@@ -188,19 +187,11 @@ class RcgApp:
 
         self.selected_file_var = tk.StringVar()
         self.selected_file_entry = ttk.Entry(
-            file_select_frame,
-            textvariable=self.selected_file_var,
-            style="CustomStyle.TEntry",
-            state="readonly"
+            file_select_frame, textvariable=self.selected_file_var, style="CustomStyle.TEntry", state="readonly"
         )
         self.selected_file_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
-        choose_file_button = ttk.Button(
-            file_select_frame,
-            text="Browse",
-            command=self.choose_file,
-            style="Primary.TButton"
-        )
+        choose_file_button = ttk.Button(file_select_frame, text="Browse", command=self.choose_file, style="Primary.TButton")
         choose_file_button.pack(side="right")
 
         # Action buttons section
@@ -215,13 +206,10 @@ class RcgApp:
         )
         run_button.pack(fill="x", pady=(0, 10))
 
-        help_button = ttk.Button(
-            button_frame,
-            text="Help & Documentation",
-            command=self.show_help,
-            style="Primary.TButton"
+        help_button = ttk.Button(button_frame, text="Help & Documentation", command=self.show_help, style="Primary.TButton")
+        help_button.pack(
+            fill="x",
         )
-        help_button.pack(fill="x",)
 
     def create_input_group(self, parent, text, row):
         label = ttk.Label(parent, text=text, style="CustomStyle.TLabel")
@@ -302,13 +290,13 @@ The application will generate subcatchments with appropriate parameters based on
             text_frame,
             wrap="word",
             yscrollcommand=scrollbar.set,
-            font=('Segoe UI', 10),
+            font=("Segoe UI", 10),
             bg="#ffffff",
             fg="#5d4e37",
             relief="flat",
             borderwidth=1,
             padx=15,
-            pady=15
+            pady=15,
         )
         help_text.insert(tk.END, text)
         help_text.config(state="disabled")
@@ -324,10 +312,7 @@ The application will generate subcatchments with appropriate parameters based on
         if file_path:
             file_extension = os.path.splitext(file_path)[1]
             if file_extension.lower() != ".inp":
-                messagebox.showerror(
-                    "Invalid File Type",
-                    "Please select a file with the '.inp' extension."
-                )
+                messagebox.showerror("Invalid File Type", "Please select a file with the '.inp' extension.")
                 return
 
             self.selected_file_var.set(os.path.basename(file_path))
@@ -386,7 +371,7 @@ The application will generate subcatchments with appropriate parameters based on
                 f"Area: {area} ha\n"
                 f"Land Cover: {land_cover_str.replace('_', ' ').title()}\n"
                 f"Land Form: {land_form_str.replace('_', ' ').title()}\n"
-                f"File: {os.path.basename(self.file_path)}"
+                f"File: {os.path.basename(self.file_path)}",
             )
         except Exception as e:
             messagebox.showerror("Simulation Error", f"An error occurred during simulation:\n\n{str(e)}")

@@ -4,12 +4,12 @@ Centralized logging configuration for RCG.
 This module provides a unified logging setup for the rapid-catchment-generator
 project, ensuring consistent log formatting and handling across all modules.
 """
+
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional
-from logging.handlers import RotatingFileHandler
-
 
 # Default log format
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -26,7 +26,7 @@ def setup_logging(
     log_format: str = DEFAULT_FORMAT,
     date_format: str = DEFAULT_DATE_FORMAT,
     max_bytes: int = 10 * 1024 * 1024,  # 10 MB
-    backup_count: int = 5
+    backup_count: int = 5,
 ) -> logging.Logger:
     """
     Set up centralized logging configuration.
@@ -86,12 +86,7 @@ def setup_logging(
         log_file = Path(log_file)
         log_file.parent.mkdir(parents=True, exist_ok=True)
 
-        file_handler = RotatingFileHandler(
-            log_file,
-            maxBytes=max_bytes,
-            backupCount=backup_count,
-            encoding="utf-8"
-        )
+        file_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8")
         file_handler.setLevel(level)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

@@ -1,5 +1,7 @@
 import unittest
+
 from skfuzzy.control import ControlSystem, ControlSystemSimulation
+
 from rcg.fuzzy import categories
 from rcg.fuzzy.engine import FuzzyEngine, Prototype, create_fuzzy_engine
 from rcg.fuzzy.memberships import create_memberships, get_default_memberships
@@ -51,9 +53,9 @@ class TestFuzzyEngine(unittest.TestCase):
 
     def test_compute_all(self):
         results = self.engine.compute_all(2, 10)
-        self.assertIn('slope', results)
-        self.assertIn('impervious', results)
-        self.assertIn('catchment', results)
+        self.assertIn("slope", results)
+        self.assertIn("impervious", results)
+        self.assertIn("catchment", results)
 
     def tearDown(self) -> None:
         del self.engine
@@ -86,9 +88,7 @@ class TestPrototype(unittest.TestCase):
 
     def test_get_linguistic(self):
         # Use instance method instead of static method
-        result = self.prototype.get_linguistic(
-            result=self.prototype.catchment_result
-        )
+        result = self.prototype.get_linguistic(result=self.prototype.catchment_result)
         self.assertIsNotNone(result)
         self.assertIsInstance(result, str)
         self.assertIn(result, categories.Catchments.get_all_categories())
@@ -96,13 +96,9 @@ class TestPrototype(unittest.TestCase):
     def test_get_linguistic_with_custom_member(self):
         # Test with explicit member parameter
         memberships = get_default_memberships()
-        result = self.prototype.get_linguistic(
-            result=self.prototype.catchment_result,
-            member=memberships.catchment
-        )
+        result = self.prototype.get_linguistic(result=self.prototype.catchment_result, member=memberships.catchment)
         self.assertIsNotNone(result)
         self.assertIsInstance(result, str)
-
 
     def tearDown(self) -> None:
         del self.prototype
@@ -124,9 +120,7 @@ class TestDependencyInjection(unittest.TestCase):
     def test_prototype_with_custom_engine(self):
         custom_engine = create_fuzzy_engine()
         prototype = Prototype(
-            land_form=categories.LandForm.flats_and_plateaus,
-            land_cover=categories.LandCover.rural,
-            engine=custom_engine
+            land_form=categories.LandForm.flats_and_plateaus, land_cover=categories.LandCover.rural, engine=custom_engine
         )
         self.assertIsNotNone(prototype.slope_result)
 

@@ -4,6 +4,7 @@ Shared pytest fixtures for RCG tests.
 This module provides reusable fixtures for testing the rapid-catchment-generator
 project, including isolated instances for dependency injection testing.
 """
+
 import shutil
 import tempfile
 from collections.abc import Generator
@@ -47,6 +48,7 @@ def clean_memberships():
         A new isolated Memberships instance.
     """
     from rcg.fuzzy.memberships import create_memberships
+
     return create_memberships()
 
 
@@ -69,6 +71,7 @@ def clean_rule_engine(clean_memberships):
         A new isolated RuleEngine instance.
     """
     from rcg.fuzzy.rule_engine import create_rule_engine
+
     return create_rule_engine(memberships=clean_memberships)
 
 
@@ -138,6 +141,7 @@ def sample_land_form():
         A sample LandForm enum value.
     """
     from rcg.fuzzy.categories import LandForm
+
     return LandForm.flats_and_plateaus
 
 
@@ -152,6 +156,7 @@ def sample_land_cover():
         A sample LandCover enum value.
     """
     from rcg.fuzzy.categories import LandCover
+
     return LandCover.rural
 
 
@@ -171,6 +176,7 @@ def build_catchments_with_backup(temp_inp_file):
         A BuildCatchments instance with backup enabled.
     """
     from rcg.inp_manage.inp import BuildCatchments
+
     return BuildCatchments(str(temp_inp_file), backup=True)
 
 
@@ -190,4 +196,5 @@ def build_catchments_without_backup(temp_inp_file):
         A BuildCatchments instance with backup disabled.
     """
     from rcg.inp_manage.inp import BuildCatchments
+
     return BuildCatchments(str(temp_inp_file), backup=False)

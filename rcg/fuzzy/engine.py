@@ -6,9 +6,12 @@ impervious surface percentage, and catchment type based on land form and land co
 
 Supports dependency injection for memberships and rule engine to enable isolated testing.
 """
+
+from typing import TYPE_CHECKING, Optional
+
 import skfuzzy as fuzz
-from typing import Dict, Optional, TYPE_CHECKING
 from skfuzzy import control as ctrl
+
 from rcg.fuzzy import categories
 
 if TYPE_CHECKING:
@@ -43,11 +46,7 @@ class FuzzyEngine:
         The memberships instance used for fuzzy computations.
     """
 
-    def __init__(
-        self,
-        memberships: Optional["Memberships"] = None,
-        rule_engine: Optional["RuleEngine"] = None
-    ):
+    def __init__(self, memberships: Optional["Memberships"] = None, rule_engine: Optional["RuleEngine"] = None):
         """
         Initialize fuzzy control systems for catchment parameter calculation.
 
@@ -64,11 +63,13 @@ class FuzzyEngine:
         # Load dependencies
         if memberships is None:
             from rcg.fuzzy.memberships import get_default_memberships
+
             memberships = get_default_memberships()
         self.memberships = memberships
 
         if rule_engine is None:
             from .rule_definitions import default_engine
+
             rule_engine = default_engine
 
         # Create control systems from rule definitions
@@ -121,7 +122,7 @@ class FuzzyEngine:
         """Compute catchment type parameter using fuzzy inference."""
         return self._compute_single(self.catchment_sim, land_form, land_cover, self.memberships.catchment.label)
 
-    def compute_all(self, land_form: int, land_cover: int) -> Dict[str, float]:
+    def compute_all(self, land_form: int, land_cover: int) -> dict[str, float]:
         """
         Compute all catchment parameters at once.
 
@@ -135,9 +136,9 @@ class FuzzyEngine:
         self._validate_inputs(land_form, land_cover)
 
         return {
-            'slope': self.compute_slope(land_form, land_cover),
-            'impervious': self.compute_impervious(land_form, land_cover),
-            'catchment': self.compute_catchment(land_form, land_cover)
+            "slope": self.compute_slope(land_form, land_cover),
+            "impervious": self.compute_impervious(land_form, land_cover),
+            "catchment": self.compute_catchment(land_form, land_cover),
         }
 
     def _compute_single(self, sim: ctrl.ControlSystemSimulation, land_form: int, land_cover: int, output_label: str) -> float:
@@ -167,12 +168,7 @@ class Prototype:
     from land form and land cover inputs using fuzzy logic inference.
     """
 
-    def __init__(
-        self,
-        land_form: categories.LandForm,
-        land_cover: categories.LandCover,
-        engine: Optional[FuzzyEngine] = None
-    ):
+    def __init__(self, land_form: categories.LandForm, land_cover: categories.LandCover, engine: Optional[FuzzyEngine] = None):
         """
         Calculate catchment parameters for given land characteristics.
 
@@ -196,9 +192,9 @@ class Prototype:
         results = engine.compute_all(land_form.value, land_cover.value)
 
         # Store results as instance attributes for backward compatibility
-        self.slope_result = results['slope']
-        self.impervious_result = results['impervious']
-        self.catchment_result = results['catchment']
+        self.slope_result = results["slope"]
+        self.impervious_result = results["impervious"]
+        self.catchment_result = results["catchment"]
 
     def get_linguistic(self, result: float, member=None) -> str:
         """
@@ -219,9 +215,8 @@ class Prototype:
         if member is None:
             member = self._engine.memberships.catchment
 
-        populate: Dict[str, float] = {
-            key: fuzz.interp_membership(member.universe, member[key].mf, result)
-            for key in member.terms
+        populate: dict[str, float] = {
+            key: fuzz.interp_membership(member.universe, member[key].mf, result) for key in member.terms
         }
         if not populate:
             raise ValueError("No terms in the membership function")
@@ -233,8 +228,7 @@ _default_fuzzy_engine: Optional[FuzzyEngine] = None
 
 
 def create_fuzzy_engine(
-    memberships: Optional["Memberships"] = None,
-    rule_engine: Optional["RuleEngine"] = None
+    memberships: Optional["Memberships"] = None, rule_engine: Optional["RuleEngine"] = None
 ) -> FuzzyEngine:
     """
     Factory function to create a new FuzzyEngine instance.

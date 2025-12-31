@@ -20,6 +20,7 @@ class RCGError(Exception):
     ... except RCGError as e:
     ...     print(f"RCG error: {e}")
     """
+
     pass
 
 

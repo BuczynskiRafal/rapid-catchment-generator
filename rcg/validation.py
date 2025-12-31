@@ -1,9 +1,10 @@
 """Input validation utilities."""
+
 import argparse
 from pathlib import Path
 
-from .fuzzy.categories import LandForm, LandCover
 from .exceptions import ValidationError as RCGValidationError
+from .fuzzy.categories import LandCover, LandForm
 
 
 class ValidationError(argparse.ArgumentTypeError):
@@ -15,6 +16,7 @@ class ValidationError(argparse.ArgumentTypeError):
 
     Note: For non-CLI code, prefer using rcg.exceptions.ValidationError directly.
     """
+
     pass
 
 
@@ -72,18 +74,18 @@ def validate_file_path(file_path: str) -> Path:
     if not path.is_file():
         raise ValidationError(f"Path is not a file: {file_path}")
 
-    if path.suffix.lower() != '.inp':
+    if path.suffix.lower() != ".inp":
         raise ValidationError(f"File must have .inp extension (case-insensitive), got: {path.suffix}")
 
     try:
-        with path.open('r') as f:
+        with path.open("r") as f:
             content = f.read(10)
             if not content:
                 raise ValidationError(f"File is empty: {file_path}")
-    except PermissionError:
-        raise ValidationError(f"Permission denied reading file: {file_path}")
+    except PermissionError as e:
+        raise ValidationError(f"Permission denied reading file: {file_path}") from e
     except Exception as e:
-        raise ValidationError(f"Error reading file: {e}")
+        raise ValidationError(f"Error reading file: {e}") from e
 
     return path
 
@@ -114,8 +116,8 @@ def validate_area(area_str: str) -> float:
     """
     try:
         area = float(area_str)
-    except ValueError:
-        raise ValidationError(f"Area must be a valid number, got: '{area_str}'")
+    except ValueError as e:
+        raise ValidationError(f"Area must be a valid number, got: '{area_str}'") from e
 
     if area <= 0:
         raise ValidationError(f"Area must be positive, got: {area}")
@@ -142,9 +144,7 @@ def validate_land_form(land_form_str: str) -> LandForm:
             return getattr(LandForm, form_name)
 
     valid_list = sorted(LandForm.get_all_categories())
-    raise ValidationError(
-        f"Invalid land form '{land_form_str}' (case-insensitive). Valid options: {', '.join(valid_list)}"
-    )
+    raise ValidationError(f"Invalid land form '{land_form_str}' (case-insensitive). Valid options: {', '.join(valid_list)}")
 
 
 def validate_land_cover(land_cover_str: str) -> LandCover:
@@ -163,6 +163,4 @@ def validate_land_cover(land_cover_str: str) -> LandCover:
             return getattr(LandCover, cover_name)
 
     valid_list = sorted(LandCover.get_all_categories())
-    raise ValidationError(
-        f"Invalid land cover '{land_cover_str}' (case-insensitive). Valid options: {', '.join(valid_list)}"
-    )
+    raise ValidationError(f"Invalid land cover '{land_cover_str}' (case-insensitive). Valid options: {', '.join(valid_list)}")

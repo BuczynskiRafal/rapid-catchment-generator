@@ -1,13 +1,14 @@
-import os
-import pytest
-import tempfile
 import math
-import pandas as pd
+import os
+import tempfile
 
+import pandas as pd
+import pytest
 from swmmio import Model
-from rcg.inp_manage.inp import BuildCatchments, SubcatchmentConfig
+
+from rcg.fuzzy.categories import LandCover, LandForm
 from rcg.fuzzy.engine import Prototype
-from rcg.fuzzy.categories import LandForm, LandCover
+from rcg.inp_manage.inp import BuildCatchments, SubcatchmentConfig
 
 
 class TestBuildCatchments:
@@ -24,16 +25,16 @@ class TestBuildCatchments:
             test_model = BuildCatchments(inp_path, backup=False)
             subcatchment_id = test_model._get_new_subcatchment_id()
 
-            with open(inp_path, "r") as file:
+            with open(inp_path) as file:
                 data = file.read()
                 assert data.count(subcatchment_id) == 0
 
-            with open(model_path, "r") as file:
+            with open(model_path) as file:
                 data = file.read()
                 assert data.count(subcatchment_id) == 0
 
     def test_add_timeseries(self, model_path):
-        model = Model(model_path)
+        Model(model_path)
         test_model = BuildCatchments(model_path, backup=False)
         initial_timeseries_count = len(test_model.model.inp.timeseries)
 
@@ -72,7 +73,7 @@ class TestBuildCatchments:
         ]
 
     def test_get_timeseries_no_existing(self, model_path):
-        model = Model(model_path)
+        Model(model_path)
         test_model = BuildCatchments(model_path, backup=False)
 
         test_model.model.inp.timeseries = test_model.model.inp.timeseries.iloc[0:0]
@@ -81,7 +82,7 @@ class TestBuildCatchments:
         assert first_timeseries_name == "generator_series"
 
     def test_get_timeseries_with_existing(self, model_path):
-        model = Model(model_path)
+        Model(model_path)
         test_model = BuildCatchments(model_path, backup=False)
 
         assert len(test_model.model.inp.timeseries) > 0
@@ -90,7 +91,7 @@ class TestBuildCatchments:
         assert first_timeseries_name == test_model.model.inp.timeseries.index[0]
 
     def test_add_raingage(self, model_path):
-        model = Model(model_path)
+        Model(model_path)
         test_model = BuildCatchments(model_path, backup=False)
 
         test_model.model.inp.raingages = test_model.model.inp.raingages.iloc[0:0]
@@ -103,13 +104,10 @@ class TestBuildCatchments:
         assert test_model.model.inp.raingages.loc["RG1", "TimeIntrvl"] == "0:01"
         assert test_model.model.inp.raingages.loc["RG1", "SnowCatch"] == "1.0"
         assert test_model.model.inp.raingages.loc["RG1", "DataSource"] == "TIMESERIES"
-        assert (
-            test_model.model.inp.raingages.loc["RG1", "DataSourceName"]
-            == test_model._get_timeseries()
-        )
+        assert test_model.model.inp.raingages.loc["RG1", "DataSourceName"] == test_model._get_timeseries()
 
     def test_get_raingage_no_existing_raingages(self, model_path):
-        model = Model(model_path)
+        Model(model_path)
         test_model = BuildCatchments(model_path, backup=False)
 
         test_model.model.inp.raingages = test_model.model.inp.raingages.iloc[0:0]
@@ -120,7 +118,7 @@ class TestBuildCatchments:
         assert len(test_model.model.inp.raingages) == 1
 
     def test_get_raingage_with_existing_raingages(self, model_path):
-        model = Model(model_path)
+        Model(model_path)
         test_model = BuildCatchments(model_path, backup=False)
 
         existing_raingage_name = test_model.model.inp.raingages.index[0]
@@ -140,11 +138,7 @@ class TestBuildCatchments:
         land_form = LandForm.mountains
         land_cover = LandCover.urban_weakly_impervious
 
-        config = SubcatchmentConfig(
-            area=1.0,
-            land_form=land_form,
-            land_cover=land_cover
-        )
+        config = SubcatchmentConfig(area=1.0, land_form=land_form, land_cover=land_cover)
         config.subcatchment_id = "test_subcatchment"
         config.prototype = Prototype(land_form, land_cover)
 
@@ -179,17 +173,13 @@ class TestBuildCatchments:
         land_form = LandForm.flats_and_plateaus
         land_cover = LandCover.rural
 
-        config = SubcatchmentConfig(
-            area=1.0,
-            land_form=land_form,
-            land_cover=land_cover
-        )
+        config = SubcatchmentConfig(area=1.0, land_form=land_form, land_cover=land_cover)
         config.subcatchment_id = "S1"
         config.prototype = Prototype(land_form, land_cover)
 
         test_model._add_coords(config)
 
-        expected_side_length = math.sqrt(config.area * 10_000)
+        math.sqrt(config.area * 10_000)
         assert len(test_model.model.inp.polygons) == 4
         assert config.subcatchment_id in test_model.model.inp.polygons.index
 
@@ -202,11 +192,7 @@ class TestBuildCatchments:
             test_model = BuildCatchments(inp_path, backup=False)
             initial_count = len(test_model.model.inp.subcatchments)
 
-            test_model.add_subcatchment(
-                area=5.5,
-                land_form="flats_and_plateaus",
-                land_cover="rural"
-            )
+            test_model.add_subcatchment(area=5.5, land_form="flats_and_plateaus", land_cover="rural")
 
             assert len(test_model.model.inp.subcatchments) == initial_count + 1
 
@@ -248,10 +234,10 @@ class TestBuildCatchments:
             model.inp.save(inp_path)
 
             test_model = BuildCatchments(inp_path, backup=True)
-            backup_path = test_model._create_backup()
+            test_model._create_backup()
 
             # Read original content
-            with open(inp_path, "r") as f:
+            with open(inp_path) as f:
                 original_content = f.read()
 
             # Modify the file
@@ -262,7 +248,7 @@ class TestBuildCatchments:
             test_model.restore_backup()
 
             # Check content is restored
-            with open(inp_path, "r") as f:
+            with open(inp_path) as f:
                 restored_content = f.read()
 
             assert restored_content == original_content
@@ -286,7 +272,7 @@ class TestBuildCatchments:
             test_model = BuildCatchments(inp_path, backup=True)
 
             # Read original content
-            with open(inp_path, "r") as f:
+            with open(inp_path) as f:
                 original_content = f.read()
 
             # Transaction that fails
@@ -301,25 +287,17 @@ class TestBuildCatchments:
                 pass
 
             # Check content is restored
-            with open(inp_path, "r") as f:
+            with open(inp_path) as f:
                 restored_content = f.read()
 
             assert restored_content == original_content
 
     def test_subcatchment_config_validation(self):
         with pytest.raises(ValueError, match="Area must be positive"):
-            SubcatchmentConfig(
-                area=-1.0,
-                land_form=LandForm.mountains,
-                land_cover=LandCover.forests
-            )
+            SubcatchmentConfig(area=-1.0, land_form=LandForm.mountains, land_cover=LandCover.forests)
 
     def test_subcatchment_config_creation(self):
-        config = SubcatchmentConfig(
-            area=10.0,
-            land_form=LandForm.mountains,
-            land_cover=LandCover.forests
-        )
+        config = SubcatchmentConfig(area=10.0, land_form=LandForm.mountains, land_cover=LandCover.forests)
         assert config.area == 10.0
         assert config.land_form == LandForm.mountains
         assert config.land_cover == LandCover.forests

@@ -6,15 +6,14 @@ replacing the monolithic rules.py with a more maintainable architecture.
 
 Supports dependency injection for memberships to enable isolated testing.
 """
+
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from enum import Enum
+from typing import TYPE_CHECKING, Any, Optional
 
-import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-from skfuzzy.control import Antecedent, Consequent, Rule as SkfuzzyRule
-
-from .categories import LandForm, LandCover, Slope, Impervious, Catchments
+from skfuzzy.control import Antecedent, Consequent
+from skfuzzy.control import Rule as SkfuzzyRule
 
 if TYPE_CHECKING:
     from .memberships import Memberships
@@ -23,6 +22,7 @@ if TYPE_CHECKING:
 @dataclass
 class Condition:
     """Represents a single condition in a fuzzy rule."""
+
     variable: str
     value: Enum
 
@@ -51,9 +51,10 @@ class Condition:
 @dataclass
 class FuzzyRule:
     """Represents a complete fuzzy rule with conditions and consequences."""
+
     name: str
-    conditions: List[Condition]
-    consequences: Dict[str, Enum]
+    conditions: list[Condition]
+    consequences: dict[str, Enum]
 
     def build_antecedent(self, memberships: "Memberships") -> Antecedent:
         """
@@ -118,17 +119,18 @@ class RuleBuilder:
             .then(slope=Slope.LOW, impervious=Impervious.HIGH)
             .build()
     """
+
     def __init__(self):
-        self.conditions: List[Condition] = []
-        self.consequences: Dict[str, Enum] = {}
+        self.conditions: list[Condition] = []
+        self.consequences: dict[str, Enum] = {}
         self.rule_name: str = ""
 
-    def named(self, name: str) -> 'RuleBuilder':
+    def named(self, name: str) -> "RuleBuilder":
         """Set the name of the rule."""
         self.rule_name = name
         return self
 
-    def when(self, **conditions) -> 'RuleBuilder':
+    def when(self, **conditions) -> "RuleBuilder":
         """Add conditions to the rule."""
         for variable, value in conditions.items():
             if not isinstance(value, Enum):
@@ -136,7 +138,7 @@ class RuleBuilder:
             self.conditions.append(Condition(variable, value))
         return self
 
-    def then(self, **consequences) -> 'RuleBuilder':
+    def then(self, **consequences) -> "RuleBuilder":
         """Set consequences for the rule."""
         for key, value in consequences.items():
             if not isinstance(value, Enum):
@@ -171,18 +173,15 @@ class RuleEngine:
         memberships : Optional[Memberships]
             Memberships instance to use. If None, uses the default instance.
         """
-        self.rules: List[FuzzyRule] = []
-        self._rule_systems: Dict[str, List[SkfuzzyRule]] = {
-            "slope": [],
-            "impervious": [],
-            "catchment": []
-        }
+        self.rules: list[FuzzyRule] = []
+        self._rule_systems: dict[str, list[SkfuzzyRule]] = {"slope": [], "impervious": [], "catchment": []}
         self._memberships = memberships
 
     def _get_memberships(self) -> "Memberships":
         """Get the memberships instance, loading default if needed."""
         if self._memberships is None:
             from .memberships import get_default_memberships
+
             self._memberships = get_default_memberships()
         return self._memberships
 
@@ -204,26 +203,23 @@ class RuleEngine:
                     self._rule_systems[output_type].append(skfuzzy_rule)
 
     @property
-    def slope_rules(self) -> List[SkfuzzyRule]:
+    def slope_rules(self) -> list[SkfuzzyRule]:
         """Get rules for slope calculation."""
         return self._rule_systems["slope"]
 
     @property
-    def impervious_rules(self) -> List[SkfuzzyRule]:
+    def impervious_rules(self) -> list[SkfuzzyRule]:
         """Get rules for impervious calculation."""
         return self._rule_systems["impervious"]
 
     @property
-    def catchment_rules(self) -> List[SkfuzzyRule]:
+    def catchment_rules(self) -> list[SkfuzzyRule]:
         """Get rules for catchment calculation."""
         return self._rule_systems["catchment"]
 
-    def get_rule_count(self) -> Dict[str, int]:
+    def get_rule_count(self) -> dict[str, int]:
         """Get count of rules for each output type."""
-        return {
-            "total": len(self.rules),
-            **{name: len(rules) for name, rules in self._rule_systems.items()}
-        }
+        return {"total": len(self.rules), **{name: len(rules) for name, rules in self._rule_systems.items()}}
 
 
 def rule(name: str) -> RuleBuilder:

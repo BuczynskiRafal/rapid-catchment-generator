@@ -1,5 +1,5 @@
 """The module contains classes specified in the RCG divided into categories."""
-from typing import List
+
 from enum import Enum, IntEnum
 
 
@@ -10,6 +10,7 @@ class LandForm(IntEnum):
     Defines terrain types from 1-9 representing different topographic features
     from flat lowlands to highest mountains.
     """
+
     marshes_and_lowlands = 1
     flats_and_plateaus = 2
     flats_and_plateaus_in_combination_with_hills = 3
@@ -21,7 +22,7 @@ class LandForm(IntEnum):
     highest_mountains = 9
 
     @classmethod
-    def get_all_categories(cls) -> List[str]:
+    def get_all_categories(cls) -> list[str]:
         """
         Return list of all land form names.
 
@@ -40,6 +41,7 @@ class LandCover(IntEnum):
     Defines surface cover types from 1-14 representing different
     land use and vegetation characteristics affecting runoff.
     """
+
     permeable_areas = 1
     permeable_terrain_on_plains = 2
     mountains_vegetated = 3
@@ -56,13 +58,14 @@ class LandCover(IntEnum):
     marshes = 14
 
     @classmethod
-    def get_all_categories(cls) -> List[str]:
+    def get_all_categories(cls) -> list[str]:
         """Return list of all land cover names."""
         return [member.name for member in cls]
 
 
 class Slope(Enum):
     """Slope categories."""
+
     marshes_and_lowlands = "marshes_and_lowlands"
     flats_and_plateaus = "flats_and_plateaus"
     flats_and_plateaus_in_combination_with_hills = "flats_and_plateaus_in_combination_with_hills"
@@ -74,13 +77,14 @@ class Slope(Enum):
     highest_mountains = "highest_mountains"
 
     @classmethod
-    def get_all_categories(cls) -> List[str]:
+    def get_all_categories(cls) -> list[str]:
         """Return list of all slope types."""
         return [member.value for member in cls]
 
 
 class Impervious(Enum):
     """Impervious surface categories."""
+
     marshes = "marshes"
     arable = "arable"
     meadows = "meadows"
@@ -95,13 +99,14 @@ class Impervious(Enum):
     mountains_vegetated = "mountains_vegetated"
 
     @classmethod
-    def get_all_categories(cls) -> List[str]:
+    def get_all_categories(cls) -> list[str]:
         """Return list of all impervious types."""
         return [member.value for member in cls]
 
 
 class Catchments(Enum):
     """Catchment categories."""
+
     urban = "urban"
     suburban = "suburban"
     rural = "rural"
@@ -111,7 +116,7 @@ class Catchments(Enum):
     mountains = "mountains"
 
     @classmethod
-    def get_all_categories(cls) -> List[str]:
+    def get_all_categories(cls) -> list[str]:
         """Return list of all catchment types."""
         return [member.value for member in cls]
 

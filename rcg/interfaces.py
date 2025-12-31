@@ -4,7 +4,8 @@ Protocol interfaces for RCG components.
 This module defines abstract interfaces using Python's Protocol pattern,
 enabling dependency injection and improved testability across the codebase.
 """
-from typing import Protocol, Dict, List, Any, runtime_checkable
+
+from typing import Any, Protocol, runtime_checkable
 
 from skfuzzy.control import Antecedent, Consequent
 
@@ -17,6 +18,7 @@ class IMemberships(Protocol):
     Defines the interface for classes that provide fuzzy membership functions
     for land form, land cover, slope, impervious surface, and catchment calculations.
     """
+
     land_form_type: Antecedent
     land_cover_type: Antecedent
     slope: Consequent
@@ -42,17 +44,17 @@ class IRuleEngine(Protocol):
         ...
 
     @property
-    def slope_rules(self) -> List[Any]:
+    def slope_rules(self) -> list[Any]:
         """Get rules for slope calculation."""
         ...
 
     @property
-    def impervious_rules(self) -> List[Any]:
+    def impervious_rules(self) -> list[Any]:
         """Get rules for impervious calculation."""
         ...
 
     @property
-    def catchment_rules(self) -> List[Any]:
+    def catchment_rules(self) -> list[Any]:
         """Get rules for catchment calculation."""
         ...
 
@@ -120,7 +122,7 @@ class IFuzzyEngine(Protocol):
         """
         ...
 
-    def compute_all(self, land_form: int, land_cover: int) -> Dict[str, float]:
+    def compute_all(self, land_form: int, land_cover: int) -> dict[str, float]:
         """
         Compute all catchment parameters at once.
 

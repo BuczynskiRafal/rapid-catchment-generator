@@ -39,9 +39,11 @@ dev = [
     "mypy",
     "ruff",
 ]
-gui = [
-    "tkinter",
-]
+# Note: GUI requires tkinter which is part of Python's standard library
+# On some systems you may need to install it via system package manager:
+# - Ubuntu/Debian: sudo apt-get install python3-tk
+# - Fedora: sudo dnf install python3-tkinter
+# - macOS: tkinter is included with Python from python.org
 
 [project.scripts]
 rcg = "rcg.cli:main"

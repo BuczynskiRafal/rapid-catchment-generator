@@ -1,7 +1,9 @@
 import unittest
+
 from skfuzzy import control as ctrl
-from rcg.fuzzy.rule_engine import default_engine, RuleEngine, rule, FuzzyRule
-from rcg.fuzzy.categories import LandForm, LandCover, Slope, Impervious, Catchments
+
+from rcg.fuzzy.categories import Catchments, Impervious, LandCover, LandForm, Slope
+from rcg.fuzzy.rule_engine import FuzzyRule, default_engine, rule
 
 
 class TestRuleEngine(unittest.TestCase):
