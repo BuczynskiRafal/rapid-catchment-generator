@@ -1,11 +1,14 @@
 """
 Module defining fuzzy membership functions for RCG categories.
+
+This module provides the Memberships class and factory functions for creating
+membership function instances with proper dependency injection support.
 """
+from typing import Dict, List, Optional
 
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-from typing import Dict, List
 
 from .categories import LandForm, LandCover, Slope, Impervious, Catchments
 
@@ -121,4 +124,47 @@ class Memberships:
             self.catchment[name] = fuzz.trimf(self.catchment.universe, param)
 
 
-membership = Memberships()
+# Cache for default memberships instance (lazy initialization)
+_default_memberships: Optional[Memberships] = None
+
+
+def create_memberships() -> Memberships:
+    """
+    Factory function to create a new Memberships instance.
+
+    Use this function when you need an isolated memberships instance,
+    such as in tests or when you need custom configuration.
+
+    Returns
+    -------
+    Memberships
+        A new Memberships instance with all membership functions populated.
+
+    Example
+    -------
+    >>> memberships = create_memberships()
+    >>> # Use memberships.slope, memberships.impervious, etc.
+    """
+    return Memberships()
+
+
+def get_default_memberships() -> Memberships:
+    """
+    Get the default (shared) Memberships instance.
+
+    This function provides lazy initialization of a shared memberships instance.
+    Use this for backward compatibility or when a shared instance is acceptable.
+
+    Returns
+    -------
+    Memberships
+        The shared default Memberships instance.
+    """
+    global _default_memberships
+    if _default_memberships is None:
+        _default_memberships = Memberships()
+    return _default_memberships
+
+
+# Backward compatibility alias (deprecated - use create_memberships() or get_default_memberships())
+membership = get_default_memberships()

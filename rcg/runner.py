@@ -16,16 +16,19 @@ from typing import Union
 from rcg.inp_manage.inp import BuildCatchments
 from rcg.validation import validate_file_path, validate_area, validate_land_form, validate_land_cover
 from rcg.fuzzy.categories import LandForm, LandCover
+from rcg.logging_config import setup_logging as setup_central_logging
 
 
 def setup_logging() -> logging.Logger:
-    """Configure basic logging."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
-    )
-    return logging.getLogger(__name__)
+    """
+    Configure basic logging using centralized config.
+
+    Returns
+    -------
+    logging.Logger
+        Configured logger instance.
+    """
+    return setup_central_logging(level=logging.INFO, name="rcg.runner")
 
 
 def prompt_for_float(prompt: str) -> float:

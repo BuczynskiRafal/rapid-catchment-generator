@@ -1,12 +1,13 @@
 import unittest
 from skfuzzy.control import ControlSystem, ControlSystemSimulation
 from rcg.fuzzy import categories
-from rcg.fuzzy.engine import FuzzyEngine, Prototype
-from rcg.fuzzy.memberships import membership
+from rcg.fuzzy.engine import FuzzyEngine, Prototype, create_fuzzy_engine
+from rcg.fuzzy.memberships import create_memberships, get_default_memberships
 
 
 class TestFuzzyEngine(unittest.TestCase):
     def setUp(self):
+        # Use default engine for backward compatibility tests
         self.engine = FuzzyEngine()
 
     def test_slope_ctrl(self):
@@ -84,16 +85,50 @@ class TestPrototype(unittest.TestCase):
         self.assertLess(self.prototype.catchment_result, 100)
 
     def test_get_linguistic(self):
-        result = Prototype.get_linguistic(
-            result=self.prototype.catchment_result,
-            member=membership.catchment
+        # Use instance method instead of static method
+        result = self.prototype.get_linguistic(
+            result=self.prototype.catchment_result
         )
         self.assertIsNotNone(result)
         self.assertIsInstance(result, str)
         self.assertIn(result, categories.Catchments.get_all_categories())
 
+    def test_get_linguistic_with_custom_member(self):
+        # Test with explicit member parameter
+        memberships = get_default_memberships()
+        result = self.prototype.get_linguistic(
+            result=self.prototype.catchment_result,
+            member=memberships.catchment
+        )
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, str)
+
+
     def tearDown(self) -> None:
         del self.prototype
+
+
+class TestDependencyInjection(unittest.TestCase):
+    """Test dependency injection capabilities."""
+
+    def test_create_fuzzy_engine_with_defaults(self):
+        engine = create_fuzzy_engine()
+        self.assertIsNotNone(engine)
+        self.assertIsNotNone(engine.memberships)
+
+    def test_create_fuzzy_engine_with_custom_memberships(self):
+        custom_memberships = create_memberships()
+        engine = create_fuzzy_engine(memberships=custom_memberships)
+        self.assertEqual(engine.memberships, custom_memberships)
+
+    def test_prototype_with_custom_engine(self):
+        custom_engine = create_fuzzy_engine()
+        prototype = Prototype(
+            land_form=categories.LandForm.flats_and_plateaus,
+            land_cover=categories.LandCover.rural,
+            engine=custom_engine
+        )
+        self.assertIsNotNone(prototype.slope_result)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "description": "Default parameters for RCG catchment calculations",
+  "manning_coefficients": {
+    "description": "Manning's n coefficients [impervious, pervious] for each catchment type",
+    "urban": [0.013, 0.15],
+    "suburban": [0.013, 0.24],
+    "rural": [0.013, 0.41],
+    "forests": [0.40, 0.80],
+    "meadows": [0.15, 0.41],
+    "arable": [0.06, 0.17],
+    "mountains": [0.013, 0.05]
+  },
+  "depression_storage": {
+    "description": "Depression storage [impervious_mm, pervious_mm, percent_zero_imperv] for each catchment type",
+    "urban": [0.05, 0.20, 50],
+    "suburban": [0.05, 0.20, 40],
+    "rural": [0.05, 0.20, 35],
+    "forests": [0.05, 0.30, 5],
+    "meadows": [0.05, 0.20, 10],
+    "arable": [0.05, 0.20, 10],
+    "mountains": [0.05, 0.20, 10]
+  },
+  "infiltration_defaults": {
+    "description": "Default infiltration parameters (Green-Ampt method)",
+    "Suction": 3.5,
+    "Ksat": 0.5,
+    "IMD": 0.25,
+    "Param4": 7,
+    "Param5": 0
+  },
+  "validation_limits": {
+    "description": "Validation limits for input parameters",
+    "area_max_hectares": 10000,
+    "land_form_range": [1, 9],
+    "land_cover_range": [1, 14]
+  }
+}

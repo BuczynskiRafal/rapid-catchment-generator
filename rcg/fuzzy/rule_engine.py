@@ -3,9 +3,11 @@ Rule Engine for fuzzy logic rules with clean DSL.
 
 This module provides a clean, readable way to define and execute fuzzy logic rules,
 replacing the monolithic rules.py with a more maintainable architecture.
+
+Supports dependency injection for memberships to enable isolated testing.
 """
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from enum import Enum
 
 import skfuzzy as fuzz
@@ -13,7 +15,9 @@ from skfuzzy import control as ctrl
 from skfuzzy.control import Antecedent, Consequent, Rule as SkfuzzyRule
 
 from .categories import LandForm, LandCover, Slope, Impervious, Catchments
-from .memberships import membership
+
+if TYPE_CHECKING:
+    from .memberships import Memberships
 
 
 @dataclass
@@ -22,12 +26,24 @@ class Condition:
     variable: str
     value: Enum
 
-    def to_skfuzzy(self) -> Any:
-        """Convert condition to skfuzzy format."""
+    def to_skfuzzy(self, memberships: "Memberships") -> Any:
+        """
+        Convert condition to skfuzzy format.
+
+        Parameters
+        ----------
+        memberships : Memberships
+            The memberships instance to use for conversion.
+
+        Returns
+        -------
+        Any
+            skfuzzy antecedent term.
+        """
         if self.variable == "land_form":
-            return membership.land_form_type[self.value.name]
+            return memberships.land_form_type[self.value.name]
         elif self.variable == "land_cover":
-            return membership.land_cover_type[self.value.name]
+            return memberships.land_cover_type[self.value.name]
         else:
             raise ValueError(f"Unknown variable: {self.variable}")
 
@@ -39,30 +55,56 @@ class FuzzyRule:
     conditions: List[Condition]
     consequences: Dict[str, Enum]
 
-    def build_antecedent(self) -> Antecedent:
-        """Build the antecedent (IF part) of the rule."""
+    def build_antecedent(self, memberships: "Memberships") -> Antecedent:
+        """
+        Build the antecedent (IF part) of the rule.
+
+        Parameters
+        ----------
+        memberships : Memberships
+            The memberships instance to use for building antecedents.
+
+        Returns
+        -------
+        Antecedent
+            Combined antecedent for all conditions.
+        """
         if not self.conditions:
             raise ValueError("Rule must have at least one condition")
 
-        skfuzzy_conditions = [cond.to_skfuzzy() for cond in self.conditions]
+        skfuzzy_conditions = [cond.to_skfuzzy(memberships) for cond in self.conditions]
         antecedent = skfuzzy_conditions[0]
         for condition in skfuzzy_conditions[1:]:
             antecedent = antecedent & condition
         return antecedent
 
-    def get_consequence(self, output_type: str) -> Optional[Consequent]:
-        """Get the consequence for a specific output type."""
+    def get_consequence(self, output_type: str, memberships: "Memberships") -> Optional[Consequent]:
+        """
+        Get the consequence for a specific output type.
+
+        Parameters
+        ----------
+        output_type : str
+            Type of output ('slope', 'impervious', or 'catchment').
+        memberships : Memberships
+            The memberships instance to use for consequences.
+
+        Returns
+        -------
+        Optional[Consequent]
+            The consequent term, or None if not defined.
+        """
         if output_type not in self.consequences:
             return None
 
         consequence_value = self.consequences[output_type]
 
         if output_type == "slope":
-            return membership.slope[consequence_value.value]
+            return memberships.slope[consequence_value.value]
         elif output_type == "impervious":
-            return membership.impervious[consequence_value.value]
+            return memberships.impervious[consequence_value.value]
         elif output_type == "catchment":
-            return membership.catchment[consequence_value.value]
+            return memberships.catchment[consequence_value.value]
         else:
             raise ValueError(f"Unknown output type: {output_type}")
 
@@ -114,14 +156,35 @@ class RuleBuilder:
 
 
 class RuleEngine:
-    """Main rule engine that manages and executes fuzzy rules."""
-    def __init__(self):
+    """
+    Main rule engine that manages and executes fuzzy rules.
+
+    Supports dependency injection for memberships to enable isolated testing.
+    """
+
+    def __init__(self, memberships: Optional["Memberships"] = None):
+        """
+        Initialize the rule engine.
+
+        Parameters
+        ----------
+        memberships : Optional[Memberships]
+            Memberships instance to use. If None, uses the default instance.
+        """
         self.rules: List[FuzzyRule] = []
         self._rule_systems: Dict[str, List[SkfuzzyRule]] = {
             "slope": [],
             "impervious": [],
             "catchment": []
         }
+        self._memberships = memberships
+
+    def _get_memberships(self) -> "Memberships":
+        """Get the memberships instance, loading default if needed."""
+        if self._memberships is None:
+            from .memberships import get_default_memberships
+            self._memberships = get_default_memberships()
+        return self._memberships
 
     def add_rule(self, rule: FuzzyRule) -> None:
         """Add a fuzzy rule to the engine."""
@@ -130,11 +193,12 @@ class RuleEngine:
     def build_rule_systems(self) -> None:
         """Build skfuzzy control systems from the defined rules."""
         self._rule_systems = {k: [] for k in self._rule_systems}  # Clear existing
+        memberships = self._get_memberships()
 
         for rule in self.rules:
-            antecedent = rule.build_antecedent()
+            antecedent = rule.build_antecedent(memberships)
             for output_type in self._rule_systems.keys():
-                consequent = rule.get_consequence(output_type)
+                consequent = rule.get_consequence(output_type, memberships)
                 if consequent:
                     skfuzzy_rule = ctrl.Rule(antecedent=antecedent, consequent=consequent)
                     self._rule_systems[output_type].append(skfuzzy_rule)
@@ -167,5 +231,53 @@ def rule(name: str) -> RuleBuilder:
     return RuleBuilder().named(name)
 
 
-# Global rule engine instance
-default_engine = RuleEngine()
+# Cache for default rule engine instance (lazy initialization)
+_default_rule_engine: Optional[RuleEngine] = None
+
+
+def create_rule_engine(memberships: Optional["Memberships"] = None) -> RuleEngine:
+    """
+    Factory function to create a new RuleEngine instance.
+
+    Use this function when you need an isolated rule engine instance,
+    such as in tests or when you need custom configuration.
+
+    Parameters
+    ----------
+    memberships : Optional[Memberships]
+        Memberships instance to use. If None, uses the default instance.
+
+    Returns
+    -------
+    RuleEngine
+        A new RuleEngine instance.
+
+    Example
+    -------
+    >>> from rcg.fuzzy.memberships import create_memberships
+    >>> memberships = create_memberships()
+    >>> engine = create_rule_engine(memberships)
+    """
+    return RuleEngine(memberships=memberships)
+
+
+def get_default_rule_engine() -> RuleEngine:
+    """
+    Get the default (shared) RuleEngine instance.
+
+    This function provides lazy initialization of a shared rule engine instance.
+    Use this for backward compatibility or when a shared instance is acceptable.
+
+    Returns
+    -------
+    RuleEngine
+        The shared default RuleEngine instance.
+    """
+    global _default_rule_engine
+    if _default_rule_engine is None:
+        _default_rule_engine = RuleEngine()
+    return _default_rule_engine
+
+
+# Backward compatibility alias (deprecated - use create_rule_engine() or get_default_rule_engine())
+default_engine = get_default_rule_engine()

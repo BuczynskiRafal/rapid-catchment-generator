@@ -3,11 +3,41 @@ import argparse
 from pathlib import Path
 
 from .fuzzy.categories import LandForm, LandCover
+from .exceptions import ValidationError as RCGValidationError
 
 
 class ValidationError(argparse.ArgumentTypeError):
-    """Custom validation error for argparse."""
+    """
+    Custom validation error for argparse compatibility.
+
+    This class extends argparse.ArgumentTypeError for CLI compatibility
+    while also being usable as a standalone validation error.
+
+    Note: For non-CLI code, prefer using rcg.exceptions.ValidationError directly.
+    """
     pass
+
+
+def _raise_validation_error(message: str, field: str = None, value=None, for_argparse: bool = True):
+    """
+    Raise the appropriate validation error based on context.
+
+    Parameters
+    ----------
+    message : str
+        Error message to display.
+    field : str, optional
+        Name of the field that failed validation.
+    value : any, optional
+        The invalid value.
+    for_argparse : bool
+        If True, raises argparse-compatible ValidationError.
+        If False, raises RCGValidationError.
+    """
+    if for_argparse:
+        raise ValidationError(message)
+    else:
+        raise RCGValidationError(message, field=field, value=value)
 
 
 def validate_file_path(file_path: str) -> Path:

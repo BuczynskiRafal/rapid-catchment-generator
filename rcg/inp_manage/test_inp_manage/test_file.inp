@@ -62,7 +62,7 @@ S7                  Raingage2   J1     10.0   65.00000000000004    316.227766016
 S8                  Raingage2   J1     12.0   25.000000000000007   346.41016151377545   2.333333333333333    0       
 S9                  Raingage2   J1     13.0   10.000000000000002   360.5551275463989    20.000000000000004   0       
 S10                 Raingage2   J1     5.0    25.000000000000007   223.60679774997897   15.000000000000004   0       
-test_subcatchment   Raingage2   J1     1.0    30.000000000000007   100.0                61.6666666666667     0       
+test_subcatchment   Raingage2   O4     1.0    65.0                 50.0                 21.67                0       
 
 [SUBAREAS]
 ;;                  N-Imperv N-Perv S-Imperv S-Perv              PctZero RouteTo 
@@ -76,7 +76,7 @@ S7                  0.013    0.05   1.27     5.08                80      OUTLET
 S8                  0.013    0.24   1.27     5.08                80      OUTLET
 S9                  0.15     0.41   1.27     5.08                10      OUTLET
 S10                 0.013    0.24   1.27     5.08                80      OUTLET
-test_subcatchment   0.013    0.15   1.27     5.08                90      OUTLET
+test_subcatchment   0.013    0.15   1.27     5.08                50      OUTLET
 
 [INFILTRATION]
 ;;    Suction Ksat  IMD    Param4 Param5
@@ -206,13 +206,9 @@ Raingage2        777181.540         592591.318
 
 
 [POLYGONS]
-;;   X   Y   
-S1   0   0 
-S1   0   5 
-S1   5   5 
-S1   5   0 
-S2   5   -5
-S2   5   0 
-S2   0   0 
-S2   0   -5
+;;   X       Y       
+S1   0.0     0.0   
+S1   100.0   0.0   
+S1   100.0   -100.0
+S1   0.0     -100.0
 

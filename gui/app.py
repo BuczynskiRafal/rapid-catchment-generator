@@ -5,7 +5,9 @@ from tkinter import filedialog, messagebox, ttk
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from rcg.fuzzy.categories import LandCover, LandForm
 from rcg.runner import generate_subcatchment
+from rcg.validation import validate_area, validate_land_cover, validate_land_form
 
 
 def get_help_file_path():
@@ -143,50 +145,27 @@ class RcgApp:
         input_frame = Frame(main_frame)
         input_frame.pack(fill="x", pady=(0, 20))
 
-        # Land cover selection
+        # Land cover selection - dynamically populated from categories
         self.create_input_group(input_frame, "Land Cover Type", 0)
         self.land_cover_var = tk.StringVar()
+        land_cover_values = sorted(LandCover.get_all_categories())
         land_cover_combobox = ttk.Combobox(
             input_frame,
             textvariable=self.land_cover_var,
-            values=[
-                "permeable_areas",
-                "permeable_terrain_on_plains",
-                "mountains_vegetated",
-                "mountains_rocky",
-                "urban_weakly_impervious",
-                "urban_moderately_impervious",
-                "urban_highly_impervious",
-                "suburban_weakly_impervious",
-                "suburban_highly_impervious",
-                "rural",
-                "forests",
-                "meadows",
-                "arable",
-                "marshes",
-            ],
+            values=land_cover_values,
             style="CustomStyle.TCombobox",
             state="readonly"
         )
         land_cover_combobox.pack(fill="x", pady=(5, 20))
 
-        # Land form selection
+        # Land form selection - dynamically populated from categories
         self.create_input_group(input_frame, "Land Form Type", 1)
         self.land_form_var = tk.StringVar()
+        land_form_values = sorted(LandForm.get_all_categories())
         land_form_combobox = ttk.Combobox(
             input_frame,
             textvariable=self.land_form_var,
-            values=[
-                "marshes_and_lowlands",
-                "flats_and_plateaus",
-                "flats_and_plateaus_in_combination_with_hills",
-                "hills_with_gentle_slopes",
-                "steeper_hills_and_foothills",
-                "hills_and_outcrops_of_mountain_ranges",
-                "higher_hills",
-                "mountains",
-                "highest_mountains",
-            ],
+            values=land_form_values,
             style="CustomStyle.TCombobox",
             state="readonly"
         )
@@ -268,7 +247,7 @@ class RcgApp:
         help_title.pack(pady=(0, 20))
 
         try:
-            with open(get_help_file_path(), "r") as file:
+            with open(get_help_file_path()) as file:
                 text = file.read()
         except FileNotFoundError:
             text = """
@@ -355,47 +334,58 @@ The application will generate subcatchments with appropriate parameters based on
             self.file_path = file_path
 
     def run_simulation(self):
-        land_cover = self.land_cover_var.get().replace(" ", "_")
-        land_form = self.land_form_var.get().replace(" ", "_")
-        area = self.area_var.get()
+        """Run the subcatchment generation with centralized validation."""
+        land_cover_str = self.land_cover_var.get()
+        land_form_str = self.land_form_var.get()
+        area_str = self.area_var.get()
 
-        # Validation
+        # Basic presence validation
         if not self.file_path:
             messagebox.showerror("Missing File", "Please select a SWMM input file.")
             return
 
-        if not land_cover:
+        if not land_cover_str:
             messagebox.showerror("Missing Selection", "Please select a land cover type.")
             return
 
-        if not land_form:
+        if not land_form_str:
             messagebox.showerror("Missing Selection", "Please select a land form type.")
             return
 
-        if not area:
+        if not area_str:
             messagebox.showerror("Missing Value", "Please enter an area value.")
             return
 
+        # Use centralized validation
         try:
-            area = area.replace(",", ".")
-            area = float(area)
-            if area <= 0:
-                raise ValueError("Area must be positive")
-        except ValueError:
-            messagebox.showerror(
-                "Invalid Area",
-                "Please enter a valid positive number for the area."
-            )
+            # Handle comma as decimal separator
+            area_str = area_str.replace(",", ".")
+            area = validate_area(area_str)
+        except Exception as e:
+            messagebox.showerror("Invalid Area", str(e))
             return
 
         try:
-            generate_subcatchment(self.file_path, area, land_form, land_cover)
+            validate_land_form(land_form_str)
+        except Exception as e:
+            messagebox.showerror("Invalid Land Form", str(e))
+            return
+
+        try:
+            validate_land_cover(land_cover_str)
+        except Exception as e:
+            messagebox.showerror("Invalid Land Cover", str(e))
+            return
+
+        # Generate subcatchment
+        try:
+            generate_subcatchment(self.file_path, area, land_form_str, land_cover_str)
             messagebox.showinfo(
                 "Simulation Complete",
                 f"Subcatchment generated successfully!\n\n"
                 f"Area: {area} ha\n"
-                f"Land Cover: {land_cover.replace('_', ' ').title()}\n"
-                f"Land Form: {land_form.replace('_', ' ').title()}\n"
+                f"Land Cover: {land_cover_str.replace('_', ' ').title()}\n"
+                f"Land Form: {land_form_str.replace('_', ' ').title()}\n"
                 f"File: {os.path.basename(self.file_path)}"
             )
         except Exception as e:

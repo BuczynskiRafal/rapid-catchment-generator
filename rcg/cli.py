@@ -7,18 +7,25 @@ from typing import Tuple
 from .fuzzy.categories import LandForm, LandCover
 from .inp_manage.inp import BuildCatchments
 from .validation import validate_file_path, validate_area, validate_land_form, validate_land_cover
+from .logging_config import setup_logging as setup_central_logging, get_logger
 
 
 def setup_logging(verbose: bool = False) -> logging.Logger:
-    """Configure logging based on verbosity level."""
+    """
+    Configure logging based on verbosity level using centralized config.
+
+    Parameters
+    ----------
+    verbose : bool
+        If True, sets logging level to DEBUG.
+
+    Returns
+    -------
+    logging.Logger
+        Configured logger instance.
+    """
     level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S',
-        stream=sys.stderr
-    )
-    return logging.getLogger(__name__)
+    return setup_central_logging(level=level, name="rcg.cli")
 
 
 def create_parser() -> argparse.ArgumentParser:
