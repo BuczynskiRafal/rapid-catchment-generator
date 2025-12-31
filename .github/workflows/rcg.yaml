@@ -35,9 +35,11 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
       - name: Install dependencies
-        run: uv pip install --system mypy -r requirements.txt
+        run: |
+          uv venv
+          uv pip install mypy -r requirements.txt
       - name: Type check with mypy
-        run: mypy rcg/ --ignore-missing-imports --no-error-summary || true
+        run: uv run mypy rcg/ --ignore-missing-imports --no-error-summary || true
 
   test:
     runs-on: ${{ matrix.os }}
@@ -57,9 +59,11 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv pip install --system pytest pytest-cov pytest-mock -r requirements.txt
+        run: |
+          uv venv
+          uv pip install pytest pytest-cov pytest-mock -r requirements.txt
       - name: Test with pytest
-        run: pytest rcg/ --cov=rcg --cov-report=xml
+        run: uv run pytest rcg/ --cov=rcg --cov-report=xml
       - name: Upload coverage reports to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         uses: codecov/codecov-action@v4
