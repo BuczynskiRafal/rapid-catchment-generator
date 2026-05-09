@@ -196,7 +196,7 @@ class RuleEngine:
 
         for rule in self.rules:
             antecedent = rule.build_antecedent(memberships)
-            for output_type in self._rule_systems.keys():
+            for output_type in self._rule_systems:
                 consequent = rule.get_consequence(output_type, memberships)
                 if consequent:
                     skfuzzy_rule = ctrl.Rule(antecedent=antecedent, consequent=consequent)
@@ -275,5 +275,8 @@ def get_default_rule_engine() -> RuleEngine:
     return _default_rule_engine
 
 
-# Backward compatibility alias (deprecated - use create_rule_engine() or get_default_rule_engine())
-default_engine = get_default_rule_engine()
+# Backward compatibility alias (lazy — only initialized on first access)
+def __getattr__(name):
+    if name == "default_engine":
+        return get_default_rule_engine()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

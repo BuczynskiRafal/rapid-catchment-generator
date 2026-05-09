@@ -321,7 +321,7 @@ class BuildCatchments:
     def _add_subcatchment(self, config: SubcatchmentConfig) -> None:
         """Add a new subcatchment to the model."""
         outlet = self._get_outlet(config.subcatchment_id)
-        width = round((config.area * 10_000) / (2 * math.sqrt(config.area * 10_000)), 2)
+        width = round(math.sqrt(config.area * 10_000) / 2, 2)
 
         subcatchment_data = {
             "Raingage": self._get_raingage(),
@@ -391,8 +391,8 @@ class BuildCatchments:
             land_cover: Land cover type as string or LandCover enum
         """
         # Convert to Enum for Prototype (already validated in CLI/runner)
-        land_form_enum = getattr(LandForm, land_form)
-        land_cover_enum = getattr(LandCover, land_cover)
+        land_form_enum = land_form if isinstance(land_form, LandForm) else LandForm[land_form]
+        land_cover_enum = land_cover if isinstance(land_cover, LandCover) else LandCover[land_cover]
 
         config = SubcatchmentConfig(area=area, land_form=land_form_enum, land_cover=land_cover_enum)
         config.subcatchment_id = self._get_new_subcatchment_id()

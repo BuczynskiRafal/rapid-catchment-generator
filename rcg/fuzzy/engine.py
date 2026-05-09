@@ -279,6 +279,8 @@ def get_default_fuzzy_engine() -> FuzzyEngine:
     return _default_fuzzy_engine
 
 
-# Backward compatibility aliases (deprecated - use create_fuzzy_engine() or get_default_fuzzy_engine())
-_default_engine = get_default_fuzzy_engine()
-engine = _default_engine
+# Backward compatibility aliases (lazy — only initialized on first access)
+def __getattr__(name):
+    if name in ("engine", "_default_engine"):
+        return get_default_fuzzy_engine()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

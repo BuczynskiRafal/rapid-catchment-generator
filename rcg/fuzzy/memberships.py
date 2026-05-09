@@ -165,5 +165,8 @@ def get_default_memberships() -> Memberships:
     return _default_memberships
 
 
-# Backward compatibility alias (deprecated - use create_memberships() or get_default_memberships())
-membership = get_default_memberships()
+# Backward compatibility alias (lazy — only initialized on first access)
+def __getattr__(name):
+    if name == "membership":
+        return get_default_memberships()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

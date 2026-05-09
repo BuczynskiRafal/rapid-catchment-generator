@@ -128,39 +128,39 @@ def validate_area(area_str: str) -> float:
     return area
 
 
+# Pre-built lookup dicts for O(1) case-insensitive enum resolution
+_LAND_FORM_LOOKUP: dict[str, LandForm] = {m.name.lower(): m for m in LandForm}
+_LAND_COVER_LOOKUP: dict[str, LandCover] = {m.name.lower(): m for m in LandCover}
+
+
+def _validate_enum(value: str, lookup: dict, enum_name: str):
+    """Validate and convert a string to an enum member (case-insensitive, O(1) lookup)."""
+    if not value:
+        raise ValidationError(f"{enum_name} cannot be empty.")
+
+    result = lookup.get(value.lower())
+    if result is None:
+        valid_list = sorted(lookup)
+        raise ValidationError(
+            f"Invalid {enum_name} '{value}' (case-insensitive). Valid options: {', '.join(valid_list)}"
+        )
+    return result
+
+
 def validate_land_form(land_form_str: str) -> LandForm:
     """Validate and convert land form to Enum (case-insensitive).
 
-    Example: validate_land_form('flats_and_plateaus') -> LandForm.FLATS_AND_PLATEAUS.
+    Example: validate_land_form('flats_and_plateaus') -> LandForm.flats_and_plateaus.
     Raises ValidationError if invalid.
     """
-    if not land_form_str:
-        raise ValidationError("Land form cannot be empty.")
-
-    normalized = land_form_str.lower()
-
-    for form_name in LandForm.get_all_categories():
-        if form_name.lower() == normalized:
-            return getattr(LandForm, form_name)
-
-    valid_list = sorted(LandForm.get_all_categories())
-    raise ValidationError(f"Invalid land form '{land_form_str}' (case-insensitive). Valid options: {', '.join(valid_list)}")
+    return _validate_enum(land_form_str, _LAND_FORM_LOOKUP, "land form")
 
 
 def validate_land_cover(land_cover_str: str) -> LandCover:
     """Validate and convert land cover to Enum (case-insensitive).
 
-    Example: validate_land_cover('urban_moderately_impervious') -> LandCover.URBAN_MODERATELY_IMPERVIOUS.
+    Example: validate_land_cover('urban_moderately_impervious') -> LandCover.urban_moderately_impervious.
     Raises ValidationError if invalid.
     """
-    if not land_cover_str:
-        raise ValidationError("Land cover cannot be empty.")
+    return _validate_enum(land_cover_str, _LAND_COVER_LOOKUP, "land cover")
 
-    normalized = land_cover_str.lower()
-
-    for cover_name in LandCover.get_all_categories():
-        if cover_name.lower() == normalized:
-            return getattr(LandCover, cover_name)
-
-    valid_list = sorted(LandCover.get_all_categories())
-    raise ValidationError(f"Invalid land cover '{land_cover_str}' (case-insensitive). Valid options: {', '.join(valid_list)}")
