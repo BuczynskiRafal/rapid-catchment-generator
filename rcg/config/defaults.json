@@ -12,7 +12,7 @@
     "mountains": [0.013, 0.05]
   },
   "depression_storage": {
-    "description": "Depression storage [impervious_mm, pervious_mm, percent_zero_imperv] for each catchment type",
+    "description": "Depression storage [impervious_in, pervious_in, percent_zero_imperv] for each catchment type (depths in inches; converted to mm when written)",
     "urban": [0.05, 0.20, 50],
     "suburban": [0.05, 0.20, 40],
     "rural": [0.05, 0.20, 35],
@@ -22,15 +22,30 @@
     "mountains": [0.05, 0.20, 10]
   },
   "infiltration_defaults": {
-    "description": "Default infiltration parameters (Green-Ampt method)",
-    "Suction": 3.5,
-    "Ksat": 0.5,
-    "IMD": 0.25,
-    "Param4": 7,
-    "Param5": 0
+    "description": "[INFILTRATION] row written for each infiltration method of the model (MODIFIED_HORTON uses HORTON, MODIFIED_GREEN_AMPT uses GREEN_AMPT). Values are written in the model's own units, in this order.",
+    "GREEN_AMPT": {
+      "Suction": 3.5,
+      "Ksat": 0.5,
+      "IMD": 0.25,
+      "Param4": 7,
+      "Param5": 0
+    },
+    "HORTON": {
+      "MaxRate": 3.0,
+      "MinRate": 0.5,
+      "Decay": 4,
+      "DryTime": 7,
+      "MaxInfil": 0
+    },
+    "CURVE_NUMBER": {
+      "CurveNum": 80,
+      "Conductivity": 0.5,
+      "DryTime": 7
+    }
   },
   "validation_limits": {
     "description": "Validation limits for input parameters",
+    "area_min_hectares": 0.0001,
     "area_max_hectares": 10000,
     "land_form_range": [1, 9],
     "land_cover_range": [1, 14]
