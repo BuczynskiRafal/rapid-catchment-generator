@@ -154,15 +154,15 @@ the link is kept.
 ```python
 import rcg
 
-params = rcg.preview(5.5, "flats_and_plateaus", "Urban, moderately impervious")   # pure, no file access
+params = rcg.preview(5.5, "flats_and_plateaus", "Urban, moderately impervious")  # pure, no file access
 print(params.slope_pct, params.impervious_pct, params.catchment_type, params.width_m)
 
-result = rcg.apply("model.inp", params)                      # backup kept, model updated in place
+result = rcg.apply("model.inp", params)  # backup kept, model updated in place
 print(result.subcatchment_ids, result.raingage, result.outlet, result.backup_path)
 
-copy = rcg.apply("model.inp", [params, params], output_path="copy.inp")   # several at once, one write
+copy = rcg.apply("model.inp", [params, params], output_path="copy.inp")  # several at once, one write
 
-info = rcg.inspect("model.inp")                              # ModelInfo: flow_units, is_metric, infiltration_method, ...
+info = rcg.inspect("model.inp")  # ModelInfo: flow_units, is_metric, infiltration_method, ...
 ```
 
 `rcg.preview(area_ha, land_form, land_cover)` returns a frozen `SubcatchmentParameters` with the fields

@@ -99,59 +99,79 @@ class SubcatchmentParameters:
     land_form: LandForm
     land_cover: LandCover
     area_ha: float
-    slope_pct: float            # fuzzy slope result, rounded to 2 dp when written
-    impervious_pct: float       # fuzzy impervious result, rounded to 2 dp when written
-    catchment_score: float      # raw fuzzy catchment output (0-100)
-    catchment_type: str         # linguistic label: urban|suburban|rural|forests|meadows|arable|mountains
-    width_m: float              # round(sqrt(area_ha*10_000)/2, 2)
+    slope_pct: float  # fuzzy slope result, rounded to 2 dp when written
+    impervious_pct: float  # fuzzy impervious result, rounded to 2 dp when written
+    catchment_score: float  # raw fuzzy catchment output (0-100)
+    catchment_type: str  # linguistic label: urban|suburban|rural|forests|meadows|arable|mountains
+    width_m: float  # round(sqrt(area_ha*10_000)/2, 2)
     n_imperv: float
     n_perv: float
-    s_imperv_mm: float          # defaults.json inches * 25.4
+    s_imperv_mm: float  # defaults.json inches * 25.4
     s_perv_mm: float
     pct_zero: int
-    infiltration: Mapping[str, float]   # Suction, Ksat, IMD, Param4, Param5 (Green-Ampt, from defaults.json)
+    infiltration: Mapping[str, float]  # Suction, Ksat, IMD, Param4, Param5 (Green-Ampt, from defaults.json)
 
-def preview(area_ha: float, land_form: LandForm | str, land_cover: LandCover | str,
-            *, engine: FuzzyEngine | None = None) -> SubcatchmentParameters: ...
+
+def preview(
+    area_ha: float, land_form: LandForm | str, land_cover: LandCover | str, *, engine: FuzzyEngine | None = None
+) -> SubcatchmentParameters:
+    ...
     # pure; validates inputs; raises rcg.exceptions.ValidationError
+
 
 @dataclass(frozen=True)
 class ApplyResult:
-    output_path: Path           # resolved (symlinks followed)
-    backup_path: Path | None    # copy of the overwritten file (source or existing output)
+    output_path: Path  # resolved (symlinks followed)
+    backup_path: Path | None  # copy of the overwritten file (source or existing output)
     subcatchment_ids: tuple[str, ...]
     raingage: str
     outlet: str
-    flow_units: str = "CMS"     # model FLOW_UNITS (US units => acres/feet/inches written)
-    infiltration_method: str = "GREEN_AMPT"   # model INFILTRATION option
+    flow_units: str = "CMS"  # model FLOW_UNITS (US units => acres/feet/inches written)
+    infiltration_method: str = "GREEN_AMPT"  # model INFILTRATION option
 
-def apply(inp_path: str | Path, parameters: Sequence[SubcatchmentParameters] | SubcatchmentParameters,
-          *, output_path: str | Path | None = None, backup: bool = True) -> ApplyResult: ...
+
+def apply(
+    inp_path: str | Path,
+    parameters: Sequence[SubcatchmentParameters] | SubcatchmentParameters,
+    *,
+    output_path: str | Path | None = None,
+    backup: bool = True,
+) -> ApplyResult:
+    ...
     # one read, in-memory edits, one atomic write; validates every written value
     # (ValidationError); raises ModelOperationError (not SWMM, read-only, changed meanwhile, ...)
 
+
 @dataclass(frozen=True)
 class ModelInfo:
-    path: Path                  # resolved
-    flow_units: str             # FLOW_UNITS, "CFS" when absent
-    is_metric: bool             # CMS / LPS / MLD
-    infiltration_method: str    # INFILTRATION, "HORTON" when absent
+    path: Path  # resolved
+    flow_units: str  # FLOW_UNITS, "CFS" when absent
+    is_metric: bool  # CMS / LPS / MLD
+    infiltration_method: str  # INFILTRATION, "HORTON" when absent
     subcatchment_count: int
-    raingage: str | None        # gage apply() would use; None => it would create RG1
-    outlet: str | None          # outlet apply() would use; None => subcatchment drains to itself
+    raingage: str | None  # gage apply() would use; None => it would create RG1
+    outlet: str | None  # outlet apply() would use; None => subcatchment drains to itself
     size_bytes: int
 
-def inspect(inp_path: str | Path) -> ModelInfo: ...
+
+def inspect(inp_path: str | Path) -> ModelInfo:
+    ...
     # read-only, fast (no fuzzy engine); same parser and structural check as apply();
     # raises ValidationError / ModelOperationError
 
+
 # rcg.catchment
 INFILTRATION_FIELDS: dict[str, tuple[tuple[str, str, str], ...]]
-    # method -> ((label, SI unit, US unit), ...) labelling the leading values of infiltration_for()
-def infiltration_for(method: str) -> dict[str, float]: ...
+
+
+# method -> ((label, SI unit, US unit), ...) labelling the leading values of infiltration_for()
+def infiltration_for(method: str) -> dict[str, float]:
+    ...
     # ordered [INFILTRATION] row for a method (from defaults.json); MODIFIED_* share the base row
 
-def warm_up(engine: FuzzyEngine | None = None) -> FuzzyEngine: ...
+
+def warm_up(engine: FuzzyEngine | None = None) -> FuzzyEngine:
+    ...
     # builds the default engine (≈ seconds); GUI calls it from a worker thread
 ```
 
