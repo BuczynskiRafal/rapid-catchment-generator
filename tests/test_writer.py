@@ -288,6 +288,7 @@ def test_existing_output_file_without_backup_when_opted_out(example_inp, urban_p
     assert "S16" in section(out, "SUBCATCHMENTS").index
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX permission bits (Windows chmod only sets read-only)")
 def test_file_mode_is_preserved(example_inp, urban_params):
     os.chmod(example_inp, 0o640)
     apply(example_inp, urban_params, backup=False)
