@@ -69,6 +69,11 @@ def rcg_app(qapp):
         font.setPointSizeF(13 * 72 / app.primaryScreen().logicalDotsPerInch())
         app.setFont(font)
         install_theme(app)  # rebuild the style sheet for this font now, not on the next event loop pass
+    elif sys.platform == "win32" and app.platformName() == "offscreen":
+        # Same on Windows: offscreen ignores the system font and falls back to Qt's 12 pt
+        # default (16 px at 96 dpi); the Windows UI font is Segoe UI 9 pt (12 px).
+        app.setFont(QFont("Segoe UI", 9))
+        install_theme(app)
     return app
 
 

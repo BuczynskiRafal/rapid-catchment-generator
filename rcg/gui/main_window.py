@@ -578,7 +578,9 @@ class MainWindow(QMainWindow):
         self._engine_worker.previewFailed.connect(self._on_preview_failed)
         self._previewRequested.connect(self._engine_worker.compute)
         self._engine_thread.started.connect(self._engine_worker.warm_up)
-        self._engine_thread.finished.connect(self._engine_worker.deleteLater)
+        # No `finished -> deleteLater`: the worker is owned by Python (this window), and
+        # deleting its wrapper from the worker thread segfaults in shiboken. It is freed
+        # with the window, on the GUI thread, after the thread has stopped.
         # If the window is destroyed without being closed (e.g. garbage-collected), stop
         # the thread before Qt deletes it: `destroyed` fires before children are deleted.
         self.destroyed.connect(partial(_stop_thread, self._engine_thread))
