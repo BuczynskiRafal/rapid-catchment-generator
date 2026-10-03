@@ -1,59 +1,90 @@
 # Contributing Guide
 
-Thank you for considering contributing to our project! We appreciate your efforts and look forward to collaborating with you. This guide outlines the steps you should follow to make the contribution process as smooth as possible.
+Thank you for considering a contribution to Rapid Catchment Generator. This guide covers how to set up a
+development environment, run the checks that CI runs, and build the desktop app.
 
-## Table of Contents
+## Reporting bugs and requesting features
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Submitting a Pull Request](#submitting-a-pull-request)
-- [Reporting Bugs and Requesting Features](#reporting-bugs-and-requesting-features)
-- [Code Style and Linting](#code-style-and-linting)
-- [Testing](#testing)
-- [Documentation](#documentation)
+Please open an issue in the [issue tracker](https://github.com/BuczynskiRafal/rapid-catchment-generator/issues) with
+steps to reproduce, expected and actual behaviour, any error output, and (when relevant) the SWMM `.inp` file you used.
 
-## Code of Conduct
+## Development setup
 
-By participating in this project, you agree to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please review the Code of Conduct before contributing to ensure a welcoming and inclusive environment for everyone.
+RCG needs Python 3.10 or newer.
 
-## Getting Started
+```
+git clone https://github.com/BuczynskiRafal/rapid-catchment-generator
+cd rapid-catchment-generator
+python3 -m venv venv
+venv/bin/pip install -e ".[dev,gui]"
+```
 
-To start contributing to the project, follow these steps:
+The `dev` extra brings pytest, pytest-cov, pytest-qt, pyswmm (used by the end-to-end tests to run written models in
+SWMM), mypy and ruff. The `gui` extra brings PySide6.
 
-1. Fork the repository on GitHub.
-2. Clone your fork to your local development environment.
-3. Set up the development environment following the instructions in the project README.
-4. Create a new branch for your changes, using a descriptive name.
-5. Implement your changes, following the guidelines outlined in this document.
-6. Ensure your changes pass all tests and comply with our code style guidelines.
+Numbers are frozen: the fuzzy rules, membership functions and `rcg/config/defaults.json` must not change unless that is
+the explicit goal of the pull request (see the golden test below).
 
-## Submitting a Pull Request
+## Tests
 
-Once you have implemented your changes, you can submit a pull request. Please follow these steps:
+```
+venv/bin/python -m pytest                                  # full suite
+venv/bin/python -m pytest tests/test_golden.py             # numerical regression only
+QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest tests/gui   # GUI tests, headless
+venv/bin/python -m pytest --cov=rcg --cov-report=term-missing   # with coverage
+```
 
-1. Commit your changes in your feature branch.
-2. Push your changes to your fork on GitHub.
-3. Navigate to the original repository on GitHub, and click the "New Pull Request" button.
-4. Select your fork and the appropriate branch.
-5. Provide a detailed description of your changes, explaining what you have changed and why.
-6. Ensure that the "Allow edits from maintainers" checkbox is checked.
+On Linux the headless GUI tests need a few system libraries
+(`libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libxcb-cursor0`). GUI tests are skipped when PySide6 or
+pytest-qt is not installed.
 
-We will review your pull request as soon as possible and provide feedback. If any changes are required, please make the necessary updates and push your changes to your branch. Once your pull request is approved, it will be merged into the main branch.
+**Golden test.** `tests/test_golden.py` compares slope, imperviousness, catchment type, Manning coefficients and
+depression storage for all 126 land form x land cover combinations (and the width formula) with
+`tests/golden/fuzzy_outcomes.json`. A failure means the numbers changed. There is no automatic update switch: a changed number must be a deliberate edit. Regenerate
+`tests/golden/fuzzy_outcomes.json` from the engine (`FuzzyEngine.compute_all` for every combination, keeping the existing
+structure of the file), review the diff line by line, and explain the change in `CHANGELOG.md` and in the pull request.
 
-## Reporting Bugs and Requesting Features
+## Code style and type checking
 
-If you encounter any bugs or issues, or have a feature request, please create an issue in the project's [issue tracker](https://github.com/BuczynskiRafal/catchments_simulation/issues). Be sure to provide as much information as possible to help us understand and address your issue or request.
+```
+venv/bin/ruff check .
+venv/bin/ruff format --check .      # drop --check to apply the formatting
+venv/bin/mypy rcg
+```
 
-## Code Style and Linting
-
-Please follow the code style and formatting guidelines provided in the project README. If the project uses a linter or code formatter, ensure that your changes pass any linting or formatting checks.
-
-## Testing
-
-Tests are crucial for maintaining the quality and stability of the project. When submitting changes, please ensure that your changes pass all existing tests. If your changes introduce new functionality or modify existing functionality, please write new tests to cover these changes.
+All three run in CI and must pass. Library code must not use `print`; log through `rcg.logging_config.get_logger`.
 
 ## Documentation
 
-Please update any relevant documentation as needed when making changes to the project. This includes comments in the code, as well as external documentation such as README files or user guides. Proper documentation ensures that users and fellow contributors can understand and effectively use the project.
+Update `README.md`, `CHANGELOG.md` and the docstrings (NumPy style) when behaviour changes. The API documentation is built
+with Sphinx:
 
-Thank you for your interest in contributing to our project! We look forward to working with you and appreciate your help in making this project better for everyone.
+```
+venv/bin/pip install sphinx sphinx-rtd-theme
+venv/bin/python -m sphinx -b html docs/source docs/_build/html
+```
+
+## Building the desktop app
+
+Builds use [PyInstaller](https://pyinstaller.org/) and must be run on the target operating system, from the repository
+root, in an environment with the `gui` extra installed:
+
+```
+venv/bin/pip install pyinstaller
+venv/bin/pyinstaller packaging/rcg-gui.spec    # desktop app -> dist/RCG.exe, dist/RCG.app or dist/RCG
+venv/bin/pyinstaller packaging/rcg.spec --distpath dist-cli   # command-line tool -> dist-cli/rcg[.exe]
+```
+
+See the docstring at the top of each spec file for options (for example `RCG_ONEDIR=1` for a folder build on Windows and
+Linux). The `build` job in `.github/workflows/rcg.yaml` produces the same artifacts on tags named `v*` or when started
+manually.
+
+## Submitting a pull request
+
+1. Fork the repository and create a branch with a descriptive name.
+2. Make your change, with tests for new or changed behaviour.
+3. Run the tests, ruff and mypy as described above.
+4. Push the branch and open a pull request that explains what changed and why; add a line to `CHANGELOG.md` under
+   "Unreleased" for anything user-visible.
+
+Thank you for helping to make this project better.

@@ -3,8 +3,17 @@ name: RCG
 on:
   push:
     branches: [main, develop]
+    tags: ["v*"]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -15,7 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "requirements*.txt"
+          cache-dependency-glob: "pyproject.toml"
       - name: Set up Python
         run: uv python install 3.12
       - name: Lint with ruff
@@ -31,15 +40,15 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "requirements*.txt"
+          cache-dependency-glob: "pyproject.toml"
       - name: Set up Python
         run: uv python install 3.12
       - name: Install dependencies
         run: |
-          uv venv
-          uv pip install mypy -r requirements.txt
+          uv venv --python 3.12
+          uv pip install -e ".[dev,gui]"
       - name: Type check with mypy
-        run: uv run mypy rcg/ --ignore-missing-imports --no-error-summary || true
+        run: uv run --no-sync mypy rcg
 
   test:
     runs-on: ${{ matrix.os }}
@@ -47,7 +56,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    env:
+      QT_QPA_PLATFORM: offscreen
+      # tests/gui/conftest.py fails (instead of skipping) when PySide6 or pytest-qt is missing.
+      RCG_REQUIRE_GUI_TESTS: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -55,18 +68,96 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "requirements*.txt"
+          cache-dependency-glob: "pyproject.toml"
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
+      - name: Install Qt system libraries (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libxcb-cursor0
       - name: Install dependencies
         run: |
-          uv venv
-          uv pip install pytest pytest-cov pytest-mock -r requirements.txt
+          uv venv --python ${{ matrix.python-version }}
+          uv pip install -e ".[dev,gui]" pyswmm
       - name: Test with pytest
-        run: uv run pytest rcg/ --cov=rcg --cov-report=xml
+        run: uv run --no-sync pytest -p no:cacheprovider -rs --cov=rcg --cov-report=xml
       - name: Upload coverage reports to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
+
+  build:
+    name: build (${{ matrix.os }})
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    needs: [lint, type-check, test]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: dist/RCG.exe
+            cli: dist-cli/rcg.exe
+          - os: macos-latest
+            artifact: dist/RCG-macos.zip
+            cli: dist-cli/rcg
+          - os: ubuntu-latest
+            artifact: dist/RCG
+            cli: dist-cli/rcg
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install Qt system libraries (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libxcb-cursor0
+      - name: Install dependencies
+        run: |
+          uv venv --python 3.12
+          uv pip install ".[gui]" pyinstaller pillow
+      - name: Build the desktop app
+        run: uv run --no-sync pyinstaller packaging/rcg-gui.spec
+      - name: Build the command-line tool
+        run: uv run --no-sync pyinstaller packaging/rcg.spec --distpath dist-cli
+      - name: Archive the macOS app bundle
+        if: runner.os == 'macOS'
+        run: ditto -c -k --sequesterRsrc --keepParent dist/RCG.app dist/RCG-macos.zip
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rcg-gui-${{ runner.os }}
+          path: |
+            ${{ matrix.artifact }}
+            ${{ matrix.cli }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Rename assets
+        run: |
+          mkdir release
+          cp artifacts/rcg-gui-Windows/dist/RCG.exe release/RCG-windows.exe
+          cp artifacts/rcg-gui-Windows/dist-cli/rcg.exe release/rcg-cli-windows.exe
+          cp artifacts/rcg-gui-macOS/dist/RCG-macos.zip release/RCG-macos.zip
+          cp artifacts/rcg-gui-macOS/dist-cli/rcg release/rcg-cli-macos
+          cp artifacts/rcg-gui-Linux/dist/RCG release/RCG-linux
+          cp artifacts/rcg-gui-Linux/dist-cli/rcg release/rcg-cli-linux
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

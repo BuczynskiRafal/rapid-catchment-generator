@@ -1,166 +1,104 @@
-"""
-Custom exception hierarchy for RCG.
+"""Exception hierarchy for RCG.
 
-This module provides a structured exception hierarchy for the rapid-catchment-generator
-project, enabling more precise error handling and better error messages.
+Every error raised on purpose by the library derives from :class:`RCGError`, so callers
+(the CLI, the GUI) can show ``str(error)`` to the user and treat anything else as a bug.
 """
+
+from __future__ import annotations
+
+from typing import Any
 
 
 class RCGError(Exception):
-    """
-    Base exception for all RCG errors.
-
-    All custom exceptions in the RCG project should inherit from this class
-    to enable catching all RCG-related errors with a single except clause.
-
-    Example
-    -------
-    >>> try:
-    ...     # RCG operations
-    ... except RCGError as e:
-    ...     print(f"RCG error: {e}")
-    """
-
-    pass
+    """Base class for all RCG errors."""
 
 
 class ValidationError(RCGError):
-    """
-    Exception raised for input validation errors.
-
-    This exception is raised when user input fails validation checks,
-    such as invalid file paths, out-of-range values, or invalid enum values.
+    """Invalid user input (area, category, file path, ...).
 
     Attributes
     ----------
-    field : str, optional
-        Name of the field that failed validation.
-    value : any, optional
-        The invalid value that was provided.
-
-    Example
-    -------
-    >>> raise ValidationError("Area must be positive", field="area", value=-5)
+    field : str or None
+        Name of the offending input.
+    value : Any
+        The rejected value.
     """
 
-    def __init__(self, message: str, field: str = None, value=None):
+    def __init__(self, message: str, field: str | None = None, value: Any = None) -> None:
         super().__init__(message)
         self.field = field
         self.value = value
 
 
 class ConfigurationError(RCGError):
-    """
-    Exception raised for configuration-related errors.
-
-    This exception is raised when there are issues with configuration files,
-    missing configuration values, or invalid configuration formats.
+    """A packaged configuration file is missing or malformed.
 
     Attributes
     ----------
-    config_file : str, optional
-        Path to the configuration file that caused the error.
-
-    Example
-    -------
-    >>> raise ConfigurationError("Invalid JSON format", config_file="rules.json")
+    config_file : str or None
+        Path of the offending file.
     """
 
-    def __init__(self, message: str, config_file: str = None):
+    def __init__(self, message: str, config_file: str | None = None) -> None:
         super().__init__(message)
         self.config_file = config_file
 
 
 class FuzzyEngineError(RCGError):
-    """
-    Exception raised for fuzzy logic computation errors.
-
-    This exception is raised when fuzzy inference fails, such as when
-    there are no applicable rules for the given input or when computation
-    produces invalid results.
+    """Fuzzy inference failed.
 
     Attributes
     ----------
-    land_form : int, optional
-        Land form value that caused the error.
-    land_cover : int, optional
-        Land cover value that caused the error.
-
-    Example
-    -------
-    >>> raise FuzzyEngineError("No rules match input", land_form=5, land_cover=10)
+    land_form, land_cover : int or None
+        Inputs that caused the failure.
     """
 
-    def __init__(self, message: str, land_form: int = None, land_cover: int = None):
+    def __init__(self, message: str, land_form: int | None = None, land_cover: int | None = None) -> None:
         super().__init__(message)
         self.land_form = land_form
         self.land_cover = land_cover
 
 
 class ModelOperationError(RCGError):
-    """
-    Exception raised for SWMM model operation errors.
-
-    This exception is raised when operations on the SWMM model fail,
-    such as when adding subcatchments, reading/writing INP files,
-    or when model validation fails.
+    """Reading, editing or writing a SWMM model failed.
 
     Attributes
     ----------
-    operation : str, optional
-        Name of the operation that failed.
-    model_path : str, optional
-        Path to the model file.
-
-    Example
-    -------
-    >>> raise ModelOperationError("Failed to add subcatchment", operation="add_subcatchment")
+    operation : str or None
+        Step that failed (``read``, ``verify``, ``backup``, ``write``, ...).
+    model_path : str or None
+        Model file involved.
     """
 
-    def __init__(self, message: str, operation: str = None, model_path: str = None):
+    def __init__(self, message: str, operation: str | None = None, model_path: str | None = None) -> None:
         super().__init__(message)
         self.operation = operation
         self.model_path = model_path
 
 
 class BackupError(RCGError):
-    """
-    Exception raised for backup/restore operation errors.
-
-    This exception is raised when backup creation or restoration fails.
+    """Creating or restoring a backup failed.
 
     Attributes
     ----------
-    backup_path : str, optional
-        Path to the backup file.
-
-    Example
-    -------
-    >>> raise BackupError("Failed to create backup", backup_path="/path/to/backup.inp")
+    backup_path : str or None
+        Backup file involved.
     """
 
-    def __init__(self, message: str, backup_path: str = None):
+    def __init__(self, message: str, backup_path: str | None = None) -> None:
         super().__init__(message)
         self.backup_path = backup_path
 
 
 class RuleDefinitionError(RCGError):
-    """
-    Exception raised for fuzzy rule definition errors.
-
-    This exception is raised when there are issues with defining fuzzy rules,
-    such as missing conditions, invalid consequents, or duplicate rule names.
+    """A fuzzy rule is malformed.
 
     Attributes
     ----------
-    rule_name : str, optional
-        Name of the rule that caused the error.
-
-    Example
-    -------
-    >>> raise RuleDefinitionError("Rule has no conditions", rule_name="my_rule")
+    rule_name : str or None
+        Name of the offending rule.
     """
 
-    def __init__(self, message: str, rule_name: str = None):
+    def __init__(self, message: str, rule_name: str | None = None) -> None:
         super().__init__(message)
         self.rule_name = rule_name

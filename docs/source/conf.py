@@ -11,8 +11,10 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Rapid Catchment Generator"
-copyright = "2023, Rafał Buczyński"
+copyright = "2023-2026, Rafał Buczyński"
 author = "Rafał Buczyński"
+release = "2.0.0"
+version = "2.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -24,6 +26,11 @@ extensions = [
     "sphinx.ext.viewcode",
     # 'recommonmark',
 ]
+
+# Heavy third-party dependencies are mocked so the docs build (e.g. on Read the Docs)
+# without installing them.
+autodoc_mock_imports = ["skfuzzy", "swmmio", "pandas", "numpy", "scipy", "networkx", "PySide6"]
+autodoc_member_order = "bysource"
 
 templates_path = ["_templates"]
 exclude_patterns = []

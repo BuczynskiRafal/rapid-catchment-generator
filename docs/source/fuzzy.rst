@@ -20,10 +20,18 @@ fuzzy.memberships module
    :undoc-members:
    :show-inheritance:
 
-fuzzy.rules module
+fuzzy.rule_definitions module
 ------------------------------
 
-.. automodule:: rcg.fuzzy.rules
+.. automodule:: rcg.fuzzy.rule_definitions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+fuzzy.rule_engine module
+------------------------------
+
+.. automodule:: rcg.fuzzy.rule_engine
    :members:
    :undoc-members:
    :show-inheritance:
