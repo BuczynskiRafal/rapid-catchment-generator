@@ -35,10 +35,17 @@ def test_inspect_does_not_load_the_fuzzy_stack():
 
 
 def test_engine_selects_a_non_gui_matplotlib_backend():
+    # scikit-fuzzy treats matplotlib as optional, so it may be absent; the env var
+    # is our contract, the live backend is checked only when matplotlib exists.
     _run(
         "import os\n"
         "os.environ.pop('MPLBACKEND', None)\n"
-        "import rcg.fuzzy.engine, matplotlib\n"
+        "import rcg.fuzzy.engine\n"
         "assert os.environ['MPLBACKEND'] == 'Agg'\n"
-        "assert matplotlib.get_backend().lower() == 'agg', matplotlib.get_backend()\n"
+        "try:\n"
+        "    import matplotlib\n"
+        "except ImportError:\n"
+        "    pass\n"
+        "else:\n"
+        "    assert matplotlib.get_backend().lower() == 'agg', matplotlib.get_backend()\n"
     )
