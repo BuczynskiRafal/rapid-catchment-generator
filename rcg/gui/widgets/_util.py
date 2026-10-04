@@ -7,7 +7,7 @@ from typing import Any
 
 from PySide6.QtCore import QEvent, QRect, QSize, Qt
 from PySide6.QtGui import QResizeEvent
-from PySide6.QtWidgets import QFrame, QLabel, QSizePolicy, QWidget
+from PySide6.QtWidgets import QBoxLayout, QFrame, QHBoxLayout, QLabel, QLayout, QSizePolicy, QVBoxLayout, QWidget
 
 
 def set_prop(widget: QWidget, name: str, value: Any) -> None:
@@ -46,6 +46,45 @@ def divider(parent: QWidget | None = None) -> QFrame:
     line.setProperty("divider", True)
     line.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     return line
+
+
+LayoutItem = QWidget | QLayout | int | tuple[QWidget | QLayout, int] | tuple[QWidget, int, Qt.AlignmentFlag]
+"""An entry for :func:`hbox` / :func:`vbox`: a widget, a layout, a stretch factor (``int``),
+``(widget_or_layout, stretch)`` or ``(widget, stretch, alignment)``."""
+
+
+def _fill(box: QBoxLayout, items: Iterable[LayoutItem], spacing: int | None) -> None:
+    box.setContentsMargins(0, 0, 0, 0)
+    if spacing is not None:
+        box.setSpacing(spacing)
+    for item in items:
+        if isinstance(item, int):
+            box.addStretch(item)
+        elif isinstance(item, QLayout):
+            box.addLayout(item)
+        elif isinstance(item, QWidget):
+            box.addWidget(item)
+        elif isinstance(item[0], QLayout):
+            box.addLayout(item[0], item[1])
+        else:
+            box.addWidget(*item)  # type: ignore[arg-type]
+
+
+def hbox(*items: LayoutItem, spacing: int | None = None, parent: QWidget | None = None) -> QHBoxLayout:
+    """Return a margin-less horizontal layout holding *items* (see :data:`LayoutItem`).
+
+    ``spacing=None`` keeps the style's default spacing; *parent* installs the layout on it.
+    """
+    box = QHBoxLayout(parent) if parent is not None else QHBoxLayout()
+    _fill(box, items, spacing)
+    return box
+
+
+def vbox(*items: LayoutItem, spacing: int | None = None, parent: QWidget | None = None) -> QVBoxLayout:
+    """Return a margin-less vertical layout holding *items* (see :data:`LayoutItem`)."""
+    box = QVBoxLayout(parent) if parent is not None else QVBoxLayout()
+    _fill(box, items, spacing)
+    return box
 
 
 class WrapLabel(QLabel):

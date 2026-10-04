@@ -375,3 +375,31 @@ def test_dark_palette_restyles_the_window(qtbot, rcg_app, window, model_copy, sc
     finally:
         rcg_app.setPalette(original)
         qtbot.waitUntil(lambda: not theme.current_tokens().dark, timeout=5_000)
+
+
+def test_box_helpers_lay_out_items_like_explicit_calls(qtbot, rcg_app):
+    """``hbox``/``vbox``: no margins, ints are stretches, tuples carry stretch and alignment."""
+    from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
+
+    from rcg.gui.widgets._util import hbox, vbox
+
+    host = QWidget()
+    qtbot.addWidget(host)
+    first, second, third = (QLabel(text, host) for text in "abc")
+    inner = hbox(third)
+    box = vbox(first, 2, (second, 1, Qt.AlignmentFlag.AlignHCenter), (inner, 3), spacing=5, parent=host)
+
+    assert host.layout() is box
+    assert box.spacing() == 5
+    margins = box.contentsMargins()
+    assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (0, 0, 0, 0)
+    assert box.count() == 4
+    assert box.itemAt(0).widget() is first and box.stretch(0) == 0
+    assert box.itemAt(1).spacerItem() is not None and box.stretch(1) == 2
+    assert box.itemAt(2).widget() is second and box.stretch(2) == 1
+    assert box.itemAt(2).alignment() == Qt.AlignmentFlag.AlignHCenter
+    assert box.itemAt(3).layout() is inner and box.stretch(3) == 3
+    # spacing=None leaves it unset: like a bare QHBoxLayout, it follows the parent layout.
+    reference = QHBoxLayout()
+    box.addLayout(reference)
+    assert inner.spacing() == reference.spacing() == 5

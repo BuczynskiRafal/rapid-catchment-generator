@@ -54,7 +54,7 @@ from rcg.gui.file_actions import show_in_folder
 from rcg.gui.help_dialog import HelpDialog
 from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPathField, PreviewPanel
-from rcg.gui.widgets._util import ElidedLabel, WrapLabel, card, divider, label, set_prop
+from rcg.gui.widgets._util import ElidedLabel, LayoutItem, WrapLabel, card, divider, hbox, label, set_prop, vbox
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.widgets.preview import PREPARING_TEXT
@@ -307,21 +307,11 @@ class MainWindow(QMainWindow):
         self.help_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.help_button.clicked.connect(self.show_help)
 
-        titles = QVBoxLayout()
-        titles.setContentsMargins(0, 0, 0, 0)
-        titles.setSpacing(0)
-        titles.addWidget(title)
-        titles.addWidget(subtitle)
-
-        header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header.setSpacing(12)
+        centred = Qt.AlignmentFlag.AlignVCenter
         icon = self._header_icon(parent)
-        if icon is not None:
-            header.addWidget(icon, 0, Qt.AlignmentFlag.AlignVCenter)
-        header.addLayout(titles, 1)
-        header.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
-        return header
+        leading: tuple[LayoutItem, ...] = ((icon, 0, centred),) if icon is not None else ()
+        titles = vbox(title, subtitle, spacing=0)
+        return hbox(*leading, (titles, 1), (self.help_button, 0, centred), spacing=12)
 
     def _header_icon(self, parent: QWidget) -> QLabel | None:
         """The application icon, sharp on high-DPI screens; ``None`` if it is missing."""
@@ -350,17 +340,8 @@ class MainWindow(QMainWindow):
         content.setObjectName("inputsContent")
 
         self.preview = PreviewPanel(content)
-        row = QHBoxLayout()
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(self.GAP)
-        row.addWidget(self._build_inputs_card(content), 1)
-        row.addWidget(self.preview, 1)
-
-        cards = QVBoxLayout(content)
-        cards.setContentsMargins(0, 0, 0, 0)
-        cards.setSpacing(self.GAP)
-        cards.addWidget(self._build_model_card(content))
-        cards.addLayout(row)
+        row = hbox((self._build_inputs_card(content), 1), (self.preview, 1), spacing=self.GAP)
+        vbox(self._build_model_card(content), row, spacing=self.GAP, parent=content)
 
         self.inputs_scroll = _VerticalScrollArea(parent)
         self.inputs_scroll.setObjectName("inputsScroll")
@@ -430,12 +411,7 @@ class MainWindow(QMainWindow):
 
         # Side by side at their own width (the focus ring hugs the text): the card spans
         # the window, so one row is enough and keeps the card short.
-        outputs = QHBoxLayout()
-        outputs.setContentsMargins(0, 0, 0, 0)
-        outputs.setSpacing(24)
-        outputs.addWidget(self.in_place_radio)
-        outputs.addWidget(self.copy_radio)
-        outputs.addStretch(1)
+        outputs = hbox(self.in_place_radio, self.copy_radio, 1, spacing=24)
 
         grid = self._new_grid()
         grid.addWidget(self._field_label("File", self.path_field.edit, box), 0, 0)
@@ -483,10 +459,7 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.form_combo, 3, 1)
         grid.addWidget(self.form_hint, 4, 1)
         grid.setRowMinimumHeight(5, 6)
-        area_row = QHBoxLayout()
-        area_row.setSpacing(10)
-        area_row.addWidget(self.area_spin)
-        area_row.addWidget(area_caption, 1)  # elides instead of widening the column
+        area_row = hbox(self.area_spin, (area_caption, 1), spacing=10)  # the caption elides instead of widening the column
         grid.addWidget(self._field_label("Area", self.area_spin, box), 6, 0)
         grid.addLayout(area_row, 6, 1)
         layout = self._card_layout(box, title, grid)

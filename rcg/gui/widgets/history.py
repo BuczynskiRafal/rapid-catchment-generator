@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 
 from rcg.gui.categories import catchment_type_label
-from rcg.gui.widgets._util import ElidedLabel, divider, label, set_prop
+from rcg.gui.widgets._util import ElidedLabel, divider, hbox, label, set_prop
 
 __all__ = ["HistoryEntry", "HistoryPanel"]
 
@@ -64,21 +64,8 @@ class _HistoryRow(QWidget):
         self.folder_button.setProperty("flat", True)
         self.folder_button.setAccessibleName(f"Show {entry.output_path.name} in folder")
 
-        top = QHBoxLayout()
-        top.setContentsMargins(0, 0, 0, 0)
-        top.setSpacing(8)
-        top.addWidget(self.title)
-        top.addWidget(self.details)
-        top.addWidget(self.state)
-        top.addStretch(1)
-        top.addWidget(self.undo_button)
-        top.addWidget(self.folder_button)
-
-        bottom = QHBoxLayout()
-        bottom.setContentsMargins(0, 0, 0, 0)
-        bottom.setSpacing(12)
-        bottom.addWidget(self.file)
-        bottom.addWidget(self.backup, 1)
+        top = hbox(self.title, self.details, self.state, 1, self.undo_button, self.folder_button, spacing=8)
+        bottom = hbox(self.file, (self.backup, 1), spacing=12)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 8, 0, 8)
@@ -107,11 +94,7 @@ class HistoryPanel(QFrame):
 
         title = label("History", "sectionTitle", self)
         self.count = label("", "caption", self)
-        header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header.addWidget(title)
-        header.addStretch(1)
-        header.addWidget(self.count)
+        header = hbox(title, 1, self.count)
 
         self.placeholder = label(
             "Subcatchments you add appear here. The latest one can be undone from its backup.",

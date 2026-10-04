@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLineEdit, QPushButton, QWidget
+from PySide6.QtWidgets import QFileDialog, QLineEdit, QPushButton, QWidget
 
 from rcg.exceptions import RCGError
 from rcg.gui.categories import infiltration_method_label
-from rcg.gui.widgets._util import ElidedLabel, set_prop
+from rcg.gui.widgets._util import ElidedLabel, hbox, set_prop
 from rcg.validation import validate_inp_path
 
 if TYPE_CHECKING:
@@ -125,11 +125,7 @@ class ModelPathField(QWidget):
         self.detail = ElidedLabel("", "caption", parent, mode=Qt.TextElideMode.ElideRight)
         self.detail.setAccessibleName("Model details")
 
-        row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(8)
-        row.addWidget(self.edit, 1)
-        row.addWidget(self.browse_button)
+        hbox((self.edit, 1), self.browse_button, spacing=8, parent=self)
 
     # -- public API ------------------------------------------------------------------
     def path(self) -> Path | None:
