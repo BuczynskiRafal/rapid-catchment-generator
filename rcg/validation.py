@@ -223,23 +223,27 @@ def validate_inp_path(path: str | Path, *, must_exist: bool = True) -> Path:
         If the path is unusable.
     """
     p = Path(path).expanduser()
+
+    def error(message: str) -> ValidationError:
+        return ValidationError(message, field="inp_path", value=path)
+
     if p.suffix.lower() != ".inp":
-        raise ValidationError(f"Expected a SWMM .inp file, got: {str(path)!r}", field="inp_path", value=path)
+        raise error(f"Expected a SWMM .inp file, got: {str(path)!r}")
     if not must_exist:
         if not p.parent.is_dir():
-            raise ValidationError(f"Directory does not exist: {str(p.parent)!r}", field="inp_path", value=path)
+            raise error(f"Directory does not exist: {str(p.parent)!r}")
         if p.exists() and not p.is_file():
-            raise ValidationError(f"Not a file: {str(path)!r}", field="inp_path", value=path)
+            raise error(f"Not a file: {str(path)!r}")
         return p
     if not p.exists():
-        raise ValidationError(f"File does not exist: {str(path)!r}", field="inp_path", value=path)
+        raise error(f"File does not exist: {str(path)!r}")
     if not p.is_file():
-        raise ValidationError(f"Not a file: {str(path)!r}", field="inp_path", value=path)
+        raise error(f"Not a file: {str(path)!r}")
     try:
         with p.open("rb") as fh:
             empty = not fh.read(1)
     except OSError as e:
-        raise ValidationError(f"Cannot read {str(path)!r}: {e.strerror or e}", field="inp_path", value=path) from e
+        raise error(f"Cannot read {str(path)!r}: {e.strerror or e}") from e
     if empty:
-        raise ValidationError(f"File is empty: {str(path)!r}", field="inp_path", value=path)
+        raise error(f"File is empty: {str(path)!r}")
     return p

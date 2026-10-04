@@ -259,38 +259,35 @@ class _Model:
         return is_metric(self.flow_units)  # the module-level rcg.catchment.is_metric
 
 
+def _read_error(path: Path, message: str) -> ModelOperationError:
+    return ModelOperationError(message, operation="read", model_path=str(path))
+
+
 def _check_structure(raw: bytes, doc: _InpDocument, path: Path) -> None:
     """Reject files that are not 8-bit text SWMM input files (with a message for the user)."""
     for bom, encoding in _WIDE_BOMS:
         if raw.startswith(bom):
-            raise ModelOperationError(
+            raise _read_error(
+                path,
                 f"{path.name} is saved as {encoding} text, which SWMM cannot read. "
                 "Save it as UTF-8 or ANSI (for example from the SWMM GUI) and try again.",
-                operation="read",
-                model_path=str(path),
             )
     if b"\x00" in raw:
-        raise ModelOperationError(
-            f"{path.name} is not a text file (it contains binary data), so it cannot be a SWMM model.",
-            operation="read",
-            model_path=str(path),
-        )
+        raise _read_error(path, f"{path.name} is not a text file (it contains binary data), so it cannot be a SWMM model.")
     sections = doc.sections()
     if not sections & _SWMM_SECTIONS:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} is not a SWMM model: it has no SWMM section such as [TITLE], [OPTIONS], "
             "[JUNCTIONS] or [SUBCATCHMENTS].",
-            operation="read",
-            model_path=str(path),
         )
     epanet = set(sections & _EPANET_ONLY_SECTIONS)
     if {"JUNCTIONS", "PATTERNS"} <= sections:  # shared names, but EPANET's core pair without SWMM links
         epanet.add("PATTERNS")
     if epanet and not sections & _SWMM_ONLY_SECTIONS:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} looks like an EPANET network ({', '.join(f'[{s}]' for s in sorted(epanet))}), not a SWMM model.",
-            operation="read",
-            model_path=str(path),
         )
 
 
@@ -302,18 +299,16 @@ def _options(doc: _InpDocument, path: Path) -> tuple[str, str]:
             values[row[0].upper()] = row[1].strip('"').upper()  # SWMM keeps the last value given
     flow_units = values.get("FLOW_UNITS", DEFAULT_FLOW_UNITS)
     if flow_units not in FLOW_UNITS_SI + FLOW_UNITS_US:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} has an unknown FLOW_UNITS {flow_units!r}; expected one of "
             f"{', '.join(FLOW_UNITS_US + FLOW_UNITS_SI)}.",
-            operation="read",
-            model_path=str(path),
         )
     method = values.get("INFILTRATION", DEFAULT_INFILTRATION)
     if method not in INFILTRATION_METHODS:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} has an unknown INFILTRATION method {method!r}; expected one of {', '.join(INFILTRATION_METHODS)}.",
-            operation="read",
-            model_path=str(path),
         )
     return flow_units, method
 
@@ -322,7 +317,7 @@ def _read_model(path: Path) -> _Model:
     try:
         raw = path.read_bytes()
     except OSError as e:
-        raise ModelOperationError(f"Cannot read {path}: {e}", operation="read", model_path=str(path)) from e
+        raise _read_error(path, f"Cannot read {path}: {e}") from e
     # latin-1 maps every byte to one code point, so untouched text round-trips exactly
     # whatever the file's real encoding (UTF-8, cp1250, ...); everything we add is ASCII.
     doc = _InpDocument(raw.decode("latin-1"))
