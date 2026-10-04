@@ -443,6 +443,13 @@ def test_section_headers_in_any_case_are_accepted(example_inp, urban_params, old
 # --------------------------------------------------------------------------- structural check
 
 
+def test_section_sets_are_consistent():
+    # A misspelt shared section would silently stay in the SWMM-only set.
+    assert writer._SHARED_WITH_EPANET < writer._SWMM_SECTIONS
+    assert len(writer._SWMM_ONLY_SECTIONS) == len(writer._SWMM_SECTIONS) - len(writer._SHARED_WITH_EPANET) == 42
+    assert not writer._SWMM_SECTIONS & writer._EPANET_ONLY_SECTIONS
+
+
 @pytest.mark.parametrize(
     ("content", "match"),
     [
