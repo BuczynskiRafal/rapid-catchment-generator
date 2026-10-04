@@ -18,6 +18,7 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 import skfuzzy as fuzz  # noqa: E402
 from skfuzzy import control as ctrl  # noqa: E402
 
+from rcg.fuzzy._lazy import lazy_singleton  # noqa: E402
 from rcg.fuzzy.categories import LandCover, LandForm  # noqa: E402
 
 if TYPE_CHECKING:
@@ -177,10 +178,6 @@ class Prototype:
         return self._engine.classify_catchment(result)
 
 
-_default_fuzzy_engine: FuzzyEngine | None = None
-_default_lock = threading.Lock()
-
-
 def create_fuzzy_engine(memberships: Memberships | None = None, rule_engine: RuleEngine | None = None) -> FuzzyEngine:
     """Create a new, independent :class:`FuzzyEngine`.
 
@@ -199,11 +196,7 @@ def create_fuzzy_engine(memberships: Memberships | None = None, rule_engine: Rul
     return FuzzyEngine(memberships=memberships, rule_engine=rule_engine)
 
 
+@lazy_singleton
 def get_default_fuzzy_engine() -> FuzzyEngine:
     """Return the shared engine, building it on first use (thread-safe)."""
-    global _default_fuzzy_engine
-    if _default_fuzzy_engine is None:
-        with _default_lock:
-            if _default_fuzzy_engine is None:
-                _default_fuzzy_engine = FuzzyEngine()
-    return _default_fuzzy_engine
+    return FuzzyEngine()

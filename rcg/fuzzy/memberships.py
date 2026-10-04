@@ -7,11 +7,11 @@ membership function instances with proper dependency injection support.
 
 from __future__ import annotations
 
-import threading
-
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
+
+from ._lazy import lazy_singleton
 
 
 class Memberships:
@@ -125,11 +125,6 @@ class Memberships:
             self.catchment[name] = fuzz.trimf(self.catchment.universe, param)
 
 
-# Cache for default memberships instance (lazy initialization)
-_default_memberships: Memberships | None = None
-_default_lock = threading.Lock()
-
-
 def create_memberships() -> Memberships:
     """
     Factory function to create a new Memberships instance.
@@ -150,6 +145,7 @@ def create_memberships() -> Memberships:
     return Memberships()
 
 
+@lazy_singleton
 def get_default_memberships() -> Memberships:
     """
     Get the default (shared) Memberships instance.
@@ -162,9 +158,4 @@ def get_default_memberships() -> Memberships:
     Memberships
         The shared default Memberships instance.
     """
-    global _default_memberships
-    if _default_memberships is None:
-        with _default_lock:
-            if _default_memberships is None:
-                _default_memberships = Memberships()
-    return _default_memberships
+    return Memberships()

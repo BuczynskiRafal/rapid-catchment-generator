@@ -11,12 +11,12 @@ outputs to several land forms of one land cover.
 
 from __future__ import annotations
 
-import threading
 from collections import Counter
 from collections.abc import Sequence
 
 from rcg.exceptions import RuleDefinitionError
 
+from ._lazy import lazy_singleton
 from .categories import Catchments, Impervious, LandCover, LandForm, Slope
 from .rule_engine import RuleEngine, rule
 
@@ -241,15 +241,7 @@ def define_all_rules(engine: RuleEngine, table: Sequence[RuleRow] = RULE_TABLE) 
     return engine
 
 
-_default_rules: RuleEngine | None = None
-_default_rules_lock = threading.Lock()
-
-
+@lazy_singleton
 def get_default_rules() -> RuleEngine:
     """Return the shared rule engine populated with :func:`define_all_rules` (built once)."""
-    global _default_rules
-    if _default_rules is None:
-        with _default_rules_lock:
-            if _default_rules is None:
-                _default_rules = define_all_rules(RuleEngine())
-    return _default_rules
+    return define_all_rules(RuleEngine())
