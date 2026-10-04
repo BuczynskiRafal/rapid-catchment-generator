@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- `rcg.restore(backup_path, target_path, expected_sha256=None)` undoes an apply from its backup. With
+  `expected_sha256` it refuses (and keeps the file) when the model was edited after RCG wrote it. The desktop app's Undo
+  uses it. A refused or failed restore raises `BackupError`.
+- `ApplyResult.written_sha256`: SHA-256 of the bytes written, also in `to_dict()` and `rcg add --json`.
+- Backup handling lives in `rcg.inp_manage.backups`; `rcg.inp_manage.writer.create_backup` and `BACKUP_DIR_NAME` are
+  still importable from the writer.
+
 ### Changed
 - Desktop app layout: the SWMM model card spans the window; the inputs and the preview sit side by side at equal height,
   with *Add subcatchment* at the bottom of the inputs card; the history spans the window below and takes any extra
