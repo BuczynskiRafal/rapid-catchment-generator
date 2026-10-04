@@ -5,6 +5,7 @@
   single load and one atomic write.
 * :func:`inspect` describes a model (units, infiltration method, rain gage, outlet)
   without changing it.
+* :func:`restore` undoes an :func:`apply` from its backup.
 * :func:`warm_up` builds the shared fuzzy engine ahead of time (takes seconds).
 
 The fuzzy engine (scikit-fuzzy and its scientific stack) is imported only inside
@@ -34,7 +35,16 @@ from rcg.validation import (
 if TYPE_CHECKING:
     from rcg.fuzzy.engine import FuzzyEngine
 
-__all__ = ["ApplyResult", "ModelInfo", "SubcatchmentParameters", "apply", "inspect", "preview", "warm_up"]
+__all__ = [
+    "ApplyResult",
+    "ModelInfo",
+    "SubcatchmentParameters",
+    "apply",
+    "inspect",
+    "preview",
+    "restore",
+    "warm_up",
+]
 
 logger = get_logger("service")
 
@@ -215,3 +225,28 @@ def inspect(inp_path: str | Path) -> ModelInfo:
     from rcg.inp_manage.writer import inspect_model
 
     return inspect_model(validate_inp_path(inp_path))
+
+
+def restore(backup_path: str | Path, target_path: str | Path, *, expected_sha256: str | None = None) -> None:
+    """Undo an :func:`apply` by copying its backup back over the written file.
+
+    Parameters
+    ----------
+    backup_path : str or Path
+        :attr:`ApplyResult.backup_path` of the apply to undo. The backup is kept.
+    target_path : str or Path
+        :attr:`ApplyResult.output_path` of that apply.
+    expected_sha256 : str, optional
+        :attr:`ApplyResult.written_sha256`. When given, the file is restored only if it
+        is still exactly as RCG wrote it, so edits made elsewhere are not lost.
+
+    Raises
+    ------
+    BackupError
+        If the backup is gone, the file changed since it was written, or the copy
+        fails. The file is replaced atomically, never left half-written.
+    """
+    from rcg.inp_manage.backups import restore_backup
+
+    restore_backup(Path(backup_path), Path(target_path), expected_sha256=expected_sha256)
+    logger.info("Restored %s from %s", target_path, backup_path)

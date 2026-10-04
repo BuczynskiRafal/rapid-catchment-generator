@@ -10,7 +10,7 @@ import rcg
 from rcg.catchment import ApplyResult, ModelInfo, SubcatchmentParameters
 from rcg.exceptions import ModelOperationError, ValidationError
 from rcg.fuzzy.categories import LandCover, LandForm
-from rcg.service import apply, inspect, preview, warm_up
+from rcg.service import apply, inspect, preview, restore, warm_up
 
 
 def test_public_api():
@@ -19,6 +19,7 @@ def test_public_api():
     assert rcg.apply is apply
     assert rcg.warm_up is warm_up
     assert rcg.inspect is inspect
+    assert rcg.restore is restore
     assert rcg.SubcatchmentParameters is SubcatchmentParameters
     assert rcg.ApplyResult is ApplyResult
     assert rcg.ModelInfo is ModelInfo
