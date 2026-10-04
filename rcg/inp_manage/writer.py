@@ -30,6 +30,7 @@ spell it ``[POLYGONS]``, and its index parsing turns ids such as ``001`` into ``
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import math
 import os
 import re
@@ -702,7 +703,8 @@ def append_subcatchments(
     _check_unique(updated, plan.ids)
     _verify(updated, plan.ids)
 
-    backup_path = _write_atomic(target, updated.encode("latin-1"), backup=backup, source=model)
+    data = updated.encode("latin-1")
+    backup_path = _write_atomic(target, data, backup=backup, source=model)
     logger.debug("Wrote %s (backup: %s)", target, backup_path)
     return ApplyResult(
         output_path=target,
@@ -712,4 +714,5 @@ def append_subcatchments(
         outlet=plan.outlet,
         flow_units=model.flow_units,
         infiltration_method=model.infiltration_method,
+        written_sha256=hashlib.sha256(data).hexdigest(),
     )

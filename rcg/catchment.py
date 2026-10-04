@@ -325,6 +325,10 @@ class ApplyResult:
         was written in acres, the width in feet and depression storage in inches.
     infiltration_method : str
         ``INFILTRATION`` option of the model; it decided the ``[INFILTRATION]`` row.
+    written_sha256 : str or None
+        SHA-256 (hex) of the bytes written to ``output_path``. Pass it to
+        :func:`rcg.restore` to refuse an undo once the file was edited elsewhere.
+        ``None`` only for results built by hand.
     """
 
     output_path: Path
@@ -334,6 +338,7 @@ class ApplyResult:
     outlet: str
     flow_units: str = "CMS"
     infiltration_method: str = "GREEN_AMPT"
+    written_sha256: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serialisable dict (paths as strings)."""
@@ -345,6 +350,7 @@ class ApplyResult:
             "outlet": self.outlet,
             "flow_units": self.flow_units,
             "infiltration_method": self.infiltration_method,
+            "written_sha256": self.written_sha256,
         }
 
 

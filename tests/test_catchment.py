@@ -88,4 +88,5 @@ def test_apply_result_to_dict():
         "outlet": "O1",
         "flow_units": "CFS",
         "infiltration_method": "HORTON",
+        "written_sha256": None,
     }
