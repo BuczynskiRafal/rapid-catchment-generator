@@ -25,8 +25,6 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
-    QDialog,
-    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -40,14 +38,13 @@ from PySide6.QtWidgets import (
 
 from rcg.exceptions import RCGError
 from rcg.gui.cards import OUTPUT_COPY, OUTPUT_IN_PLACE, InputsCard, ModelCard, align_field_labels
-from rcg.gui.file_actions import show_in_folder
+from rcg.gui.file_actions import ask_save_path, choose_output_path, confirm_replace, normalise_output_path, show_in_folder
 from rcg.gui.help_dialog import HelpDialog
 from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
 from rcg.gui.widgets._util import ElidedLabel, LayoutItem, hbox, label, vbox
 from rcg.gui.widgets.containers import VerticalScrollArea, WindowCentral, invalidate_layouts
-from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.widgets.preview import PREPARING_TEXT
 from rcg.gui.workers import Task
 from rcg.logging_config import get_logger
@@ -68,25 +65,6 @@ CLOSE_WAIT_MS = 200
 _KEY_GEOMETRY = "window/geometry"
 _KEY_LAST_DIR = "paths/last_dir"
 _KEY_OUTPUT_MODE = "output/mode"
-
-
-def normalise_output_path(path: Path) -> Path:
-    """Make sure *path* ends in ``.inp`` by appending it (``model_v1.1`` -> ``model_v1.1.inp``).
-
-    The suffix is appended, never substituted: replacing it would turn a dotted name
-    into a different, possibly existing, sibling file.
-    """
-    return path if path.suffix.lower() == ".inp" else path.with_name(f"{path.name}.inp")
-
-
-def _copy_suggestion(source: Path) -> Path:
-    """``<stem>_rcg.inp`` next to the source, numbered if that file already exists."""
-    candidate = source.with_name(f"{source.stem}_rcg.inp")
-    number = 2
-    while candidate.exists() and number < 100:
-        candidate = source.with_name(f"{source.stem}_rcg_{number}.inp")
-        number += 1
-    return candidate
 
 
 @dataclass
@@ -466,37 +444,15 @@ class MainWindow(QMainWindow):
 
     def _choose_output_path(self, source: Path) -> Path | None:
         """Ask where to save the copy; ``None`` when cancelled."""
-        chosen = self._ask_save_path(_copy_suggestion(source))
-        if not chosen:
-            return None
-        confirmed = Path(chosen)
-        path = normalise_output_path(confirmed)
-        if path != confirmed and path.exists() and not self._confirm_replace(path):
-            return None
-        return path
+        return choose_output_path(source, ask=self._ask_save_path, confirm=self._confirm_replace)
 
     def _ask_save_path(self, suggestion: Path) -> str | None:
         """Run the save dialog (separate method so tests can replace it)."""
-        dialog = QFileDialog(self, "Save model as", str(suggestion.parent), INP_FILTER)
-        dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
-        dialog.setDefaultSuffix("inp")
-        dialog.selectFile(str(suggestion))
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return None
-        files = dialog.selectedFiles()
-        return files[0] if files else None
+        return ask_save_path(self, suggestion)
 
     def _confirm_replace(self, path: Path) -> bool:
         """Ask before overwriting a file the save dialog did not confirm."""
-        answer = QMessageBox.question(
-            self,
-            "Replace file?",
-            f"{path.name} already exists in {path.parent}.\nDo you want to replace it?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        return answer == QMessageBox.StandardButton.Yes
+        return confirm_replace(self, path)
 
     def _start_apply(self, params: SubcatchmentParameters) -> None:
         ctx = self._apply_ctx
