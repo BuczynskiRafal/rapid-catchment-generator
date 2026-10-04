@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import threading
+import warnings
 from typing import TYPE_CHECKING, ClassVar
 
 # scikit-fuzzy imports matplotlib.pyplot; never let it pick (or probe) a GUI backend.
@@ -186,6 +187,9 @@ class Prototype:
 def create_fuzzy_engine(memberships: Memberships | None = None, rule_engine: RuleEngine | None = None) -> FuzzyEngine:
     """Create a new, independent :class:`FuzzyEngine`.
 
+    .. deprecated:: 2.1
+        Call ``FuzzyEngine(memberships=..., rule_engine=...)`` directly.
+
     Parameters
     ----------
     memberships : Memberships, optional
@@ -198,6 +202,7 @@ def create_fuzzy_engine(memberships: Memberships | None = None, rule_engine: Rul
     FuzzyEngine
         A freshly built engine.
     """
+    warnings.warn("create_fuzzy_engine is deprecated; call FuzzyEngine(...) instead", DeprecationWarning, stacklevel=2)
     return FuzzyEngine(memberships=memberships, rule_engine=rule_engine)
 
 

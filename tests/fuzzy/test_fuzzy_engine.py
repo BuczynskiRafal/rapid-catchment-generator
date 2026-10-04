@@ -130,3 +130,13 @@ def test_prototype_legacy_wrapper(engine):
     assert 0 < proto.impervious_result < 100
     assert 0 < proto.catchment_result < 100
     assert proto.get_linguistic(proto.catchment_result) == engine.classify_catchment(proto.catchment_result)
+
+
+def test_create_fuzzy_engine_is_deprecated(monkeypatch):
+    from rcg.fuzzy import engine as engine_module
+
+    built = []
+    monkeypatch.setattr(engine_module, "FuzzyEngine", lambda **kwargs: built.append(kwargs) or "engine")
+    with pytest.warns(DeprecationWarning, match="FuzzyEngine"):
+        assert engine_module.create_fuzzy_engine() == "engine"
+    assert built == [{"memberships": None, "rule_engine": None}]

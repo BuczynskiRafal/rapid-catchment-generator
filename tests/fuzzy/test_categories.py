@@ -1,5 +1,6 @@
 import pytest
 
+from rcg.fuzzy import categories
 from rcg.fuzzy.categories import Catchments, Impervious, LandCover, LandForm, Slope
 
 
@@ -43,3 +44,23 @@ def test_slope_terms_mirror_land_forms():
 def test_impervious_terms_are_land_covers():
     # Impervious repeats land cover names; a renamed land cover must be renamed here too.
     assert set(Impervious.get_all_categories()) <= set(LandCover.get_all_categories())
+
+
+@pytest.mark.parametrize(
+    ("alias", "enum_cls"),
+    [
+        ("land_form", LandForm),
+        ("land_cover", LandCover),
+        ("slope_ctgr", Slope),
+        ("impervious_ctgr", Impervious),
+        ("catchment_ctgr", Catchments),
+    ],
+)
+def test_1x_aliases_still_resolve_with_a_warning(alias, enum_cls):
+    with pytest.warns(DeprecationWarning, match=enum_cls.__name__):
+        assert getattr(categories, alias) is enum_cls
+
+
+def test_unknown_attribute_is_still_an_error():
+    with pytest.raises(AttributeError):
+        categories.no_such_name  # noqa: B018
