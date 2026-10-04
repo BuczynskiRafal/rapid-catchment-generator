@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QEvent, QMimeData, QObject, QSettings, QSize, Qt, QThreadPool, QTimer
+from PySide6.QtCore import QMimeData, QSettings, QSize, Qt, QThreadPool, QTimer
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -30,12 +30,9 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLayout,
     QMainWindow,
-    QMenuBar,
     QMessageBox,
     QScrollArea,
-    QSizePolicy,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -49,6 +46,7 @@ from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
 from rcg.gui.widgets._util import ElidedLabel, LayoutItem, hbox, label, set_prop, vbox
+from rcg.gui.widgets.containers import VerticalScrollArea, WindowCentral, invalidate_layouts
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.widgets.preview import PREPARING_TEXT
 from rcg.gui.workers import Task
@@ -89,77 +87,6 @@ def _copy_suggestion(source: Path) -> Path:
         candidate = source.with_name(f"{source.stem}_rcg_{number}.inp")
         number += 1
     return candidate
-
-
-class _Central(QWidget):
-    """Central widget that keeps the window at least at the design minimum (860 x 560).
-
-    The window's minimum size is otherwise left to the layout, so content that needs more
-    room (a long error banner, large system fonts) grows the window instead of overlapping.
-    """
-
-    WINDOW_MINIMUM = QSize(860, 560)
-
-    def minimumSizeHint(self) -> QSize:
-        minimum = QSize(self.WINDOW_MINIMUM)
-        window = self.window()
-        bar = window.menuWidget() if isinstance(window, QMainWindow) else None
-        if isinstance(bar, QMenuBar) and not bar.isNativeMenuBar():
-            minimum.setHeight(minimum.height() - bar.sizeHint().height())  # the bar is part of the window
-        return super().minimumSizeHint().expandedTo(minimum)
-
-
-class _VerticalScrollArea(QScrollArea):
-    """Scrolls vertically only, never narrower than its content.
-
-    Its minimum height is the content's, so the cards are fully visible at the window's
-    minimum size and the scroll bar never appears. Only when that would not fit on the
-    screen (very large fonts, small displays) does it fall back to scrolling, and only
-    then is room for the scroll bar reserved. It asks for no more than its content's
-    height either, so any extra window height goes to the history below it.
-    """
-
-    SCREEN_SHARE = 0.6  # at most this share of the screen height is claimed as minimum
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
-
-    def setWidget(self, widget: QWidget) -> None:
-        super().setWidget(widget)
-        widget.installEventFilter(self)
-
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        # QScrollArea does not pass size changes of its content on to its own parent
-        # layout, which would keep using a stale (e.g. pre-style-sheet) minimum width.
-        if watched is self.widget() and event.type() == QEvent.Type.LayoutRequest:
-            self.updateGeometry()
-        return super().eventFilter(watched, event)
-
-    def minimumSizeHint(self) -> QSize:
-        hint = super().minimumSizeHint()
-        content = self.widget()
-        if content is None:
-            return hint
-        frame = 2 * self.frameWidth()
-        content_hint = content.minimumSizeHint()
-        width = content_hint.width() + frame
-        height = content_hint.height() + frame
-        screen = self.screen()
-        if screen is not None:
-            cap = int(screen.availableGeometry().height() * self.SCREEN_SHARE)
-            if height > cap:
-                height = cap
-                width += self.verticalScrollBar().sizeHint().width()
-        return QSize(max(hint.width(), width), max(hint.height(), height))
-
-    def sizeHint(self) -> QSize:
-        content = self.widget()
-        if content is None:
-            return super().sizeHint()
-        minimum = self.minimumSizeHint()
-        height = max(content.sizeHint().height(), content.minimumSizeHint().height()) + 2 * self.frameWidth()
-        return QSize(minimum.width(), max(minimum.height(), height))
 
 
 @dataclass
@@ -238,7 +165,7 @@ class MainWindow(QMainWindow):
     HEADER_ICON = 40
 
     def _build_ui(self) -> None:
-        central = _Central(self)
+        central = WindowCentral(self)
         central.setObjectName("central")
         root = QVBoxLayout(central)
         root.setContentsMargins(20, 16, 20, 18)
@@ -311,7 +238,7 @@ class MainWindow(QMainWindow):
         row = hbox((self.inputs_card, 1), (self.preview, 1), spacing=self.GAP)
         vbox(self.model_card, row, spacing=self.GAP, parent=content)
 
-        self.inputs_scroll = _VerticalScrollArea(parent)
+        self.inputs_scroll = VerticalScrollArea(parent)
         self.inputs_scroll.setObjectName("inputsScroll")
         self.inputs_scroll.setWidgetResizable(True)
         self.inputs_scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -775,7 +702,7 @@ class MainWindow(QMainWindow):
         self.inputs_scroll.updateGeometry()
         central = self.centralWidget()
         if central is not None and (central_layout := central.layout()) is not None:
-            _invalidate_layouts(central_layout)
+            invalidate_layouts(central_layout)
         if (window_layout := self.layout()) is not None:
             window_layout.invalidate()
 
@@ -803,16 +730,6 @@ class MainWindow(QMainWindow):
 
     def engine_thread_running(self) -> bool:
         return self.preview_controller.thread_running()
-
-
-def _invalidate_layouts(layout: QLayout) -> None:
-    """Drop the cached sizes of *layout* and every layout nested in it (innermost first)."""
-    for index in range(layout.count()):
-        item = layout.itemAt(index)
-        child = item.layout() if item is not None else None
-        if child is not None:
-            _invalidate_layouts(child)
-    layout.invalidate()
 
 
 def _version() -> str:
