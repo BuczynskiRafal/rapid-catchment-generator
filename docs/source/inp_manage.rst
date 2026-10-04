@@ -12,6 +12,14 @@ inp_manage.writer module
    :no-index:
    :show-inheritance:
 
+inp_manage.backups module
+-------------------------
+
+.. automodule:: rcg.inp_manage.backups
+   :members:
+   :no-index:
+   :show-inheritance:
+
 inp_manage.inp module (deprecated)
 ----------------------------------
 
