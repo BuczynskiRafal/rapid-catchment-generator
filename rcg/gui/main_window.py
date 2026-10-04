@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QEvent, QLocale, QMimeData, QObject, QSettings, QSize, Qt, QThreadPool, QTimer
+from PySide6.QtCore import QEvent, QMimeData, QObject, QSettings, QSize, Qt, QThreadPool, QTimer
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -24,22 +24,16 @@ from PySide6.QtGui import (
     QShowEvent,
 )
 from PySide6.QtWidgets import (
-    QAbstractSpinBox,
     QApplication,
-    QButtonGroup,
-    QComboBox,
     QDialog,
-    QDoubleSpinBox,
     QFileDialog,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLayout,
     QMainWindow,
     QMenuBar,
     QMessageBox,
-    QRadioButton,
     QScrollArea,
     QSizePolicy,
     QToolButton,
@@ -48,19 +42,17 @@ from PySide6.QtWidgets import (
 )
 
 from rcg.exceptions import RCGError
-from rcg.gui.categories import CategoryOption, land_cover_options, land_form_options
+from rcg.gui.cards import ADD_TEXT, OUTPUT_COPY, OUTPUT_IN_PLACE, InputsCard, ModelCard, align_field_labels
 from rcg.gui.file_actions import show_in_folder
 from rcg.gui.help_dialog import HelpDialog
 from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.resources import resource_path
-from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPathField, PreviewPanel
-from rcg.gui.widgets._util import ElidedLabel, LayoutItem, WrapLabel, card, divider, hbox, label, set_prop, vbox
-from rcg.gui.widgets.buttons import PrimaryButton
+from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
+from rcg.gui.widgets._util import ElidedLabel, LayoutItem, hbox, label, set_prop, vbox
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.widgets.preview import PREPARING_TEXT
 from rcg.gui.workers import Task
 from rcg.logging_config import get_logger
-from rcg.validation import max_area_ha
 
 if TYPE_CHECKING:
     from rcg.catchment import ApplyResult, ModelInfo, SubcatchmentParameters
@@ -71,18 +63,9 @@ __all__ = ["MainWindow", "OUTPUT_COPY", "OUTPUT_IN_PLACE", "normalise_output_pat
 logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 APP_TITLE = "Rapid Catchment Generator"
-ADD_TEXT = "Add subcatchment"
 ENGINE_FAILED_TEXT = "The fuzzy engine could not be started."
 PREVIEW_FAILED_TEXT = "The preview could not be computed."
-OUTPUT_IN_PLACE = "in_place"
-OUTPUT_COPY = "copy"
 CLOSE_WAIT_MS = 200
-# The spin box shows two decimals, so its minimum is 0.01 ha, deliberately above
-# min_area_ha(); the maximum is the validation limit from defaults.json.
-AREA_MIN_HA, AREA_MAX_HA, AREA_DEFAULT_HA = 0.01, max_area_ha(), 1.0
-AREA_RANGE_TEXT = f"{AREA_MIN_HA:g} to {AREA_MAX_HA:,.0f} ha".replace(",", " ")  # "0.01 to 10 000 ha"
-
-_HINT_ROLE = Qt.ItemDataRole.UserRole + 1  # one-line hint of a category option
 
 _KEY_GEOMETRY = "window/geometry"
 _KEY_LAST_DIR = "paths/last_dir"
@@ -224,7 +207,6 @@ class MainWindow(QMainWindow):
 
         self._settings = settings if settings is not None else QSettings()
         self._log_path = log_path
-        self._field_labels: list[QLabel] = []
         self._busy = False
         self._refocus_add = False
         self._closing = False
@@ -273,7 +255,7 @@ class MainWindow(QMainWindow):
         root.addWidget(self.history, 1)  # the only part that grows with the window
 
         self.setCentralWidget(central)
-        self._align_field_labels()
+        align_field_labels([*self.model_card.field_labels, *self.inputs_card.field_labels])
         self._set_tab_order()
 
     def _build_header(self, parent: QWidget) -> QHBoxLayout:
@@ -323,8 +305,11 @@ class MainWindow(QMainWindow):
         content.setObjectName("inputsContent")
 
         self.preview = PreviewPanel(content)
-        row = hbox((self._build_inputs_card(content), 1), (self.preview, 1), spacing=self.GAP)
-        vbox(self._build_model_card(content), row, spacing=self.GAP, parent=content)
+        self.inputs_card = InputsCard(content)
+        self.model_card = ModelCard(content)
+        self._adopt_card_widgets()
+        row = hbox((self.inputs_card, 1), (self.preview, 1), spacing=self.GAP)
+        vbox(self.model_card, row, spacing=self.GAP, parent=content)
 
         self.inputs_scroll = _VerticalScrollArea(parent)
         self.inputs_scroll.setObjectName("inputsScroll")
@@ -336,156 +321,19 @@ class MainWindow(QMainWindow):
         content.setAutoFillBackground(False)
         return self.inputs_scroll
 
-    def _make_combo(self, parent: QWidget, options: tuple[CategoryOption, ...], accessible: str) -> QComboBox:
-        combo = QComboBox(parent)
-        combo.setAccessibleName(accessible)
-        combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        combo.setMinimumContentsLength(10)
-        combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        combo.setMaxVisibleItems(len(options))
-        for index, option in enumerate(options):
-            combo.addItem(option.label, option.member)
-            combo.setItemData(index, option.description, Qt.ItemDataRole.ToolTipRole)
-            combo.setItemData(index, option.hint, _HINT_ROLE)
-            combo.setItemData(index, f"{option.label}. {option.description}", Qt.ItemDataRole.AccessibleDescriptionRole)
-        view = combo.view()
-        view.setMinimumWidth(view.sizeHintForColumn(0) + 32)
-        return combo
+    def _adopt_card_widgets(self) -> None:
+        """Expose the cards' widgets on the window (tests and the window's own code use them)."""
+        model, inputs = self.model_card, self.inputs_card
+        self.path_field = model.path_field
+        self.in_place_radio, self.copy_radio, self.output_group = model.in_place_radio, model.copy_radio, model.output_group
+        self.cover_combo, self.form_combo, self.area_spin = inputs.cover_combo, inputs.form_combo, inputs.area_spin
+        self.cover_hint, self.form_hint = inputs.cover_hint, inputs.form_hint
+        self.add_hint, self.add_button = inputs.add_hint, inputs.add_button
 
-    def _new_grid(self) -> QGridLayout:
-        grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(14)
-        grid.setVerticalSpacing(3)
-        grid.setColumnStretch(1, 1)
-        return grid
-
-    @staticmethod
-    def _card_layout(box: QWidget, title: QLabel, grid: QGridLayout) -> QVBoxLayout:
-        layout = QVBoxLayout(box)
-        layout.setContentsMargins(18, 14, 18, 16)
-        layout.setSpacing(10)
-        layout.addWidget(title)
-        layout.addLayout(grid)
-        return layout
-
-    def _build_model_card(self, parent: QWidget) -> QWidget:
-        box = card(parent, "modelCard")
-        title = label("SWMM model", "sectionTitle", box)
-
-        self.path_field = ModelPathField(box)
         self.path_field.modelChanged.connect(self._on_model_changed)
-
-        self.in_place_radio = QRadioButton("Update model in place (backup kept)", box)
-        self.in_place_radio.setToolTip(
-            "Overwrite the model; the original is first copied to a .rcg_backups folder next to it."
-        )
-        self.copy_radio = QRadioButton("Save as copy…", box)
-        self.copy_radio.setToolTip(
-            "Leave the model untouched: choose a new file when you add. The copy then becomes the model you edit."
-        )
-        for radio in (self.in_place_radio, self.copy_radio):
-            radio.setFocusPolicy(Qt.FocusPolicy.TabFocus)  # a click never leaves a focus ring
-        self.output_group = QButtonGroup(self)
-        self.output_group.addButton(self.in_place_radio)
-        self.output_group.addButton(self.copy_radio)
-        self.in_place_radio.setChecked(True)
         self.output_group.buttonToggled.connect(self._on_output_mode_changed)
-
-        # Side by side at their own width (the focus ring hugs the text): the card spans
-        # the window, so one row is enough and keeps the card short.
-        outputs = hbox(self.in_place_radio, self.copy_radio, 1, spacing=24)
-
-        grid = self._new_grid()
-        grid.addWidget(self._field_label("File", self.path_field.edit, box), 0, 0)
-        grid.addWidget(self.path_field, 0, 1)
-        grid.addWidget(self.path_field.message, 1, 1)
-        grid.addWidget(self.path_field.detail, 2, 1)
-        grid.setRowMinimumHeight(3, 6)
-        grid.addWidget(self._field_label("Output", self.in_place_radio, box), 4, 0)
-        grid.addLayout(outputs, 4, 1)
-        self._card_layout(box, title, grid)
-        return box
-
-    def _build_inputs_card(self, parent: QWidget) -> QWidget:
-        box = card(parent, "inputsCard")
-        title = label("Subcatchment", "sectionTitle", box)
-
-        self.cover_combo = self._make_combo(box, land_cover_options(), "Land cover")
-        self.form_combo = self._make_combo(box, land_form_options(), "Land form")
-        # One short line each (the full description is the tooltip), so the card keeps
-        # the same height for every category and fits at the minimum window size.
-        self.cover_hint = ElidedLabel("", "caption", box, mode=Qt.TextElideMode.ElideRight)
-        self.form_hint = ElidedLabel("", "caption", box, mode=Qt.TextElideMode.ElideRight)
-
-        self.area_spin = QDoubleSpinBox(box)
-        self.area_spin.setLocale(QLocale.c())
-        self.area_spin.setDecimals(2)
-        self.area_spin.setRange(AREA_MIN_HA, AREA_MAX_HA)
-        self.area_spin.setValue(AREA_DEFAULT_HA)
-        self.area_spin.setSuffix(" ha")
-        self.area_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.area_spin.setCorrectionMode(QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
-        self.area_spin.setAccelerated(True)
-        self.area_spin.setAccessibleName("Area in hectares")
-        self.area_spin.setToolTip(f"Subcatchment area, {AREA_RANGE_TEXT}. Up and Down arrows step by 1 ha.")
-        self.area_spin.setMinimumWidth(110)
-        self.area_spin.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        area_caption = ElidedLabel(AREA_RANGE_TEXT, "caption", box, mode=Qt.TextElideMode.ElideRight)
-
-        grid = self._new_grid()
-        grid.addWidget(self._field_label("Land cover", self.cover_combo, box), 0, 0)
-        grid.addWidget(self.cover_combo, 0, 1)
-        grid.addWidget(self.cover_hint, 1, 1)
-        grid.setRowMinimumHeight(2, 6)
-        grid.addWidget(self._field_label("Land form", self.form_combo, box), 3, 0)
-        grid.addWidget(self.form_combo, 3, 1)
-        grid.addWidget(self.form_hint, 4, 1)
-        grid.setRowMinimumHeight(5, 6)
-        area_row = hbox(self.area_spin, (area_caption, 1), spacing=10)  # the caption elides instead of widening the column
-        grid.addWidget(self._field_label("Area", self.area_spin, box), 6, 0)
-        grid.addLayout(area_row, 6, 1)
-        layout = self._card_layout(box, title, grid)
-        # The card is as tall as the preview beside it; the action sits at the bottom.
-        layout.addStretch(1)
-        layout.addWidget(divider(box))
-        layout.addLayout(self._build_action_row(box))
-
-        self.cover_combo.currentIndexChanged.connect(self._on_category_changed)
-        self.form_combo.currentIndexChanged.connect(self._on_category_changed)
-        self.area_spin.valueChanged.connect(self._schedule_preview)
-        self._on_category_changed()
-        return box
-
-    def _field_label(self, text: str, buddy: QWidget, parent: QWidget) -> QLabel:
-        """Left-column label; the grid row centres it on its field."""
-        lbl = label(text, "fieldLabel", parent)
-        lbl.setBuddy(buddy)
-        self._field_labels.append(lbl)
-        return lbl
-
-    def _align_field_labels(self) -> None:
-        """Give every field label the same width so the fields of both cards line up."""
-        width = max((lbl.sizeHint().width() for lbl in self._field_labels), default=0)
-        for lbl in self._field_labels:
-            lbl.setMinimumWidth(width)
-
-    def _build_action_row(self, parent: QWidget) -> QHBoxLayout:
-        # Two lines are always reserved, so a longer message never changes the row's (and
-        # the window's minimum) height.
-        self.add_hint = WrapLabel("", "caption", parent, reserve_lines=2)
-        self.add_hint.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight)
-        self.add_button = PrimaryButton(ADD_TEXT, parent)
-        self.add_button.setAccessibleName(ADD_TEXT)
-        self.add_button.setMinimumWidth(180)
+        inputs.inputsChanged.connect(self._schedule_preview)
         self.add_button.clicked.connect(self.add_subcatchment)
-
-        row = QHBoxLayout()
-        row.setContentsMargins(0, 2, 0, 0)
-        row.setSpacing(14)
-        row.addWidget(self.add_hint, 1)
-        row.addWidget(self.add_button)
-        return row
 
     def _set_tab_order(self) -> None:
         chain = [
@@ -601,7 +449,7 @@ class MainWindow(QMainWindow):
         self._update_add_state()
 
     def _inputs_key(self) -> InputsKey:
-        return (round(self.area_spin.value(), 2), self.form_combo.currentData(), self.cover_combo.currentData())
+        return self.inputs_card.inputs_key()
 
     def _schedule_preview(self) -> None:
         self.preview_controller.schedule()
@@ -628,15 +476,6 @@ class MainWindow(QMainWindow):
         return self.preview_controller.parameters_for(self._inputs_key())
 
     # ------------------------------------------------------------------ input handlers
-    def _on_category_changed(self) -> None:
-        for combo, hint in ((self.cover_combo, self.cover_hint), (self.form_combo, self.form_hint)):
-            description = combo.currentData(Qt.ItemDataRole.ToolTipRole) or ""
-            hint.setText(combo.currentData(_HINT_ROLE) or description)
-            hint.setToolTip(description)
-            combo.setToolTip(description)
-            combo.setAccessibleDescription(description)
-        self._schedule_preview()
-
     def _on_model_changed(self, info: ModelInfo | None) -> None:
         path = info.path if info is not None else None
         if path != self._model_path:
@@ -653,7 +492,7 @@ class MainWindow(QMainWindow):
             self._settings.setValue(_KEY_OUTPUT_MODE, self._preferred_mode)
 
     def output_mode(self) -> str:
-        return OUTPUT_COPY if self.copy_radio.isChecked() else OUTPUT_IN_PLACE
+        return self.model_card.output_mode()
 
     def _update_add_state(self) -> None:
         has_model = self.path_field.path() is not None
