@@ -16,7 +16,7 @@ from PySide6.QtWidgets import QApplication
 from rcg.gui.main_window import APP_TITLE, MainWindow
 from rcg.gui.resources import resource_path
 from rcg.gui.theme import install_theme
-from rcg.logging_config import log_file_path, setup_logging
+from rcg.logging_config import get_logger, log_file_path, setup_logging
 
 __all__ = ["create_application", "main"]
 
@@ -26,7 +26,7 @@ APP_USER_MODEL_ID = "BuczynskiRafal.RapidCatchmentGenerator"
 LOG_FILE_NAME = "rcg-gui.log"
 GUI_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
-logger = logging.getLogger("rcg.gui")
+logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 
 def _set_application_identity() -> None:

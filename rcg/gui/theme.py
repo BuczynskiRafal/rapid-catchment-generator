@@ -11,7 +11,6 @@ forces a dark palette) the style sheet is rebuilt automatically.
 
 from __future__ import annotations
 
-import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,9 +19,11 @@ from PySide6.QtCore import QEvent, QObject, QStandardPaths, QTimer
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
+from rcg.logging_config import get_logger
+
 __all__ = ["ThemeController", "Tokens", "current_tokens", "install_theme", "is_dark", "mix", "tokens"]
 
-logger = logging.getLogger("rcg.gui")
+logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 # The single accent, tuned per appearance so it keeps contrast on light and dark surfaces.
 _ACCENT_LIGHT = "#2B6A96"
