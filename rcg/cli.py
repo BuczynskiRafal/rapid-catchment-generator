@@ -9,7 +9,7 @@ import argparse
 import json
 import logging
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 from rcg import __version__
@@ -60,9 +60,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_category_args(add)
     add.add_argument("--output", "-o", metavar="OUT.inp", help="write to this file instead of updating MODEL.inp")
     add.add_argument("--no-backup", action="store_true", help="do not keep a backup when updating MODEL.inp in place")
+    add.set_defaults(handler=_cmd_add)
 
     prev = sub.add_parser("preview", help="show the parameters without writing anything")
     _add_category_args(prev)
+    prev.set_defaults(handler=_cmd_preview)
 
     info = sub.add_parser(
         "inspect",
@@ -71,9 +73,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     info.add_argument("model", metavar="MODEL.inp", help="SWMM input file to read")
     info.add_argument("--json", action="store_true", help="print the result as JSON")
+    info.set_defaults(handler=_cmd_inspect)
 
     options = sub.add_parser("list-options", help="list land forms and land covers")
     options.add_argument("--json", action="store_true", help="print the lists as JSON")
+    options.set_defaults(handler=_cmd_list_options)
     return parser
 
 
@@ -142,24 +146,34 @@ def _list_options(as_json: bool = False) -> str:
     return "\n".join(lines)
 
 
-def _run(args: argparse.Namespace) -> str:
-    from rcg.service import apply, inspect, preview
-    from rcg.validation import validate_inp_path
+def _cmd_list_options(args: argparse.Namespace) -> str:
+    return _list_options(as_json=args.json)
 
-    if args.command == "list-options":
-        return _list_options(as_json=args.json)
-    if args.command == "inspect":
-        info = inspect(args.model)
-        return _json(info.to_dict()) if args.json else _format_model_info(info)
-    if args.command == "add":  # fail fast, before the fuzzy engine is built
-        validate_inp_path(args.model)
-        if args.output is not None:
-            validate_inp_path(args.output, must_exist=False)
+
+def _cmd_inspect(args: argparse.Namespace) -> str:
+    from rcg.service import inspect
+
+    info = inspect(args.model)
+    return _json(info.to_dict()) if args.json else _format_model_info(info)
+
+
+def _cmd_preview(args: argparse.Namespace) -> str:
+    from rcg.service import preview
 
     params = preview(args.area, args.land_form, args.land_cover)
-    if args.command == "preview":
-        return _json(params.to_dict()) if args.json else _format_parameters(params)
+    return _json(params.to_dict()) if args.json else _format_parameters(params)
 
+
+def _cmd_add(args: argparse.Namespace) -> str:
+    from rcg.service import apply, preview
+    from rcg.validation import validate_inp_path
+
+    # Fail fast on the paths, before preview() spends seconds building the fuzzy engine.
+    validate_inp_path(args.model)
+    if args.output is not None:
+        validate_inp_path(args.output, must_exist=False)
+
+    params = preview(args.area, args.land_form, args.land_cover)
     result = apply(args.model, params, output_path=args.output, backup=not args.no_backup)
     if args.json:
         payload: dict[str, Any] = {**result.to_dict(), "parameters": params.to_dict()}
@@ -173,6 +187,11 @@ def _run(args: argparse.Namespace) -> str:
     if result.backup_path is not None:
         lines.append(f"Backup: {result.backup_path}")
     return "\n".join(lines)
+
+
+def _run(args: argparse.Namespace) -> str:
+    handler: Callable[[argparse.Namespace], str] = args.handler  # set by build_parser per subcommand
+    return handler(args)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
