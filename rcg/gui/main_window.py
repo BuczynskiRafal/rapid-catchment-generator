@@ -380,16 +380,8 @@ class MainWindow(QMainWindow):
 
     def _on_apply_succeeded(self, result: ApplyResult) -> None:
         ctx = self._apply_ctx
-        params = ctx.params if ctx is not None else None
-        output_path = Path(result.output_path)
-        entry = HistoryEntry(
-            subcatchment_ids=tuple(result.subcatchment_ids),
-            area_ha=params.area_ha if params is not None else float("nan"),
-            catchment_type=params.catchment_type if params is not None else "",
-            output_path=output_path,
-            backup_path=Path(result.backup_path) if result.backup_path is not None else None,
-            written_sha256=result.written_sha256,
-        )
+        entry = HistoryEntry.from_apply(result, ctx.params if ctx is not None else None)
+        output_path = entry.output_path
         self.history.add_entry(entry)
         logger.info("Added %s to %s (backup: %s)", entry.title, output_path, entry.backup_path)
         if ctx is not None and ctx.to_copy:
