@@ -773,19 +773,22 @@ class MainWindow(QMainWindow):
         if self._status_timer.isActive() and not self._busy:
             return  # a confirmation is being shown; it reverts when the timer fires
         set_prop(self.add_hint, "role", "caption")
-        if self._busy:
-            hint = "Writing the model…"
-        elif self._engine_failed:
-            hint = "The fuzzy engine is not available."
-        elif not self._engine_ready:
-            hint = "Preparing fuzzy engine…"
-        elif not has_model:
-            hint = "Fix the model path first." if self.path_field.text().strip() else "Choose a SWMM model first."
-        else:
-            shortcut = self.add_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
-            hint = f"Press {shortcut} to add" if shortcut else ""
+        hint = self._add_hint(has_model)
         self.add_hint.setText(hint)
         self.add_button.setToolTip(hint if not enabled else "")
+
+    def _add_hint(self, has_model: bool) -> str:
+        """The line under *Add subcatchment*: why it is disabled, or its shortcut."""
+        if self._busy:
+            return "Writing the model…"
+        if self._engine_failed:
+            return "The fuzzy engine is not available."
+        if not self._engine_ready:
+            return "Preparing fuzzy engine…"
+        if not has_model:
+            return "Fix the model path first." if self.path_field.text().strip() else "Choose a SWMM model first."
+        shortcut = self.add_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
+        return f"Press {shortcut} to add" if shortcut else ""
 
     # ------------------------------------------------------------------ add / undo
     def add_subcatchment(self) -> None:
