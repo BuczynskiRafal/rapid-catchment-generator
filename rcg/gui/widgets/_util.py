@@ -87,6 +87,13 @@ def vbox(*items: LayoutItem, spacing: int | None = None, parent: QWidget | None 
     return box
 
 
+def set_tab_order(widgets: Iterable[QWidget]) -> None:
+    """Make Tab move through *widgets* in the given order."""
+    chain = list(widgets)
+    for first, second in zip(chain, chain[1:]):
+        QWidget.setTabOrder(first, second)
+
+
 class WrapLabel(QLabel):
     """Word-wrapped label whose height always matches its text at its current width.
 

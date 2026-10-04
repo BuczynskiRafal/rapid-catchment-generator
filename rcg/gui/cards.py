@@ -134,6 +134,10 @@ class ModelCard(_Card):
     def output_mode(self) -> str:
         return OUTPUT_COPY if self.copy_radio.isChecked() else OUTPUT_IN_PLACE
 
+    def focus_chain(self) -> list[QWidget]:
+        """The card's focusable widgets in Tab order."""
+        return [self.path_field.edit, self.path_field.browse_button, self.in_place_radio, self.copy_radio]
+
 
 class InputsCard(_Card):
     """Land cover, land form and area, with the *Add subcatchment* row at the bottom.
@@ -198,6 +202,10 @@ class InputsCard(_Card):
     def inputs_key(self) -> InputsKey:
         """The inputs as the preview cache keys them (area rounded to what the spin box shows)."""
         return (round(self.area_spin.value(), 2), self.form_combo.currentData(), self.cover_combo.currentData())
+
+    def focus_chain(self) -> list[QWidget]:
+        """The card's focusable widgets in Tab order."""
+        return [self.cover_combo, self.form_combo, self.area_spin, self.add_button]
 
     def show_add_state(self, *, enabled: bool, busy: bool, hint: str) -> None:
         """Enable *Add* and explain its state (*hint*), unless a confirmation is on show."""

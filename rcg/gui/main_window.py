@@ -32,7 +32,7 @@ from rcg.gui.help_dialog import HelpDialog, show_about_box
 from rcg.gui.menus import install_menus, shortcut_text
 from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
-from rcg.gui.widgets._util import hbox, vbox
+from rcg.gui.widgets._util import hbox, set_tab_order, vbox
 from rcg.gui.widgets.containers import VerticalScrollArea, WindowCentral, invalidate_layouts
 from rcg.gui.widgets.drop import FileDropFilter
 from rcg.gui.widgets.header import build_header
@@ -149,7 +149,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(central)
         align_field_labels([*self.model_card.field_labels, *self.inputs_card.field_labels])
-        self._set_tab_order()
+        set_tab_order([*self.model_card.focus_chain(), *self.inputs_card.focus_chain(), self.help_button])
 
     def _build_workspace(self, parent: QWidget) -> QScrollArea:
         """Model across the top; inputs and preview below it, side by side and level.
@@ -193,21 +193,6 @@ class MainWindow(QMainWindow):
         inputs.inputsChanged.connect(self._schedule_preview)
         inputs.statusExpired.connect(self._update_add_state)
         self.add_button.clicked.connect(self.add_subcatchment)
-
-    def _set_tab_order(self) -> None:
-        chain = [
-            self.path_field.edit,
-            self.path_field.browse_button,
-            self.in_place_radio,
-            self.copy_radio,
-            self.cover_combo,
-            self.form_combo,
-            self.area_spin,
-            self.add_button,
-            self.help_button,
-        ]
-        for first, second in zip(chain, chain[1:]):
-            QWidget.setTabOrder(first, second)
 
     def _build_actions(self) -> None:
         actions = install_menus(
