@@ -34,6 +34,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   `console_level` and `propagate` arguments, replaces only the handlers it installed when called again, writes to the
   current `sys.stderr` and opens the log file before changing anything. `log_file_path()` returns the file in use.
   `rcg -v` now shows RCG's debug messages only (it configures the `rcg` logger, not the root logger).
+- Desktop app: the area field's upper limit (and the range shown under it) follows `validation_limits.area_max_hectares` in
+  `defaults.json` instead of a separate hard-coded value. A model opened with the app or dropped on the window also
+  focuses the path field.
 
 ### Deprecated
 - `rcg.fuzzy.engine.create_fuzzy_engine`: call `FuzzyEngine(...)` directly.
