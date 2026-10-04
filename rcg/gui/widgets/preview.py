@@ -405,17 +405,16 @@ class PreviewPanel(QFrame):
 
     # -- states ----------------------------------------------------------------------
     def show_preparing(self, text: str = "Preparing fuzzy engine…") -> None:
-        self.preparing_label.setText(text)
-        self.progress.show()
-        self.preparing_detail.show()
-        self.badge.hide()
-        self.stack.setCurrentIndex(self.PAGE_PREPARING)
+        self._show_placeholder(text, busy=True)
 
     def show_unavailable(self, text: str) -> None:
         """The engine could not be built: keep the placeholder page, without progress."""
+        self._show_placeholder(text, busy=False)
+
+    def _show_placeholder(self, text: str, *, busy: bool) -> None:
         self.preparing_label.setText(text)
-        self.progress.hide()
-        self.preparing_detail.hide()
+        self.progress.setVisible(busy)
+        self.preparing_detail.setVisible(busy)
         self.badge.hide()
         self.stack.setCurrentIndex(self.PAGE_PREPARING)
 
