@@ -9,10 +9,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from enum import Enum, IntEnum
+from types import MappingProxyType
+from typing import Any
 
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
+
+from rcg.exceptions import RuleDefinitionError
 
 from ._lazy import lazy_singleton
 from .categories import Catchments, Impervious, LandCover, LandForm, Slope
@@ -41,6 +45,26 @@ class Memberships:
         self._populate_slope()
         self._populate_impervious()
         self._populate_catchment()
+
+        self.variables: Mapping[str, ctrl.Antecedent | ctrl.Consequent] = MappingProxyType(
+            {v.label: v for v in (self.land_form_type, self.land_cover_type, self.slope, self.impervious, self.catchment)}
+        )
+        """Every fuzzy variable by label: ``land_form``, ``land_cover``, ``slope``, ``impervious``, ``catchment``."""
+
+    def term(self, variable: str, name: str) -> Any:
+        """Return the term ``name`` of the fuzzy variable labelled ``variable``.
+
+        Raises
+        ------
+        RuleDefinitionError
+            If there is no such variable or the variable has no such term.
+        """
+        fuzzy_variable = self.variables.get(variable)
+        if fuzzy_variable is None:
+            raise RuleDefinitionError(f"Unknown fuzzy variable {variable!r}; expected one of {', '.join(self.variables)}")
+        if name not in fuzzy_variable.terms:
+            raise RuleDefinitionError(f"Fuzzy variable {variable!r} has no term {name!r}")
+        return fuzzy_variable[name]
 
     @staticmethod
     def _add_terms(variable: ctrl.Antecedent | ctrl.Consequent, params: Mapping[Enum, Sequence[float]]) -> None:

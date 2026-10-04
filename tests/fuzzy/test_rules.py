@@ -92,3 +92,30 @@ def test_create_rule_engine_is_empty():
     engine = create_rule_engine()
     assert engine.rules == []
     assert engine.get_rule_count()["total"] == 0
+
+
+def test_builder_errors_are_rule_definition_errors():
+    with pytest.raises(RuleDefinitionError) as info:
+        rule("bad").when(land_form="mountains")
+    assert info.value.rule_name == "bad"
+    assert isinstance(info.value, ValueError)  # 2.0.0 raised ValueError
+
+
+@pytest.mark.parametrize(
+    ("built", "message"),
+    [
+        (
+            rule("r").when(slope_form=LandForm.mountains).then(slope=Slope.mountains).build(),
+            "Unknown fuzzy variable 'slope_form'",
+        ),
+        (rule("r").when(land_form=LandCover.rural).then(slope=Slope.mountains).build(), "'land_form' has no term 'rural'"),
+        (rule("r").when(land_form=LandForm.mountains).then(slpoe=Slope.mountains).build(), "Unknown output 'slpoe'"),
+    ],
+)
+def test_build_rule_systems_names_the_bad_rule(built, message):
+    engine = create_rule_engine()
+    engine.add_rule(built)
+    with pytest.raises(RuleDefinitionError, match=message) as info:
+        engine.build_rule_systems()
+    assert info.value.rule_name == "r"
+    assert str(info.value).startswith("Rule 'r': ")

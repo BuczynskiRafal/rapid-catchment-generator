@@ -90,8 +90,10 @@ class BackupError(RCGError):
         self.backup_path = backup_path
 
 
-class RuleDefinitionError(RCGError):
+class RuleDefinitionError(RCGError, ValueError):
     """A fuzzy rule is malformed.
+
+    Also a :class:`ValueError`: 2.0.0 raised plain ``ValueError`` for these mistakes.
 
     Attributes
     ----------
