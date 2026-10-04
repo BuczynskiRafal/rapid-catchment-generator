@@ -187,9 +187,13 @@ class _ApplyContext:
     source: Path
     output: Path | None
     key: InputsKey
-    to_copy: bool
     params: SubcatchmentParameters | None = None
     request_id: int | None = None  # preview request computing ``key`` for this Add
+
+    @property
+    def to_copy(self) -> bool:
+        """Whether this Add writes a separate file (``output``) instead of updating ``source``."""
+        return self.output is not None
 
 
 class MainWindow(QMainWindow):
@@ -807,7 +811,7 @@ class MainWindow(QMainWindow):
         # Disabling the button while busy moves keyboard focus away; give it back afterwards.
         self._refocus_add = self.add_button.hasFocus()
         key = self._inputs_key()
-        ctx = _ApplyContext(source=source, output=output, key=key, to_copy=output is not None)
+        ctx = _ApplyContext(source=source, output=output, key=key)
         self._apply_ctx = ctx
         self._set_busy(True)
 
