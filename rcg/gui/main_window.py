@@ -112,7 +112,6 @@ class MainWindow(QMainWindow):
         self._pool = QThreadPool(self)
         self._help: HelpDialog | None = None
         self._preferred_mode = OUTPUT_IN_PLACE
-        self._switching_mode = False
 
         self.preview_controller = self._create_preview_controller(engine)
         self._build_ui()
@@ -301,9 +300,8 @@ class MainWindow(QMainWindow):
         self._update_add_state()
 
     def _on_output_mode_changed(self) -> None:
-        if not self._switching_mode:  # only the user's own choice is remembered
-            self._preferred_mode = self.output_mode()
-            self._settings.setValue(_KEY_OUTPUT_MODE, self._preferred_mode)
+        self._preferred_mode = self.output_mode()  # the user's own choice: switch_to_in_place() is silent
+        self._settings.setValue(_KEY_OUTPUT_MODE, self._preferred_mode)
 
     def output_mode(self) -> str:
         return self.model_card.output_mode()
@@ -405,11 +403,7 @@ class MainWindow(QMainWindow):
 
     def _switch_to(self, path: Path) -> None:
         """Make *path* the edited model, updated in place from now on."""
-        self._switching_mode = True
-        try:
-            self.in_place_radio.setChecked(True)
-        finally:
-            self._switching_mode = False
+        self.model_card.switch_to_in_place()
         self.path_field.set_path(path)
 
     def _on_apply_failed(self, exc: BaseException) -> None:

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import QLocale, Qt, QTimer, Signal
+from PySide6.QtCore import QLocale, QSignalBlocker, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QButtonGroup,
@@ -133,6 +133,15 @@ class ModelCard(_Card):
 
     def output_mode(self) -> str:
         return OUTPUT_COPY if self.copy_radio.isChecked() else OUTPUT_IN_PLACE
+
+    def switch_to_in_place(self) -> None:
+        """Select *Update in place* without emitting ``output_group`` signals.
+
+        Used when the window itself changes the mode (after saving a copy), so only
+        the user's own choices reach the handlers that remember the preferred mode.
+        """
+        with QSignalBlocker(self.output_group):
+            self.in_place_radio.setChecked(True)
 
     def focus_chain(self) -> list[QWidget]:
         """The card's focusable widgets in Tab order."""
