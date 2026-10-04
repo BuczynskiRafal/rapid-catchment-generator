@@ -26,6 +26,7 @@ class HistoryEntry:
     output_path: Path
     backup_path: Path | None
     undone: bool = False
+    written_sha256: str | None = None  # file as RCG wrote it; undo refuses once it changed
 
     @property
     def title(self) -> str:

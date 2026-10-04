@@ -7,7 +7,6 @@ the session history across the full width, which takes whatever height is left.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 from dataclasses import dataclass
 from functools import partial
@@ -52,7 +51,7 @@ from PySide6.QtWidgets import (
 
 from rcg.exceptions import RCGError
 from rcg.gui.categories import CategoryOption, land_cover_options, land_form_options
-from rcg.gui.file_actions import restore_backup, show_in_folder
+from rcg.gui.file_actions import show_in_folder
 from rcg.gui.help_dialog import HelpDialog
 from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPathField, PreviewPanel
@@ -85,23 +84,6 @@ _KEY_LAST_DIR = "paths/last_dir"
 _KEY_OUTPUT_MODE = "output/mode"
 
 InputsKey = tuple[float, "LandForm", "LandCover"]  # (area_ha rounded to 2 dp, land form, land cover)
-
-
-def _sha256(path: Path) -> str | None:
-    try:
-        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-    except OSError:
-        return None
-
-
-def _apply_and_fingerprint(
-    source: Path, params: SubcatchmentParameters, output: Path | None
-) -> tuple[ApplyResult, str | None]:
-    """Worker body: write the model, then fingerprint the written file (for safe undo)."""
-    from rcg import service
-
-    result = service.apply(source, params, output_path=output, backup=True)
-    return result, _sha256(Path(result.output_path))
 
 
 def normalise_output_path(path: Path) -> Path:
@@ -204,13 +186,6 @@ class _ApplyContext:
     to_copy: bool
     params: SubcatchmentParameters | None = None
     request_id: int | None = None  # preview request computing ``key`` for this Add
-
-
-@dataclass
-class _Entry(HistoryEntry):
-    """History entry plus the fingerprint of the file as RCG wrote it."""
-
-    written_sha256: str | None = None
 
 
 class MainWindow(QMainWindow):
@@ -876,25 +851,26 @@ class MainWindow(QMainWindow):
         if ctx is None or ctx.params is not None:
             return
         ctx.params = params
-        task = Task(_apply_and_fingerprint, ctx.source, params, ctx.output)
+        from rcg import service  # light: does not load the fuzzy engine
+
+        task = Task(service.apply, ctx.source, params, output_path=ctx.output, backup=True)
         task.signals.succeeded.connect(self._on_apply_succeeded)
         task.signals.failed.connect(self._on_apply_failed)
         task.signals.finished.connect(self._on_apply_finished)
         self._task = task
         self._pool.start(task)
 
-    def _on_apply_succeeded(self, outcome: tuple[ApplyResult, str | None]) -> None:
-        result, digest = outcome
+    def _on_apply_succeeded(self, result: ApplyResult) -> None:
         ctx = self._apply_ctx
         params = ctx.params if ctx is not None else None
         output_path = Path(result.output_path)
-        entry = _Entry(
+        entry = HistoryEntry(
             subcatchment_ids=tuple(result.subcatchment_ids),
             area_ha=params.area_ha if params is not None else float("nan"),
             catchment_type=params.catchment_type if params is not None else "",
             output_path=output_path,
             backup_path=Path(result.backup_path) if result.backup_path is not None else None,
-            written_sha256=digest,
+            written_sha256=result.written_sha256,
         )
         self.history.add_entry(entry)
         logger.info("Added %s to %s (backup: %s)", entry.title, output_path, entry.backup_path)
@@ -949,27 +925,18 @@ class MainWindow(QMainWindow):
         if self._busy or entry is not self.history.undo_candidate() or entry.backup_path is None:
             return False
         target, backup = entry.output_path, entry.backup_path
-        if not backup.is_file():
-            self.banner.show_error(f"The backup no longer exists: {backup}")
-            return False
-        expected = getattr(entry, "written_sha256", None)
-        if expected is not None and _sha256(target) != expected:
-            self.banner.show_error(
-                f"{target.name} has changed since RCG wrote it, so it was not restored automatically. "
-                f"The backup is still available at {backup}."
-            )
-            return False
+        from rcg import service  # light: does not load the fuzzy engine
+
         try:
-            restore_backup(backup, target)
-        except OSError as exc:
-            logger.warning("Undo failed", exc_info=True)
-            self.banner.show_error(f"Could not restore {target.name}: {exc.strerror or exc}")
+            service.restore(backup, target, expected_sha256=entry.written_sha256)
+        except RCGError as exc:
+            logger.warning("Undo of %s failed: %s", entry.title, exc, exc_info=isinstance(exc.__cause__, OSError))
+            self.banner.show_error(str(exc))
             return False
         entry.undone = True
         self.history.refresh()
         self.path_field.revalidate()
         self.flash_status(f"Undone: {entry.title} removed from {target.name}")
-        logger.info("Restored %s from %s", target, backup)
         return True
 
     def flash_status(self, text: str, timeout_ms: int = 6000) -> None:
