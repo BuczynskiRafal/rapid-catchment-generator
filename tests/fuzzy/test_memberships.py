@@ -39,6 +39,16 @@ def test_terms_match_categories(memberships, attr, enum_cls):
     assert set(getattr(memberships, attr).terms) == {m.name for m in enum_cls}
 
 
+@pytest.mark.parametrize(("attr", "enum_cls"), [("land_form_type", LandForm), ("land_cover_type", LandCover)])
+def test_input_terms_peak_at_the_category_value(memberships, attr, enum_cls):
+    variable = getattr(memberships, attr)
+    for member in enum_cls:
+        x = list(variable.universe).index(member.value)
+        assert variable[member.name].mf[x] == 1.0
+        # Neighbouring triangles are zero there, so a crisp category value fires a single term.
+        assert [m for m in enum_cls if variable[m.name].mf[x] > 0] == [member]
+
+
 def test_default_instance_is_shared_and_factory_is_fresh(memberships):
     assert get_default_memberships() is memberships
     assert create_memberships() is not memberships

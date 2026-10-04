@@ -38,3 +38,8 @@ def test_linguistic_enums_use_names_as_values():
 
 def test_slope_terms_mirror_land_forms():
     assert Slope.get_all_categories() == LandForm.get_all_categories()
+
+
+def test_impervious_terms_are_land_covers():
+    # Impervious repeats land cover names; a renamed land cover must be renamed here too.
+    assert set(Impervious.get_all_categories()) <= set(LandCover.get_all_categories())
