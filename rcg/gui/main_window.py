@@ -57,6 +57,7 @@ from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPath
 from rcg.gui.widgets._util import ElidedLabel, WrapLabel, card, divider, label, set_prop
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.path_field import INP_FILTER
+from rcg.gui.widgets.preview import PREPARING_TEXT
 from rcg.gui.workers import EngineWorker, Task
 from rcg.logging_config import get_logger
 from rcg.validation import max_area_ha
@@ -71,6 +72,8 @@ __all__ = ["MainWindow", "OUTPUT_COPY", "OUTPUT_IN_PLACE", "normalise_output_pat
 logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 APP_TITLE = "Rapid Catchment Generator"
+ADD_TEXT = "Add subcatchment"
+ENGINE_FAILED_TEXT = "The fuzzy engine could not be started."
 OUTPUT_IN_PLACE = "in_place"
 OUTPUT_COPY = "copy"
 PREVIEW_DEBOUNCE_MS = 150
@@ -516,8 +519,8 @@ class MainWindow(QMainWindow):
         # the window's minimum) height.
         self.add_hint = WrapLabel("", "caption", parent, reserve_lines=2)
         self.add_hint.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight)
-        self.add_button = PrimaryButton("Add subcatchment", parent)
-        self.add_button.setAccessibleName("Add subcatchment")
+        self.add_button = PrimaryButton(ADD_TEXT, parent)
+        self.add_button.setAccessibleName(ADD_TEXT)
         self.add_button.setMinimumWidth(180)
         self.add_button.clicked.connect(self.add_subcatchment)
 
@@ -663,8 +666,8 @@ class MainWindow(QMainWindow):
         self._log_unexpected("Fuzzy engine warm-up failed", exc)
         if self._closing:
             return
-        self.preview.show_unavailable("The fuzzy engine could not be started.")
-        self.banner.show_error(self._describe_error(exc, "The fuzzy engine could not be started."))
+        self.preview.show_unavailable(ENGINE_FAILED_TEXT)
+        self.banner.show_error(self._describe_error(exc, ENGINE_FAILED_TEXT))
         self._update_add_state()
 
     def _inputs_key(self) -> InputsKey:
@@ -772,7 +775,7 @@ class MainWindow(QMainWindow):
         enabled = self._engine_ready and has_model and not self._busy
         self.add_button.setEnabled(enabled)
         self.add_action.setEnabled(enabled)
-        self.add_button.setText("Adding…" if self._busy else "Add subcatchment")
+        self.add_button.setText("Adding…" if self._busy else ADD_TEXT)
 
         if self._status_timer.isActive() and not self._busy:
             return  # a confirmation is being shown; it reverts when the timer fires
@@ -788,7 +791,7 @@ class MainWindow(QMainWindow):
         if self._engine_failed:
             return "The fuzzy engine is not available."
         if not self._engine_ready:
-            return "Preparing fuzzy engine…"
+            return PREPARING_TEXT
         if not has_model:
             return "Fix the model path first." if self.path_field.text().strip() else "Choose a SWMM model first."
         shortcut = self.add_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)

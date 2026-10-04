@@ -25,10 +25,12 @@ from rcg.gui.widgets._util import ElidedLabel, ReservedLabel, WrapLabel, divider
 if TYPE_CHECKING:
     from rcg.catchment import ModelInfo, SubcatchmentParameters
 
-__all__ = ["DEFAULT_INFILTRATION_METHOD", "PreviewPanel", "format_number"]
+__all__ = ["DEFAULT_INFILTRATION_METHOD", "PREPARING_TEXT", "PreviewPanel", "format_number"]
 
 DEFAULT_INFILTRATION_METHOD = "GREEN_AMPT"
 """Shown while no model is chosen (RCG 1.x always wrote Green-Ampt)."""
+
+PREPARING_TEXT = "Preparing fuzzy engine…"
 
 NO_MODEL_INFILTRATION_NOTE = "Green-Ampt until a model is chosen"
 NO_MODEL_INFILTRATION_TOOLTIP = (
@@ -272,7 +274,7 @@ class PreviewPanel(QFrame):
     # -- pages -----------------------------------------------------------------------
     def _build_preparing_page(self) -> QWidget:
         page = QWidget(self)
-        self.preparing_label = label("Preparing fuzzy engine…", "placeholder", page)
+        self.preparing_label = label(PREPARING_TEXT, "placeholder", page)
         self.preparing_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preparing_detail = WrapLabel(
             "Building the fuzzy rule base takes a few seconds the first time. Inputs stay editable meanwhile.",
@@ -284,7 +286,7 @@ class PreviewPanel(QFrame):
         self.progress.setRange(0, 0)
         self.progress.setTextVisible(False)
         self.progress.setMaximumWidth(220)
-        self.progress.setAccessibleName("Preparing fuzzy engine")
+        self.progress.setAccessibleName(PREPARING_TEXT.rstrip("…"))
 
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -404,7 +406,7 @@ class PreviewPanel(QFrame):
         return self._model
 
     # -- states ----------------------------------------------------------------------
-    def show_preparing(self, text: str = "Preparing fuzzy engine…") -> None:
+    def show_preparing(self, text: str = PREPARING_TEXT) -> None:
         self._show_placeholder(text, busy=True)
 
     def show_unavailable(self, text: str) -> None:
