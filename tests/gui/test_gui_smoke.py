@@ -49,6 +49,14 @@ def test_window_opens_and_warms_up_in_background(qtbot, rcg_app, gui_settings):
     assert "Choose a SWMM model" in win.add_hint.text()
 
 
+def test_area_range_follows_the_validation_limit(window):
+    from rcg.validation import max_area_ha, min_area_ha
+
+    assert window.area_spin.maximum() == max_area_ha()
+    assert window.area_spin.minimum() >= min_area_ha()
+    assert "0.01 to 10 000 ha" in window.area_spin.toolTip()
+
+
 def test_category_combos_use_labels_in_enum_order(window):
     covers = [window.cover_combo.itemData(i) for i in range(window.cover_combo.count())]
     forms = [window.form_combo.itemData(i) for i in range(window.form_combo.count())]

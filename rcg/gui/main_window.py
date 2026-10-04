@@ -59,6 +59,7 @@ from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.workers import EngineWorker, Task
 from rcg.logging_config import get_logger
+from rcg.validation import max_area_ha
 
 if TYPE_CHECKING:
     from rcg.catchment import ApplyResult, ModelInfo, SubcatchmentParameters
@@ -74,7 +75,10 @@ OUTPUT_IN_PLACE = "in_place"
 OUTPUT_COPY = "copy"
 PREVIEW_DEBOUNCE_MS = 150
 CLOSE_WAIT_MS = 200
-AREA_MIN_HA, AREA_MAX_HA, AREA_DEFAULT_HA = 0.01, 10_000.0, 1.0
+# The spin box shows two decimals, so its minimum is 0.01 ha, deliberately above
+# min_area_ha(); the maximum is the validation limit from defaults.json.
+AREA_MIN_HA, AREA_MAX_HA, AREA_DEFAULT_HA = 0.01, max_area_ha(), 1.0
+AREA_RANGE_TEXT = f"{AREA_MIN_HA:g} to {AREA_MAX_HA:,.0f} ha".replace(",", " ")  # "0.01 to 10 000 ha"
 _CACHE_LIMIT = 512
 
 _HINT_ROLE = Qt.ItemDataRole.UserRole + 1  # one-line hint of a category option
@@ -458,10 +462,10 @@ class MainWindow(QMainWindow):
         self.area_spin.setCorrectionMode(QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
         self.area_spin.setAccelerated(True)
         self.area_spin.setAccessibleName("Area in hectares")
-        self.area_spin.setToolTip("Subcatchment area, 0.01 to 10 000 ha. Up and Down arrows step by 1 ha.")
+        self.area_spin.setToolTip(f"Subcatchment area, {AREA_RANGE_TEXT}. Up and Down arrows step by 1 ha.")
         self.area_spin.setMinimumWidth(110)
         self.area_spin.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        area_caption = ElidedLabel("0.01 to 10 000 ha", "caption", box, mode=Qt.TextElideMode.ElideRight)
+        area_caption = ElidedLabel(AREA_RANGE_TEXT, "caption", box, mode=Qt.TextElideMode.ElideRight)
 
         grid = self._new_grid()
         grid.addWidget(self._field_label("Land cover", self.cover_combo, box), 0, 0)
