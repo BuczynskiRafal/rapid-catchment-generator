@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import QLocale, Qt, Signal
+from PySide6.QtCore import QLocale, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QButtonGroup,
@@ -33,7 +33,7 @@ from PySide6.QtWidgets import (
 from rcg.gui.categories import CategoryOption, land_cover_options, land_form_options
 from rcg.gui.preview_controller import InputsKey
 from rcg.gui.widgets import ModelPathField
-from rcg.gui.widgets._util import ElidedLabel, WrapLabel, divider, hbox, label
+from rcg.gui.widgets._util import ElidedLabel, WrapLabel, divider, hbox, label, set_prop
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.validation import max_area_ha
 
@@ -138,10 +138,12 @@ class ModelCard(_Card):
 class InputsCard(_Card):
     """Land cover, land form and area, with the *Add subcatchment* row at the bottom.
 
-    ``inputsChanged`` fires whenever one of the three inputs changes.
+    ``inputsChanged`` fires whenever one of the three inputs changes; ``statusExpired``
+    when a confirmation shown by :meth:`flash_status` has timed out.
     """
 
     inputsChanged = Signal()
+    statusExpired = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__("Subcatchment", "inputsCard", parent)
@@ -184,6 +186,10 @@ class InputsCard(_Card):
         self.body.addWidget(divider(self))
         self.body.addLayout(self._build_action_row())
 
+        self._status_timer = QTimer(self)
+        self._status_timer.setSingleShot(True)
+        self._status_timer.timeout.connect(self.statusExpired)
+
         self.cover_combo.currentIndexChanged.connect(self._on_category_changed)
         self.form_combo.currentIndexChanged.connect(self._on_category_changed)
         self.area_spin.valueChanged.connect(self.inputsChanged)
@@ -192,6 +198,26 @@ class InputsCard(_Card):
     def inputs_key(self) -> InputsKey:
         """The inputs as the preview cache keys them (area rounded to what the spin box shows)."""
         return (round(self.area_spin.value(), 2), self.form_combo.currentData(), self.cover_combo.currentData())
+
+    def show_add_state(self, *, enabled: bool, busy: bool, hint: str) -> None:
+        """Enable *Add* and explain its state (*hint*), unless a confirmation is on show."""
+        self.add_button.setEnabled(enabled)
+        self.add_button.setText("Adding…" if busy else ADD_TEXT)
+        if self._status_timer.isActive() and not busy:
+            return  # a confirmation is being shown; it reverts when the timer fires
+        set_prop(self.add_hint, "role", "caption")
+        self.add_hint.setText(hint)
+        self.add_button.setToolTip(hint if not enabled else "")
+
+    def flash_status(self, text: str, timeout_ms: int) -> None:
+        """Show a short confirmation next to the primary button (no layout shift)."""
+        self._status_timer.start(timeout_ms)
+        set_prop(self.add_hint, "role", "captionSuccess")
+        self.add_hint.setText(text)
+
+    def clear_status(self) -> None:
+        """Drop a confirmation that no longer applies; the next state update replaces it."""
+        self._status_timer.stop()
 
     def _make_combo(self, options: tuple[CategoryOption, ...], accessible: str) -> QComboBox:
         combo = QComboBox(self)

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QMimeData, QSettings, QSize, Qt, QThreadPool, QTimer
+from PySide6.QtCore import QMimeData, QSettings, QSize, Qt, QThreadPool
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -39,13 +39,13 @@ from PySide6.QtWidgets import (
 )
 
 from rcg.exceptions import RCGError
-from rcg.gui.cards import ADD_TEXT, OUTPUT_COPY, OUTPUT_IN_PLACE, InputsCard, ModelCard, align_field_labels
+from rcg.gui.cards import OUTPUT_COPY, OUTPUT_IN_PLACE, InputsCard, ModelCard, align_field_labels
 from rcg.gui.file_actions import show_in_folder
 from rcg.gui.help_dialog import HelpDialog
 from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
-from rcg.gui.widgets._util import ElidedLabel, LayoutItem, hbox, label, set_prop, vbox
+from rcg.gui.widgets._util import ElidedLabel, LayoutItem, hbox, label, vbox
 from rcg.gui.widgets.containers import VerticalScrollArea, WindowCentral, invalidate_layouts
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.widgets.preview import PREPARING_TEXT
@@ -144,10 +144,6 @@ class MainWindow(QMainWindow):
         self._help: HelpDialog | None = None
         self._preferred_mode = OUTPUT_IN_PLACE
         self._switching_mode = False
-
-        self._status_timer = QTimer(self)
-        self._status_timer.setSingleShot(True)
-        self._status_timer.timeout.connect(self._update_add_state)
 
         self.preview_controller = self._create_preview_controller(engine)
         self._build_ui()
@@ -260,6 +256,7 @@ class MainWindow(QMainWindow):
         self.path_field.modelChanged.connect(self._on_model_changed)
         self.output_group.buttonToggled.connect(self._on_output_mode_changed)
         inputs.inputsChanged.connect(self._schedule_preview)
+        inputs.statusExpired.connect(self._update_add_state)
         self.add_button.clicked.connect(self.add_subcatchment)
 
     def _set_tab_order(self) -> None:
@@ -407,7 +404,7 @@ class MainWindow(QMainWindow):
         path = info.path if info is not None else None
         if path != self._model_path:
             self._model_path = path
-            self._status_timer.stop()  # a stale "Added ..." confirmation would be misleading now
+            self.inputs_card.clear_status()  # a stale "Added ..." confirmation would be misleading now
             if path is not None:
                 self._remember_directory(path)
         self.preview.set_model(info)
@@ -424,16 +421,8 @@ class MainWindow(QMainWindow):
     def _update_add_state(self) -> None:
         has_model = self.path_field.path() is not None
         enabled = self.preview_controller.ready and has_model and not self._busy
-        self.add_button.setEnabled(enabled)
         self.add_action.setEnabled(enabled)
-        self.add_button.setText("Adding…" if self._busy else ADD_TEXT)
-
-        if self._status_timer.isActive() and not self._busy:
-            return  # a confirmation is being shown; it reverts when the timer fires
-        set_prop(self.add_hint, "role", "caption")
-        hint = self._add_hint(has_model)
-        self.add_hint.setText(hint)
-        self.add_button.setToolTip(hint if not enabled else "")
+        self.inputs_card.show_add_state(enabled=enabled, busy=self._busy, hint=self._add_hint(has_model))
 
     def _add_hint(self, has_model: bool) -> str:
         """The line under *Add subcatchment*: why it is disabled, or its shortcut."""
@@ -575,7 +564,7 @@ class MainWindow(QMainWindow):
 
     def _set_busy(self, busy: bool) -> None:
         if busy:
-            self._status_timer.stop()  # the previous confirmation no longer applies
+            self.inputs_card.clear_status()  # the previous confirmation no longer applies
         self._busy = busy
         self._update_add_state()
 
@@ -604,9 +593,7 @@ class MainWindow(QMainWindow):
 
     def flash_status(self, text: str, timeout_ms: int = 6000) -> None:
         """Show a short confirmation next to the primary button (no layout shift)."""
-        self._status_timer.start(timeout_ms)
-        set_prop(self.add_hint, "role", "captionSuccess")
-        self.add_hint.setText(text)
+        self.inputs_card.flash_status(text, timeout_ms)
 
     def status_text(self) -> str:
         return self.add_hint.text()
