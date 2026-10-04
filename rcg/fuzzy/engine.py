@@ -18,6 +18,7 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 import skfuzzy as fuzz  # noqa: E402
 from skfuzzy import control as ctrl  # noqa: E402
 
+from rcg.exceptions import FuzzyEngineError  # noqa: E402
 from rcg.fuzzy._lazy import lazy_singleton  # noqa: E402
 from rcg.fuzzy.categories import LandCover, LandForm  # noqa: E402
 
@@ -129,7 +130,7 @@ class FuzzyEngine:
         member = self.memberships.catchment
         degrees = {str(key): float(fuzz.interp_membership(member.universe, member[key].mf, score)) for key in member.terms}
         if not degrees:
-            raise ValueError("Catchment variable has no terms")
+            raise FuzzyEngineError("Catchment variable has no terms")
         return max(degrees, key=degrees.__getitem__)
 
     def _compute_single(self, sim: ctrl.ControlSystemSimulation, land_form: int, land_cover: int, output_label: str) -> float:
@@ -142,10 +143,14 @@ class FuzzyEngine:
 
     @staticmethod
     def _validate_inputs(land_form: int, land_cover: int) -> None:
-        if not (1 <= land_form <= 9):
-            raise ValueError(f"Invalid land_form: {land_form}. Must be 1-9")
-        if not (1 <= land_cover <= 14):
-            raise ValueError(f"Invalid land_cover: {land_cover}. Must be 1-14")
+        if not (1 <= land_form <= len(LandForm)):
+            raise FuzzyEngineError(
+                f"Invalid land_form: {land_form}. Must be 1-{len(LandForm)}", land_form=land_form, land_cover=land_cover
+            )
+        if not (1 <= land_cover <= len(LandCover)):
+            raise FuzzyEngineError(
+                f"Invalid land_cover: {land_cover}. Must be 1-{len(LandCover)}", land_form=land_form, land_cover=land_cover
+            )
 
 
 class Prototype:

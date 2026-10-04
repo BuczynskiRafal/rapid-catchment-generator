@@ -5,6 +5,7 @@ import time
 import pytest
 from skfuzzy.control import ControlSystem, ControlSystemSimulation
 
+from rcg.exceptions import FuzzyEngineError
 from rcg.fuzzy.categories import Catchments, LandCover, LandForm
 from rcg.fuzzy.engine import FuzzyEngine, Prototype, get_default_fuzzy_engine
 
@@ -43,8 +44,10 @@ def test_compute_all_returns_a_copy(engine):
 
 @pytest.mark.parametrize(("land_form", "land_cover"), [(0, 5), (10, 5), (3, 0), (3, 15)])
 def test_out_of_range_inputs_raise(engine, land_form, land_cover):
-    with pytest.raises(ValueError):
+    with pytest.raises(FuzzyEngineError) as info:
         engine.compute_slope(land_form, land_cover)
+    assert (info.value.land_form, info.value.land_cover) == (land_form, land_cover)
+    assert isinstance(info.value, ValueError)  # 2.0.0 raised ValueError
 
 
 @pytest.mark.parametrize(
