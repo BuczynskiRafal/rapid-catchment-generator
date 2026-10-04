@@ -11,14 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QMimeData, QSettings, QSize, Qt, QThreadPool
+from PySide6.QtCore import QSettings, QSize, Qt, QThreadPool
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
-    QDragEnterEvent,
-    QDragLeaveEvent,
-    QDragMoveEvent,
-    QDropEvent,
     QIcon,
     QKeySequence,
     QShowEvent,
@@ -45,6 +41,7 @@ from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
 from rcg.gui.widgets._util import ElidedLabel, LayoutItem, hbox, label, vbox
 from rcg.gui.widgets.containers import VerticalScrollArea, WindowCentral, invalidate_layouts
+from rcg.gui.widgets.drop import FileDropFilter
 from rcg.gui.widgets.preview import PREPARING_TEXT
 from rcg.gui.workers import Task
 from rcg.logging_config import get_logger
@@ -108,7 +105,6 @@ class MainWindow(QMainWindow):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(APP_TITLE)
-        self.setAcceptDrops(True)
 
         self._settings = settings if settings is not None else QSettings()
         self._log_path = log_path
@@ -232,6 +228,7 @@ class MainWindow(QMainWindow):
         self.add_hint, self.add_button = inputs.add_hint, inputs.add_button
 
         self.path_field.modelChanged.connect(self._on_model_changed)
+        self._drop_filter = FileDropFilter(self, dropped=self.open_model, highlight=self.path_field.set_drop_highlight)
         self.output_group.buttonToggled.connect(self._on_output_mode_changed)
         inputs.inputsChanged.connect(self._schedule_preview)
         inputs.statusExpired.connect(self._update_add_state)
@@ -590,38 +587,6 @@ class MainWindow(QMainWindow):
             '<p><a href="https://github.com/BuczynskiRafal/rapid-catchment-generator">'
             "github.com/BuczynskiRafal/rapid-catchment-generator</a><br>MIT License</p>",
         )
-
-    # ------------------------------------------------------------------ drag & drop
-    @staticmethod
-    def _dropped_file(mime: QMimeData) -> str | None:
-        if not mime.hasUrls():
-            return None
-        for url in mime.urls():
-            if url.isLocalFile():
-                return url.toLocalFile()
-        return None
-
-    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
-        if self._dropped_file(event.mimeData()):
-            event.acceptProposedAction()
-            self.path_field.set_drop_highlight(True)
-        else:
-            event.ignore()
-
-    def dragMoveEvent(self, event: QDragMoveEvent) -> None:
-        if self._dropped_file(event.mimeData()):
-            event.acceptProposedAction()
-
-    def dragLeaveEvent(self, event: QDragLeaveEvent) -> None:
-        self.path_field.set_drop_highlight(False)
-        super().dragLeaveEvent(event)
-
-    def dropEvent(self, event: QDropEvent) -> None:
-        self.path_field.set_drop_highlight(False)
-        filename = self._dropped_file(event.mimeData())
-        if filename:
-            event.acceptProposedAction()
-            self.open_model(filename)
 
     def open_model(self, path: str | Path) -> None:
         """Make *path* the edited model (dropped file, "Open with", command-line argument).

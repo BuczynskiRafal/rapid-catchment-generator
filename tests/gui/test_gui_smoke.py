@@ -13,8 +13,8 @@ from gui_helpers import (
     select,
     subcatchment_ids,
 )
-from PySide6.QtCore import QMimeData, QPointF, Qt, QUrl
-from PySide6.QtGui import QDropEvent
+from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
+from PySide6.QtGui import QDragEnterEvent, QDropEvent
 
 from rcg.catchment import INFILTRATION_FIELDS
 from rcg.catchment import label as category_label
@@ -141,13 +141,35 @@ def test_model_path_validation_is_inline(qtbot, window, tmp_path, model_copy):
 
 
 def test_dropping_a_file_sets_the_model(window, model_copy):
+    """The window's drop filter highlights the path field while a file hovers, then opens it."""
+    from rcg.gui.widgets.drop import FileDropFilter
+
+    drop_filter = window.findChild(FileDropFilter)
     mime = QMimeData()
     mime.setUrls([QUrl.fromLocalFile(str(model_copy))])
-    event = QDropEvent(
-        QPointF(20, 20), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier
-    )
-    window.dropEvent(event)
+    point, action = QPointF(20, 20), Qt.DropAction.CopyAction
+    buttons, modifiers = Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier
+
+    enter = QDragEnterEvent(point.toPoint(), action, mime, buttons, modifiers)
+    assert drop_filter.eventFilter(window, enter)
+    assert enter.isAccepted() and window.path_field.edit.property("dropTarget")
+
+    drop_filter.eventFilter(window, QDropEvent(point, action, mime, buttons, modifiers))
+    assert not window.path_field.edit.property("dropTarget")
     assert window.path_field.path() == model_copy.resolve()
+
+
+def test_dropping_text_is_refused(window):
+    from rcg.gui.widgets.drop import FileDropFilter
+
+    mime = QMimeData()
+    mime.setText("not a file")
+    enter = QDragEnterEvent(
+        QPoint(20, 20), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier
+    )
+    window.findChild(FileDropFilter).eventFilter(window, enter)
+    assert not enter.isAccepted()
+    assert not window.path_field.edit.property("dropTarget")
 
 
 def test_open_model_sets_the_path_and_focuses_the_field(qtbot, window, model_copy):
