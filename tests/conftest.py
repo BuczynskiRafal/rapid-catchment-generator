@@ -6,8 +6,9 @@ whole session; tests that write files work on temporary copies of the models.
 
 from __future__ import annotations
 
+import logging
 import shutil
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,20 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EXAMPLE_INP = REPO_ROOT / "rcg" / "example.inp"
 LEGACY_INP = Path(__file__).resolve().parent / "inp_manage" / "test_file.inp"
+
+
+@pytest.fixture(autouse=True)
+def _restore_rcg_logger() -> Iterator[None]:
+    """Undo what ``rcg.cli.main`` / ``setup_logging`` did to the ``rcg`` logger in a test."""
+    rcg_logger = logging.getLogger("rcg")
+    handlers, level, propagate = list(rcg_logger.handlers), rcg_logger.level, rcg_logger.propagate
+    yield
+    for handler in [h for h in rcg_logger.handlers if h not in handlers]:
+        rcg_logger.removeHandler(handler)
+        handler.close()
+    rcg_logger.handlers[:] = handlers
+    rcg_logger.setLevel(level)
+    rcg_logger.propagate = propagate
 
 
 @pytest.fixture(scope="session")

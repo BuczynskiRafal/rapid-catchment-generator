@@ -6,7 +6,6 @@ import logging
 import signal
 import sys
 from collections.abc import Sequence
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from types import TracebackType
 
@@ -17,6 +16,7 @@ from PySide6.QtWidgets import QApplication
 from rcg.gui.main_window import APP_TITLE, MainWindow
 from rcg.gui.resources import resource_path
 from rcg.gui.theme import install_theme
+from rcg.logging_config import log_file_path, setup_logging
 
 __all__ = ["create_application", "main"]
 
@@ -24,6 +24,7 @@ ORGANIZATION = "BuczynskiRafal"
 ORGANIZATION_DOMAIN = "github.com/BuczynskiRafal"
 APP_USER_MODEL_ID = "BuczynskiRafal.RapidCatchmentGenerator"
 LOG_FILE_NAME = "rcg-gui.log"
+GUI_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
 logger = logging.getLogger("rcg.gui")
 
@@ -38,36 +39,32 @@ def configure_logging() -> Path | None:
     """Log the ``rcg`` package to a rotating file in the per-user data folder.
 
     A windowed (frozen) build has no console, so the file is where tracebacks of
-    unexpected errors end up. Returns the log path, or ``None`` if it is not writable.
+    unexpected errors end up; warnings also go to stderr when there is one. Returns the
+    log path, or ``None`` if it is not writable. Safe to call more than once.
     """
-    package_logger = logging.getLogger("rcg")
-    package_logger.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-    if sys.stderr is not None and not any(getattr(h, "_rcg_gui", False) for h in package_logger.handlers):
-        console = logging.StreamHandler(sys.stderr)
-        console.setLevel(logging.WARNING)
-        console.setFormatter(formatter)
-        console._rcg_gui = True  # type: ignore[attr-defined]
-        package_logger.addHandler(console)
+    def setup(log_file: Path | None = None) -> None:
+        setup_logging(
+            logging.INFO,
+            log_file=log_file,
+            log_format=GUI_LOG_FORMAT,
+            max_bytes=1_000_000,
+            backup_count=3,
+            console_level=logging.WARNING,
+            propagate=True,
+        )
 
-    for handler in package_logger.handlers:
-        if isinstance(handler, RotatingFileHandler) and getattr(handler, "_rcg_gui", False):
-            return Path(handler.baseFilename)
     folder = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation)
     if not folder:
+        setup()
         return None
     try:
-        log_dir = Path(folder)
-        log_dir.mkdir(parents=True, exist_ok=True)
-        file_handler = RotatingFileHandler(log_dir / LOG_FILE_NAME, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
+        setup(Path(folder) / LOG_FILE_NAME)
     except OSError:
+        setup()
         logger.warning("Cannot write the log file in %s", folder, exc_info=True)
         return None
-    file_handler.setFormatter(formatter)
-    file_handler._rcg_gui = True  # type: ignore[attr-defined]
-    package_logger.addHandler(file_handler)
-    return Path(file_handler.baseFilename)
+    return log_file_path()
 
 
 def create_application(argv: Sequence[str] | None = None) -> QApplication:

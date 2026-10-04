@@ -15,11 +15,12 @@ from typing import Any
 from rcg import __version__
 from rcg.catchment import LAND_COVER_LABELS, LAND_FORM_LABELS, ModelInfo, SubcatchmentParameters, is_metric
 from rcg.exceptions import RCGError, ValidationError
-from rcg.logging_config import get_logger
+from rcg.logging_config import get_logger, setup_logging
 
 logger = get_logger("cli")
 
 EXIT_OK, EXIT_FAILURE, EXIT_USAGE = 0, 1, 2
+CLI_LOG_FORMAT = "%(levelname)s %(name)s: %(message)s"
 JSON_DECIMALS = 4
 """Floats in ``--json`` output are rounded for presentation; files keep full precision."""
 
@@ -198,11 +199,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.WARNING,
-        format="%(levelname)s %(name)s: %(message)s",
-        stream=sys.stderr,
-    )
+    setup_logging(logging.DEBUG if args.verbose else logging.WARNING, log_format=CLI_LOG_FORMAT, propagate=True)
     try:
         output = _run(args)
     except ValidationError as e:
