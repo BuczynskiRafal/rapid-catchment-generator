@@ -8,11 +8,10 @@ the session history across the full width, which takes whatever height is left.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QEvent, QLocale, QMimeData, QObject, QSettings, QSize, Qt, QThread, QThreadPool, QTimer, Signal
+from PySide6.QtCore import QEvent, QLocale, QMimeData, QObject, QSettings, QSize, Qt, QThreadPool, QTimer
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -52,19 +51,19 @@ from rcg.exceptions import RCGError
 from rcg.gui.categories import CategoryOption, land_cover_options, land_form_options
 from rcg.gui.file_actions import show_in_folder
 from rcg.gui.help_dialog import HelpDialog
+from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPathField, PreviewPanel
 from rcg.gui.widgets._util import ElidedLabel, LayoutItem, WrapLabel, card, divider, hbox, label, set_prop, vbox
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.widgets.preview import PREPARING_TEXT
-from rcg.gui.workers import EngineWorker, Task
+from rcg.gui.workers import Task
 from rcg.logging_config import get_logger
 from rcg.validation import max_area_ha
 
 if TYPE_CHECKING:
     from rcg.catchment import ApplyResult, ModelInfo, SubcatchmentParameters
-    from rcg.fuzzy.categories import LandCover, LandForm
     from rcg.fuzzy.engine import FuzzyEngine
 
 __all__ = ["MainWindow", "OUTPUT_COPY", "OUTPUT_IN_PLACE", "normalise_output_path"]
@@ -74,23 +73,20 @@ logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 APP_TITLE = "Rapid Catchment Generator"
 ADD_TEXT = "Add subcatchment"
 ENGINE_FAILED_TEXT = "The fuzzy engine could not be started."
+PREVIEW_FAILED_TEXT = "The preview could not be computed."
 OUTPUT_IN_PLACE = "in_place"
 OUTPUT_COPY = "copy"
-PREVIEW_DEBOUNCE_MS = 150
 CLOSE_WAIT_MS = 200
 # The spin box shows two decimals, so its minimum is 0.01 ha, deliberately above
 # min_area_ha(); the maximum is the validation limit from defaults.json.
 AREA_MIN_HA, AREA_MAX_HA, AREA_DEFAULT_HA = 0.01, max_area_ha(), 1.0
 AREA_RANGE_TEXT = f"{AREA_MIN_HA:g} to {AREA_MAX_HA:,.0f} ha".replace(",", " ")  # "0.01 to 10 000 ha"
-_CACHE_LIMIT = 512
 
 _HINT_ROLE = Qt.ItemDataRole.UserRole + 1  # one-line hint of a category option
 
 _KEY_GEOMETRY = "window/geometry"
 _KEY_LAST_DIR = "paths/last_dir"
 _KEY_OUTPUT_MODE = "output/mode"
-
-InputsKey = tuple[float, "LandForm", "LandCover"]  # (area_ha rounded to 2 dp, land form, land cover)
 
 
 def normalise_output_path(path: Path) -> Path:
@@ -214,8 +210,6 @@ class MainWindow(QMainWindow):
         Shown in the generic error message so users can find the traceback.
     """
 
-    _previewRequested = Signal(int, object, bool)  # request id, InputsKey, pinned
-
     def __init__(
         self,
         settings: QSettings | None = None,
@@ -230,18 +224,11 @@ class MainWindow(QMainWindow):
 
         self._settings = settings if settings is not None else QSettings()
         self._log_path = log_path
-        self._engine_ready = False
-        self._engine_failed = False
         self._field_labels: list[QLabel] = []
         self._busy = False
         self._refocus_add = False
         self._closing = False
         self._apply_ctx: _ApplyContext | None = None
-        self._request_seq = 0
-        self._requests: dict[int, InputsKey] = {}
-        self._cache: dict[InputsKey, SubcatchmentParameters] = {}
-        self._params: SubcatchmentParameters | None = None
-        self._params_key: InputsKey | None = None
         self._model_path: Path | None = None
         self._task: Task | None = None
         self._pool = QThreadPool(self)
@@ -253,15 +240,11 @@ class MainWindow(QMainWindow):
         self._status_timer.setSingleShot(True)
         self._status_timer.timeout.connect(self._update_add_state)
 
-        self._debounce = QTimer(self)
-        self._debounce.setSingleShot(True)
-        self._debounce.setInterval(PREVIEW_DEBOUNCE_MS)
-        self._debounce.timeout.connect(self._request_preview)
-
+        self.preview_controller = self._create_preview_controller(engine)
         self._build_ui()
         self._build_actions()
         self._restore_settings()
-        self._start_engine(engine)
+        self._start_engine()
         self._update_add_state()
 
         app = QApplication.instance()
@@ -591,52 +574,26 @@ class MainWindow(QMainWindow):
         self.path_field.set_start_directory(directory)
 
     # ------------------------------------------------------------------ engine & preview
-    def _start_engine(self, engine: FuzzyEngine | None) -> None:
-        self._engine_thread = QThread(self)
-        self._engine_thread.setObjectName("rcg-fuzzy-engine")
-        self._engine_worker = EngineWorker(engine)
-        self._engine_worker.moveToThread(self._engine_thread)
-        self._engine_worker.ready.connect(self._on_engine_ready)
-        self._engine_worker.warmUpFailed.connect(self._on_engine_failed)
-        self._engine_worker.previewReady.connect(self._on_preview_ready)
-        self._engine_worker.previewFailed.connect(self._on_preview_failed)
-        self._previewRequested.connect(self._engine_worker.compute)
-        self._engine_thread.started.connect(self._engine_worker.warm_up)
-        # No `finished -> deleteLater`: the worker is owned by Python (this window), and
-        # deleting its wrapper from the worker thread segfaults in shiboken. It is freed
-        # with the window, on the GUI thread, after the thread has stopped.
-        # If the window is destroyed without being closed (e.g. garbage-collected), stop
-        # the thread before Qt deletes it: `destroyed` fires before children are deleted.
-        self.destroyed.connect(partial(_stop_thread, self._engine_thread))
-        self.preview.show_preparing()
-        # Started from the event loop: the window paints first, and nothing heavy (the
-        # fuzzy engine, skfuzzy) is imported before the worker thread runs.
-        # (A child timer, not QTimer.singleShot: it dies with the window, so it can never
-        # start the thread of a window that is already gone.)
-        self._engine_start_timer = QTimer(self)
-        self._engine_start_timer.setSingleShot(True)
-        self._engine_start_timer.timeout.connect(self._start_engine_thread)
-        self._engine_start_timer.start(0)
+    def _create_preview_controller(self, engine: FuzzyEngine | None) -> PreviewController:
+        # Created before the UI: building the inputs already schedules a preview.
+        controller = PreviewController(self._inputs_key, engine=engine, parent=self)
+        controller.engineReady.connect(self._update_add_state)
+        controller.engineFailed.connect(self._on_engine_failed)
+        controller.previewReady.connect(self._on_preview_ready)
+        controller.previewFailed.connect(self._on_preview_failed)
+        controller.pinnedReady.connect(self._on_pinned_ready)
+        controller.pinnedFailed.connect(self._on_pinned_failed)
+        return controller
 
-    def _start_engine_thread(self) -> None:
-        if not self._closing:
-            self._engine_thread.start()
+    def _start_engine(self) -> None:
+        self.preview.show_preparing()
+        self.preview_controller.start()
 
     @property
     def engine_ready(self) -> bool:
-        return self._engine_ready
-
-    def _on_engine_ready(self) -> None:
-        if self._closing:
-            return
-        self._engine_ready = True
-        logger.info("Fuzzy engine ready")
-        self._update_add_state()
-        self._request_preview()
+        return self.preview_controller.ready
 
     def _on_engine_failed(self, exc: BaseException) -> None:
-        self._engine_failed = True
-        self._log_unexpected("Fuzzy engine warm-up failed", exc)
         if self._closing:
             return
         self.preview.show_unavailable(ENGINE_FAILED_TEXT)
@@ -647,76 +604,28 @@ class MainWindow(QMainWindow):
         return (round(self.area_spin.value(), 2), self.form_combo.currentData(), self.cover_combo.currentData())
 
     def _schedule_preview(self) -> None:
-        self._debounce.start()
+        self.preview_controller.schedule()
 
-    def _supersede(self) -> int:
-        """Start a new request id; unpinned requests still queued on the engine thread become stale."""
-        self._request_seq += 1
-        self._engine_worker.note_request(self._request_seq)
-        return self._request_seq
+    def _on_preview_ready(self, _key: InputsKey, params: SubcatchmentParameters) -> None:
+        self.preview.show_parameters(params)
 
-    def _issue_request(self, key: InputsKey, *, pinned: bool) -> int:
-        """Send *key* to the engine thread; a *pinned* request is never skipped as stale."""
-        request_id = self._supersede()
-        keep = {request_id - 1}
-        if self._apply_ctx is not None and self._apply_ctx.request_id is not None:
-            keep.add(self._apply_ctx.request_id)
-        self._requests = {rid: k for rid, k in self._requests.items() if rid in keep}
-        self._requests[request_id] = key
-        self._previewRequested.emit(request_id, key, pinned)
-        return request_id
+    def _on_preview_failed(self, exc: BaseException) -> None:
+        self.preview.show_error(self._describe_error(exc, PREVIEW_FAILED_TEXT))
 
-    def _request_preview(self) -> None:
-        """Show the preview for the current inputs (cached, or computed on the engine thread)."""
-        self._debounce.stop()
-        if not self._engine_ready:
-            return
-        key = self._inputs_key()
-        cached = self._cache.get(key)
-        if cached is not None:
-            self._supersede()  # results still in flight are now outdated
-            self._show_params(key, cached)
-            return
-        self._issue_request(key, pinned=False)
-
-    def _remember(self, key: InputsKey, params: SubcatchmentParameters) -> None:
-        if key not in self._cache and len(self._cache) >= _CACHE_LIMIT:
-            self._cache.pop(next(iter(self._cache)))
-        self._cache[key] = params
-
-    def _on_preview_ready(self, request_id: int, params: SubcatchmentParameters) -> None:
-        key = self._requests.pop(request_id, None)
-        if key is None:
-            return
-        self._remember(key, params)
+    def _on_pinned_ready(self, request_id: int, params: SubcatchmentParameters) -> None:
         ctx = self._apply_ctx
         if ctx is not None and ctx.request_id == request_id:
             self._start_apply(params)
-        if request_id == self._request_seq:
-            self._show_params(key, params)
 
-    def _on_preview_failed(self, request_id: int, exc: BaseException) -> None:
-        key = self._requests.pop(request_id, None)
-        if key is None:
-            return
-        if not isinstance(exc, RCGError):
-            self._log_unexpected("Preview failed", exc)
-        message = self._describe_error(exc, "The preview could not be computed.")
+    def _on_pinned_failed(self, request_id: int, exc: BaseException) -> None:
         ctx = self._apply_ctx
         if ctx is not None and ctx.request_id == request_id:
-            self.banner.show_error(message)
+            self.banner.show_error(self._describe_error(exc, PREVIEW_FAILED_TEXT))
             self._finish_apply()
-        if request_id == self._request_seq:
-            self._params = self._params_key = None
-            self.preview.show_error(message)
-
-    def _show_params(self, key: InputsKey, params: SubcatchmentParameters) -> None:
-        self._params, self._params_key = params, key
-        self.preview.show_parameters(params)
 
     def current_parameters(self) -> SubcatchmentParameters | None:
         """Parameters shown in the preview, if they match the current inputs."""
-        return self._params if self._params_key == self._inputs_key() else None
+        return self.preview_controller.parameters_for(self._inputs_key())
 
     # ------------------------------------------------------------------ input handlers
     def _on_category_changed(self) -> None:
@@ -748,7 +657,7 @@ class MainWindow(QMainWindow):
 
     def _update_add_state(self) -> None:
         has_model = self.path_field.path() is not None
-        enabled = self._engine_ready and has_model and not self._busy
+        enabled = self.preview_controller.ready and has_model and not self._busy
         self.add_button.setEnabled(enabled)
         self.add_action.setEnabled(enabled)
         self.add_button.setText("Adding…" if self._busy else ADD_TEXT)
@@ -764,9 +673,9 @@ class MainWindow(QMainWindow):
         """The line under *Add subcatchment*: why it is disabled, or its shortcut."""
         if self._busy:
             return "Writing the model…"
-        if self._engine_failed:
+        if self.preview_controller.failed:
             return "The fuzzy engine is not available."
-        if not self._engine_ready:
+        if not self.preview_controller.ready:
             return PREPARING_TEXT
         if not has_model:
             return "Fix the model path first." if self.path_field.text().strip() else "Choose a SWMM model first."
@@ -777,7 +686,7 @@ class MainWindow(QMainWindow):
     def add_subcatchment(self) -> None:
         """Write the subcatchment for the inputs as they are now (later edits do not leak in)."""
         source = self.path_field.path()
-        if self._busy or not self._engine_ready or source is None:
+        if self._busy or not self.preview_controller.ready or source is None:
             return
         output: Path | None = None
         if self.copy_radio.isChecked():
@@ -794,13 +703,11 @@ class MainWindow(QMainWindow):
         self._apply_ctx = ctx
         self._set_busy(True)
 
-        params = self._cache.get(key)
-        if params is None and self._params_key == key:
-            params = self._params
+        params = self.preview_controller.lookup(key)
         if params is not None:
             self._start_apply(params)
         else:
-            ctx.request_id = self._issue_request(key, pinned=True)
+            ctx.request_id = self.preview_controller.pin(key)
 
     def _choose_output_path(self, source: Path) -> Path | None:
         """Ask where to save the copy; ``None`` when cancelled."""
@@ -1043,22 +950,20 @@ class MainWindow(QMainWindow):
         # short; the thread then finishes in the background and is waited for when the
         # application quits (or when this window is destroyed), never torn down running.
         self.hide()
+        self.preview_controller.close()
         self.shutdown(wait_ms=CLOSE_WAIT_MS)
         super().closeEvent(event)
 
     def shutdown(self, wait_ms: int | None = None) -> None:
         """Stop background work, waiting at most *wait_ms* (``None``: until it is done)."""
-        self._debounce.stop()
-        self._engine_thread.quit()
+        self.preview_controller.shutdown(wait_ms)
         if wait_ms is None:
-            self._engine_thread.wait()
             self._pool.waitForDone()
         else:
-            self._engine_thread.wait(wait_ms)
             self._pool.waitForDone(wait_ms)
 
     def engine_thread_running(self) -> bool:
-        return self._engine_thread.isRunning()
+        return self.preview_controller.thread_running()
 
 
 def _invalidate_layouts(layout: QLayout) -> None:
@@ -1069,14 +974,6 @@ def _invalidate_layouts(layout: QLayout) -> None:
         if child is not None:
             _invalidate_layouts(child)
     layout.invalidate()
-
-
-def _stop_thread(thread: QThread, *_: object) -> None:
-    try:
-        thread.quit()
-        thread.wait()
-    except RuntimeError:  # already deleted
-        pass
 
 
 def _version() -> str:

@@ -113,7 +113,7 @@ def test_preview_matches_service(qtbot, window, gui_engine, area, land_form, lan
 def test_preview_is_debounced(qtbot, window):
     """Rapid edits produce one computation for the final value, not one per keystroke."""
     seen: list[int] = []
-    window._engine_worker.previewReady.connect(lambda rid, _p: seen.append(rid))
+    window.preview_controller._worker.previewReady.connect(lambda rid, _p: seen.append(rid))
     for value in (2.0, 3.0, 4.0, 5.0, 6.25):
         window.area_spin.setValue(value)
     qtbot.waitUntil(lambda: window.current_parameters() is not None, timeout=10_000)
