@@ -15,6 +15,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - The fuzzy rules are defined as one table, `rcg.fuzzy.rule_definitions.RULE_TABLE` (a row per land cover and output
   combination). `define_all_rules` accepts another table and raises `RuleDefinitionError` when it misses or repeats a
   land cover x land form pair. Rule names follow the pair (`<land_cover>_on_<land_form>`); the results are unchanged.
+- Malformed fuzzy rules raise `RuleDefinitionError` naming the rule (an unknown output such as a misspelt `slope=` is
+  no longer dropped silently), and out-of-range inputs to `FuzzyEngine` raise `FuzzyEngineError`. Both exceptions also
+  derive from `ValueError`, which 2.0.0 raised in these cases.
+
+### Deprecated
+- `rcg.fuzzy.engine.create_fuzzy_engine`: call `FuzzyEngine(...)` directly.
+- The 1.x aliases in `rcg.fuzzy.categories` (`land_form`, `land_cover`, `slope_ctgr`, `impervious_ctgr`,
+  `catchment_ctgr`): use the enum classes. Both still work and emit a `DeprecationWarning`.
 
 ## [2.0.0]
 
