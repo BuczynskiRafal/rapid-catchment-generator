@@ -1,4 +1,9 @@
-"""The single RCG window: model and inputs on the left, live preview and history on the right."""
+"""The single RCG window.
+
+Layout, top to bottom: the header; the SWMM model across the full width; the inputs
+(with the primary action) and the live preview side by side, always of equal height;
+the session history across the full width, which takes whatever height is left.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +15,17 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QLocale, QMimeData, QObject, QSettings, QSize, Qt, QThread, QThreadPool, QTimer, Signal
-from PySide6.QtGui import QAction, QCloseEvent, QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent, QKeySequence
+from PySide6.QtGui import (
+    QAction,
+    QCloseEvent,
+    QDragEnterEvent,
+    QDragLeaveEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QIcon,
+    QKeySequence,
+    QShowEvent,
+)
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
@@ -23,6 +38,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QMainWindow,
     QMenuBar,
     QMessageBox,
@@ -38,8 +54,9 @@ from rcg.exceptions import RCGError
 from rcg.gui.categories import CategoryOption, land_cover_options, land_form_options
 from rcg.gui.file_actions import restore_backup, show_in_folder
 from rcg.gui.help_dialog import HelpDialog
+from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPathField, PreviewPanel
-from rcg.gui.widgets._util import ElidedLabel, WrapLabel, card, label, set_prop
+from rcg.gui.widgets._util import ElidedLabel, WrapLabel, card, divider, label, set_prop
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.workers import EngineWorker, Task
@@ -130,10 +147,15 @@ class _VerticalScrollArea(QScrollArea):
     Its minimum height is the content's, so the cards are fully visible at the window's
     minimum size and the scroll bar never appears. Only when that would not fit on the
     screen (very large fonts, small displays) does it fall back to scrolling, and only
-    then is room for the scroll bar reserved.
+    then is room for the scroll bar reserved. It asks for no more than its content's
+    height either, so any extra window height goes to the history below it.
     """
 
     SCREEN_SHARE = 0.6  # at most this share of the screen height is claimed as minimum
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
 
     def setWidget(self, widget: QWidget) -> None:
         super().setWidget(widget)
@@ -162,6 +184,14 @@ class _VerticalScrollArea(QScrollArea):
                 height = cap
                 width += self.verticalScrollBar().sizeHint().width()
         return QSize(max(hint.width(), width), max(hint.height(), height))
+
+    def sizeHint(self) -> QSize:
+        content = self.widget()
+        if content is None:
+            return super().sizeHint()
+        minimum = self.minimumSizeHint()
+        height = max(content.sizeHint().height(), content.minimumSizeHint().height()) + 2 * self.frameWidth()
+        return QSize(minimum.width(), max(minimum.height(), height))
 
 
 @dataclass
@@ -253,22 +283,26 @@ class MainWindow(QMainWindow):
             app.aboutToQuit.connect(self.shutdown)
 
     # ------------------------------------------------------------------ UI building
+    GAP = 14  # between cards, horizontally and vertically, everywhere
+    HEADER_ICON = 40
+
     def _build_ui(self) -> None:
         central = _Central(self)
         central.setObjectName("central")
         root = QVBoxLayout(central)
         root.setContentsMargins(20, 16, 20, 18)
-        root.setSpacing(12)
+        root.setSpacing(self.GAP)
 
         root.addLayout(self._build_header(central))
         self.banner = MessageBanner(central)
         root.addWidget(self.banner)
+        root.addWidget(self._build_workspace(central))
 
-        columns = QHBoxLayout()
-        columns.setSpacing(16)
-        columns.addLayout(self._build_left_column(central), 1)
-        columns.addLayout(self._build_right_column(central), 1)
-        root.addLayout(columns, 1)
+        self.history = HistoryPanel(central)
+        self.history.undoRequested.connect(self.undo_entry)
+        self.history.showInFolderRequested.connect(self._show_in_folder)
+        root.addWidget(self.history, 1)  # the only part that grows with the window
+
         self.setCentralWidget(central)
         self._align_field_labels()
         self._set_tab_order()
@@ -287,25 +321,60 @@ class MainWindow(QMainWindow):
         self.help_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.help_button.clicked.connect(self.show_help)
 
+        titles = QVBoxLayout()
+        titles.setContentsMargins(0, 0, 0, 0)
+        titles.setSpacing(0)
+        titles.addWidget(title)
+        titles.addWidget(subtitle)
+
         header = QHBoxLayout()
-        header.setContentsMargins(2, 0, 0, 0)
-        header.setSpacing(14)
-        header.addWidget(title, 0, Qt.AlignmentFlag.AlignBaseline)
-        header.addWidget(subtitle, 1, Qt.AlignmentFlag.AlignBaseline)
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(12)
+        icon = self._header_icon(parent)
+        if icon is not None:
+            header.addWidget(icon, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addLayout(titles, 1)
         header.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
         return header
 
-    def _build_left_column(self, parent: QWidget) -> QVBoxLayout:
-        # The model comes first: it gates everything else, and its Output choice must
-        # stay in view. The primary action is pinned underneath the cards.
+    def _header_icon(self, parent: QWidget) -> QLabel | None:
+        """The application icon, sharp on high-DPI screens; ``None`` if it is missing."""
+        path = resource_path("icon.png")
+        if path is None:
+            return None
+        size = QSize(self.HEADER_ICON, self.HEADER_ICON)
+        pixmap = QIcon(str(path)).pixmap(size, self.devicePixelRatioF())
+        if pixmap.isNull():
+            return None
+        icon = QLabel(parent)
+        icon.setObjectName("appIcon")
+        icon.setPixmap(pixmap)
+        icon.setFixedSize(size)
+        icon.setAccessibleName(APP_TITLE)
+        return icon
+
+    def _build_workspace(self, parent: QWidget) -> QScrollArea:
+        """Model across the top; inputs and preview below it, side by side and level.
+
+        The model comes first: it gates everything else, and its Output choice must stay
+        in view. The inputs card stretches to the preview's height and pins the primary
+        action to its bottom, so both cards end on the same line.
+        """
         content = QWidget()
         content.setObjectName("inputsContent")
+
+        self.preview = PreviewPanel(content)
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(self.GAP)
+        row.addWidget(self._build_inputs_card(content), 1)
+        row.addWidget(self.preview, 1)
+
         cards = QVBoxLayout(content)
         cards.setContentsMargins(0, 0, 0, 0)
-        cards.setSpacing(14)
+        cards.setSpacing(self.GAP)
         cards.addWidget(self._build_model_card(content))
-        cards.addWidget(self._build_inputs_card(content))
-        cards.addStretch(1)
+        cards.addLayout(row)
 
         self.inputs_scroll = _VerticalScrollArea(parent)
         self.inputs_scroll.setObjectName("inputsScroll")
@@ -315,12 +384,7 @@ class MainWindow(QMainWindow):
         self.inputs_scroll.setWidget(content)
         self.inputs_scroll.viewport().setAutoFillBackground(False)
         content.setAutoFillBackground(False)
-
-        column = QVBoxLayout()
-        column.setSpacing(12)
-        column.addWidget(self.inputs_scroll, 1)
-        column.addLayout(self._build_action_row(parent))
-        return column
+        return self.inputs_scroll
 
     def _make_combo(self, parent: QWidget, options: tuple[CategoryOption, ...], accessible: str) -> QComboBox:
         combo = QComboBox(parent)
@@ -347,12 +411,13 @@ class MainWindow(QMainWindow):
         return grid
 
     @staticmethod
-    def _card_layout(box: QWidget, title: QLabel, grid: QGridLayout) -> None:
+    def _card_layout(box: QWidget, title: QLabel, grid: QGridLayout) -> QVBoxLayout:
         layout = QVBoxLayout(box)
-        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setContentsMargins(18, 14, 18, 16)
         layout.setSpacing(10)
         layout.addWidget(title)
         layout.addLayout(grid)
+        return layout
 
     def _build_model_card(self, parent: QWidget) -> QWidget:
         box = card(parent, "modelCard")
@@ -377,6 +442,15 @@ class MainWindow(QMainWindow):
         self.in_place_radio.setChecked(True)
         self.output_group.buttonToggled.connect(self._on_output_mode_changed)
 
+        # Side by side at their own width (the focus ring hugs the text): the card spans
+        # the window, so one row is enough and keeps the card short.
+        outputs = QHBoxLayout()
+        outputs.setContentsMargins(0, 0, 0, 0)
+        outputs.setSpacing(24)
+        outputs.addWidget(self.in_place_radio)
+        outputs.addWidget(self.copy_radio)
+        outputs.addStretch(1)
+
         grid = self._new_grid()
         grid.addWidget(self._field_label("File", self.path_field.edit, box), 0, 0)
         grid.addWidget(self.path_field, 0, 1)
@@ -384,9 +458,7 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.path_field.detail, 2, 1)
         grid.setRowMinimumHeight(3, 6)
         grid.addWidget(self._field_label("Output", self.in_place_radio, box), 4, 0)
-        # Left-aligned at their own width, so the focus ring hugs the text.
-        grid.addWidget(self.in_place_radio, 4, 1, Qt.AlignmentFlag.AlignLeft)
-        grid.addWidget(self.copy_radio, 5, 1, Qt.AlignmentFlag.AlignLeft)
+        grid.addLayout(outputs, 4, 1)
         self._card_layout(box, title, grid)
         return box
 
@@ -431,7 +503,11 @@ class MainWindow(QMainWindow):
         area_row.addWidget(area_caption, 1)  # elides instead of widening the column
         grid.addWidget(self._field_label("Area", self.area_spin, box), 6, 0)
         grid.addLayout(area_row, 6, 1)
-        self._card_layout(box, title, grid)
+        layout = self._card_layout(box, title, grid)
+        # The card is as tall as the preview beside it; the action sits at the bottom.
+        layout.addStretch(1)
+        layout.addWidget(divider(box))
+        layout.addLayout(self._build_action_row(box))
 
         self.cover_combo.currentIndexChanged.connect(self._on_category_changed)
         self.form_combo.currentIndexChanged.connect(self._on_category_changed)
@@ -463,22 +539,11 @@ class MainWindow(QMainWindow):
         self.add_button.clicked.connect(self.add_subcatchment)
 
         row = QHBoxLayout()
+        row.setContentsMargins(0, 2, 0, 0)
         row.setSpacing(14)
         row.addWidget(self.add_hint, 1)
         row.addWidget(self.add_button)
         return row
-
-    def _build_right_column(self, parent: QWidget) -> QVBoxLayout:
-        self.preview = PreviewPanel(parent)
-        self.history = HistoryPanel(parent)
-        self.history.undoRequested.connect(self.undo_entry)
-        self.history.showInFolderRequested.connect(self._show_in_folder)
-
-        column = QVBoxLayout()
-        column.setSpacing(14)
-        column.addWidget(self.preview)
-        column.addWidget(self.history, 1)
-        return column
 
     def _set_tab_order(self) -> None:
         chain = [
@@ -549,7 +614,7 @@ class MainWindow(QMainWindow):
             self.copy_radio.setChecked(True)
 
     def _default_size(self) -> QSize:
-        wanted = QSize(1120, 740).expandedTo(self.minimumSizeHint())
+        wanted = QSize(1120, 820).expandedTo(self.minimumSizeHint())
         screen = self.screen()
         if screen is not None:
             available = screen.availableGeometry().size() * 0.9
@@ -986,6 +1051,20 @@ class MainWindow(QMainWindow):
             self.path_field.set_path(filename)
             self.path_field.edit.setFocus(Qt.FocusReason.OtherFocusReason)
 
+    # ------------------------------------------------------------------ showing
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        # Showing applies the style sheet, which widens the inputs. Qt would pass that on
+        # in two event-loop passes (the scroll area's cached size, then every layout above
+        # it), so until then the window's minimum size would be stale and later jump.
+        # Do both now: the minimum size is final as soon as the window is shown.
+        self.inputs_scroll.updateGeometry()
+        central = self.centralWidget()
+        if central is not None and (central_layout := central.layout()) is not None:
+            _invalidate_layouts(central_layout)
+        if (window_layout := self.layout()) is not None:
+            window_layout.invalidate()
+
     # ------------------------------------------------------------------ shutdown
     def closeEvent(self, event: QCloseEvent) -> None:
         self._closing = True
@@ -1012,6 +1091,16 @@ class MainWindow(QMainWindow):
 
     def engine_thread_running(self) -> bool:
         return self._engine_thread.isRunning()
+
+
+def _invalidate_layouts(layout: QLayout) -> None:
+    """Drop the cached sizes of *layout* and every layout nested in it (innermost first)."""
+    for index in range(layout.count()):
+        item = layout.itemAt(index)
+        child = item.layout() if item is not None else None
+        if child is not None:
+            _invalidate_layouts(child)
+    layout.invalidate()
 
 
 def _stop_thread(thread: QThread, *_: object) -> None:

@@ -215,7 +215,7 @@ QFrame[divider="true"] {{
 
 /* Typography ----------------------------------------------------------- */
 QLabel[role="title"] {{ font-size: {pt(1.45)}; font-weight: 600; }}
-QLabel[role="subtitle"] {{ color: {t.muted}; padding-left: 2px; }}
+QLabel[role="subtitle"] {{ color: {t.muted}; }}
 QLabel[role="sectionTitle"] {{ font-size: {pt(1.05)}; font-weight: 600; }}
 QLabel[role="fieldLabel"] {{ color: {t.text}; }}
 QLabel[role="caption"] {{ color: {t.muted}; font-size: {pt(0.92)}; }}

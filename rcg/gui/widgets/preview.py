@@ -263,8 +263,9 @@ class PreviewPanel(QFrame):
         layout.setSpacing(12)
         layout.addLayout(header)
         layout.addWidget(self.stack)
-        # Never shrink below the content: a long banner grows the window instead.
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        # Never shrink below the content: a long banner grows the window instead. It may
+        # grow, to stay level with the inputs card beside it.
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         self.set_model(None)
         self.show_preparing()
 

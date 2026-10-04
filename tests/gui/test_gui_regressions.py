@@ -188,6 +188,34 @@ def test_cards_fit_at_minimum_size(qtbot, window, screenshot_dirs):
     save_screenshot(window, screenshot_dirs, "rcg-gui-min.png")
 
 
+@pytest.mark.parametrize("grow", [0, 100], ids=["minimum", "taller"])
+def test_cards_are_level_and_only_the_history_grows(qtbot, window, grow):
+    from PySide6.QtCore import QPoint
+
+    window.resize(window.minimumSizeHint())
+    qtbot.waitUntil(lambda: window.size() == window.minimumSizeHint(), timeout=2_000)
+    QApplication.processEvents()
+    workspace_height = window.inputs_scroll.height()
+    history_height = window.history.height()
+    if grow:
+        window.resize(window.width(), window.height() + grow)
+        QApplication.processEvents()
+
+    central = window.centralWidget()
+
+    def rect(widget):
+        return widget.geometry().translated(widget.parentWidget().mapTo(central, QPoint(0, 0)))
+
+    model, inputs = rect(window.path_field.parentWidget()), rect(window.add_button.parentWidget())
+    preview, history = rect(window.preview), rect(window.history)
+    assert inputs.top() == preview.top() and inputs.bottom() == preview.bottom(), "inputs and preview are level"
+    assert model.left() == inputs.left() == history.left(), "one left edge"
+    assert model.right() == preview.right() == history.right(), "one right edge"
+    assert inputs.top() > model.bottom() and history.top() > preview.bottom()
+    assert window.inputs_scroll.height() == workspace_height, "the cards never stretch"
+    assert window.history.height() == history_height + grow, "the extra height goes to the history"
+
+
 def test_long_banner_grows_the_window_instead_of_squeezing(qtbot, window, model_copy, screenshot_dirs):
     window.path_field.set_path(model_copy)
     window.resize(window.minimumSizeHint())

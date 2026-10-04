@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Changed
+- Desktop app layout: the SWMM model card spans the window; the inputs and the preview sit side by side at equal height,
+  with *Add subcatchment* at the bottom of the inputs card; the history spans the window below and takes any extra
+  height, so no empty gaps open up when the window grows. The header shows the application icon.
+- New application icon (a water drop over layered terrain), drawn as a vector source (`rcg/gui/resources/icon.svg`);
+  `packaging/make_icons.py` renders `icon.png` and a multi-size `icon.ico` from it.
+
 ## [2.0.0]
 
 A rewrite around one service layer (`rcg.preview` / `rcg.apply`) that the CLI, the desktop app and the Python API all
