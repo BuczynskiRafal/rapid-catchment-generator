@@ -15,19 +15,15 @@ from PySide6.QtCore import QSettings, QSize, Qt, QThreadPool
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
-    QIcon,
     QKeySequence,
     QShowEvent,
 )
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
-    QHBoxLayout,
-    QLabel,
     QMainWindow,
     QMessageBox,
     QScrollArea,
-    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -37,11 +33,11 @@ from rcg.gui.cards import OUTPUT_COPY, OUTPUT_IN_PLACE, InputsCard, ModelCard, a
 from rcg.gui.file_actions import ask_save_path, choose_output_path, confirm_replace, normalise_output_path, show_in_folder
 from rcg.gui.help_dialog import HelpDialog
 from rcg.gui.preview_controller import InputsKey, PreviewController
-from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
-from rcg.gui.widgets._util import ElidedLabel, LayoutItem, hbox, label, vbox
+from rcg.gui.widgets._util import hbox, vbox
 from rcg.gui.widgets.containers import VerticalScrollArea, WindowCentral, invalidate_layouts
 from rcg.gui.widgets.drop import FileDropFilter
+from rcg.gui.widgets.header import build_header
 from rcg.gui.widgets.preview import PREPARING_TEXT
 from rcg.gui.workers import Task
 from rcg.logging_config import get_logger
@@ -55,6 +51,7 @@ __all__ = ["MainWindow", "OUTPUT_COPY", "OUTPUT_IN_PLACE", "normalise_output_pat
 logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 APP_TITLE = "Rapid Catchment Generator"
+SUBTITLE = "SWMM subcatchments from land form and land cover"
 ENGINE_FAILED_TEXT = "The fuzzy engine could not be started."
 PREVIEW_FAILED_TEXT = "The preview could not be computed."
 CLOSE_WAIT_MS = 200
@@ -132,7 +129,6 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------------ UI building
     GAP = 14  # between cards, horizontally and vertically, everywhere
-    HEADER_ICON = 40
 
     def _build_ui(self) -> None:
         central = WindowCentral(self)
@@ -141,7 +137,9 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(20, 16, 20, 18)
         root.setSpacing(self.GAP)
 
-        root.addLayout(self._build_header(central))
+        header, self.help_button = build_header(central, APP_TITLE, SUBTITLE)
+        self.help_button.clicked.connect(self.show_help)
+        root.addLayout(header)
         self.banner = MessageBanner(central)
         root.addWidget(self.banner)
         root.addWidget(self._build_workspace(central))
@@ -154,42 +152,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         align_field_labels([*self.model_card.field_labels, *self.inputs_card.field_labels])
         self._set_tab_order()
-
-    def _build_header(self, parent: QWidget) -> QHBoxLayout:
-        title = label(APP_TITLE, "title", parent)
-        title.setAccessibleName(APP_TITLE)
-        subtitle = ElidedLabel("SWMM subcatchments from land form and land cover", "subtitle", parent)
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-
-        self.help_button = QToolButton(parent)
-        self.help_button.setText("?")
-        self.help_button.setProperty("role", "help")
-        self.help_button.setToolTip("Help (F1)")
-        self.help_button.setAccessibleName("Help")
-        self.help_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.help_button.clicked.connect(self.show_help)
-
-        centred = Qt.AlignmentFlag.AlignVCenter
-        icon = self._header_icon(parent)
-        leading: tuple[LayoutItem, ...] = ((icon, 0, centred),) if icon is not None else ()
-        titles = vbox(title, subtitle, spacing=0)
-        return hbox(*leading, (titles, 1), (self.help_button, 0, centred), spacing=12)
-
-    def _header_icon(self, parent: QWidget) -> QLabel | None:
-        """The application icon, sharp on high-DPI screens; ``None`` if it is missing."""
-        path = resource_path("icon.png")
-        if path is None:
-            return None
-        size = QSize(self.HEADER_ICON, self.HEADER_ICON)
-        pixmap = QIcon(str(path)).pixmap(size, self.devicePixelRatioF())
-        if pixmap.isNull():
-            return None
-        icon = QLabel(parent)
-        icon.setObjectName("appIcon")
-        icon.setPixmap(pixmap)
-        icon.setFixedSize(size)
-        icon.setAccessibleName(APP_TITLE)
-        return icon
 
     def _build_workspace(self, parent: QWidget) -> QScrollArea:
         """Model across the top; inputs and preview below it, side by side and level.
