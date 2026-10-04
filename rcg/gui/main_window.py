@@ -13,9 +13,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSettings, QSize, Qt, QThreadPool
 from PySide6.QtGui import (
-    QAction,
     QCloseEvent,
-    QKeySequence,
     QShowEvent,
 )
 from PySide6.QtWidgets import (
@@ -32,6 +30,7 @@ from rcg.exceptions import RCGError
 from rcg.gui.cards import OUTPUT_COPY, OUTPUT_IN_PLACE, InputsCard, ModelCard, align_field_labels
 from rcg.gui.file_actions import ask_save_path, choose_output_path, confirm_replace, normalise_output_path, show_in_folder
 from rcg.gui.help_dialog import HelpDialog
+from rcg.gui.menus import install_menus, shortcut_text
 from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
 from rcg.gui.widgets._util import hbox, vbox
@@ -212,45 +211,15 @@ class MainWindow(QMainWindow):
             QWidget.setTabOrder(first, second)
 
     def _build_actions(self) -> None:
-        def shortcuts(*keys: QKeySequence | QKeySequence.StandardKey | str) -> list[QKeySequence]:
-            unique: list[QKeySequence] = []
-            for key in keys:
-                for seq in QKeySequence.keyBindings(key) if isinstance(key, QKeySequence.StandardKey) else [QKeySequence(key)]:
-                    if not seq.isEmpty() and seq not in unique:
-                        unique.append(seq)
-            return unique
-
-        self.open_action = QAction("Open Model…", self)
-        self.open_action.setShortcuts(shortcuts(QKeySequence.StandardKey.Open))
-        self.open_action.triggered.connect(self.path_field.browse)
-
-        self.add_action = QAction("Add Subcatchment", self)
-        self.add_action.setShortcuts(shortcuts("Ctrl+Return", "Ctrl+Enter"))
-        self.add_action.triggered.connect(self.add_subcatchment)
-
-        quit_action = QAction("Quit", self)
-        quit_action.setMenuRole(QAction.MenuRole.QuitRole)
-        quit_action.setShortcuts(shortcuts(QKeySequence.StandardKey.Quit))
-        quit_action.triggered.connect(self.close)
-
-        self.help_action = QAction("Rapid Catchment Generator Help", self)
-        self.help_action.setShortcuts(shortcuts("F1", QKeySequence.StandardKey.HelpContents))
-        self.help_action.triggered.connect(self.show_help)
-
-        about_action = QAction("About Rapid Catchment Generator", self)
-        about_action.setMenuRole(QAction.MenuRole.AboutRole)
-        about_action.triggered.connect(self.show_about)
-
-        file_menu = self.menuBar().addMenu("&File")
-        file_menu.addAction(self.open_action)
-        file_menu.addAction(self.add_action)
-        file_menu.addSeparator()
-        file_menu.addAction(quit_action)
-        help_menu = self.menuBar().addMenu("&Help")
-        help_menu.addAction(self.help_action)
-        help_menu.addAction(about_action)
-
-        open_hint = self.open_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
+        actions = install_menus(
+            self,
+            open_model=self.path_field.browse,
+            add=self.add_subcatchment,
+            show_help=self.show_help,
+            show_about=self.show_about,
+        )
+        self.open_action, self.add_action, self.help_action = actions.open, actions.add, actions.help
+        open_hint = shortcut_text(self.open_action)
         self.path_field.browse_button.setToolTip(f"Open a SWMM model ({open_hint})" if open_hint else "Open a SWMM model")
 
     # ------------------------------------------------------------------ settings
@@ -371,7 +340,7 @@ class MainWindow(QMainWindow):
             return PREPARING_TEXT
         if not has_model:
             return "Fix the model path first." if self.path_field.text().strip() else "Choose a SWMM model first."
-        shortcut = self.add_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
+        shortcut = shortcut_text(self.add_action)
         return f"Press {shortcut} to add" if shortcut else ""
 
     # ------------------------------------------------------------------ add / undo
