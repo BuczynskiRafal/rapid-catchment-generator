@@ -649,11 +649,15 @@ class MainWindow(QMainWindow):
     def _schedule_preview(self) -> None:
         self._debounce.start()
 
+    def _supersede(self) -> int:
+        """Start a new request id; unpinned requests still queued on the engine thread become stale."""
+        self._request_seq += 1
+        self._engine_worker.note_request(self._request_seq)
+        return self._request_seq
+
     def _issue_request(self, key: InputsKey, *, pinned: bool) -> int:
         """Send *key* to the engine thread; a *pinned* request is never skipped as stale."""
-        self._request_seq += 1
-        request_id = self._request_seq
-        self._engine_worker.note_request(request_id)  # supersedes unpinned requests still queued
+        request_id = self._supersede()
         keep = {request_id - 1}
         if self._apply_ctx is not None and self._apply_ctx.request_id is not None:
             keep.add(self._apply_ctx.request_id)
@@ -670,8 +674,7 @@ class MainWindow(QMainWindow):
         key = self._inputs_key()
         cached = self._cache.get(key)
         if cached is not None:
-            self._request_seq += 1  # results still in flight are now outdated
-            self._engine_worker.note_request(self._request_seq)
+            self._supersede()  # results still in flight are now outdated
             self._show_params(key, cached)
             return
         self._issue_request(key, pinned=False)
