@@ -150,6 +150,13 @@ def test_dropping_a_file_sets_the_model(window, model_copy):
     assert window.path_field.path() == model_copy.resolve()
 
 
+def test_open_model_sets_the_path_and_focuses_the_field(qtbot, window, model_copy):
+    window.open_model(str(model_copy))
+    assert window.path_field.path() == model_copy.resolve()
+    if window.isActiveWindow():  # focus is only reported for the active window
+        assert window.path_field.edit.hasFocus()
+
+
 # --------------------------------------------------------------------------- add / undo
 def test_add_subcatchment_writes_model_and_records_history(qtbot, window, model_copy, screenshot_dirs):
     before_bytes = model_copy.read_bytes()

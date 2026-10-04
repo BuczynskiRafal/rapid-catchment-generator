@@ -97,9 +97,7 @@ class _FileOpenForwarder(QObject):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.Type.FileOpen and isinstance(event, QFileOpenEvent) and event.file():
-            self._window.path_field.set_path(event.file())
-            self._window.raise_()
-            self._window.activateWindow()
+            self._window.open_model(event.file())
             return True
         return False
 
@@ -124,7 +122,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     _FileOpenForwarder(app, window)
     model = _model_argument(args)
     if model:
-        window.path_field.set_path(model)
+        window.open_model(model)
 
     previous_hook = sys.excepthook
 

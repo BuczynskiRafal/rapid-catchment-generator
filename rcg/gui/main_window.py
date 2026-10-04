@@ -1026,8 +1026,19 @@ class MainWindow(QMainWindow):
         filename = self._dropped_file(event.mimeData())
         if filename:
             event.acceptProposedAction()
-            self.path_field.set_path(filename)
+            self.open_model(filename)
+
+    def open_model(self, path: str | Path) -> None:
+        """Make *path* the edited model (dropped file, "Open with", command-line argument).
+
+        Once the window is shown it is also brought to the front with the path field
+        focused, so the user sees the model check right away.
+        """
+        self.path_field.set_path(path)
+        if self.isVisible():
             self.path_field.edit.setFocus(Qt.FocusReason.OtherFocusReason)
+            self.raise_()
+            self.activateWindow()
 
     # ------------------------------------------------------------------ showing
     def showEvent(self, event: QShowEvent) -> None:
