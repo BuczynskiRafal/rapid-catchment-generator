@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
     QApplication,
     QFrame,
     QMainWindow,
-    QMessageBox,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -29,7 +28,7 @@ from PySide6.QtWidgets import (
 from rcg.exceptions import RCGError
 from rcg.gui.cards import OUTPUT_COPY, OUTPUT_IN_PLACE, InputsCard, ModelCard, align_field_labels
 from rcg.gui.file_actions import ask_save_path, choose_output_path, confirm_replace, normalise_output_path, show_in_folder
-from rcg.gui.help_dialog import HelpDialog
+from rcg.gui.help_dialog import HelpDialog, show_about_box
 from rcg.gui.menus import install_menus, shortcut_text
 from rcg.gui.preview_controller import InputsKey, PreviewController
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
@@ -510,14 +509,7 @@ class MainWindow(QMainWindow):
         self._help.activateWindow()
 
     def show_about(self) -> None:
-        QMessageBox.about(
-            self,
-            f"About {APP_TITLE}",
-            f"<h3>{APP_TITLE}</h3><p>Version {_version()}</p>"
-            "<p>Rapid prototyping of SWMM subcatchments with fuzzy logic.</p>"
-            '<p><a href="https://github.com/BuczynskiRafal/rapid-catchment-generator">'
-            "github.com/BuczynskiRafal/rapid-catchment-generator</a><br>MIT License</p>",
-        )
+        show_about_box(self, APP_TITLE)
 
     def open_model(self, path: str | Path) -> None:
         """Make *path* the edited model (dropped file, "Open with", command-line argument).
@@ -569,17 +561,3 @@ class MainWindow(QMainWindow):
 
     def engine_thread_running(self) -> bool:
         return self.preview_controller.thread_running()
-
-
-def _version() -> str:
-    import rcg
-
-    version = getattr(rcg, "__version__", None)
-    if version:
-        return str(version)
-    try:
-        from importlib.metadata import version as dist_version
-
-        return dist_version("rapid-catchment-generator")
-    except Exception:  # not installed (e.g. running from a checkout)
-        return "unknown"
