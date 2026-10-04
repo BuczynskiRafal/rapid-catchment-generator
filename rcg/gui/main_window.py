@@ -113,11 +113,12 @@ class MainWindow(QMainWindow):
         self._help: HelpDialog | None = None
         self._preferred_mode = OUTPUT_IN_PLACE
 
-        self.preview_controller = self._create_preview_controller(engine)
         self._build_ui()
+        self.preview_controller = self._create_preview_controller(engine)
         self._build_actions()
         self._restore_settings()
-        self._start_engine()
+        self.preview.show_preparing()
+        self.preview_controller.start()
         self._update_add_state()
 
         app = QApplication.instance()
@@ -189,7 +190,6 @@ class MainWindow(QMainWindow):
         self.path_field.modelChanged.connect(self._on_model_changed)
         self._drop_filter = FileDropFilter(self, dropped=self.open_model, highlight=self.path_field.set_drop_highlight)
         self.output_group.buttonToggled.connect(self._on_output_mode_changed)
-        inputs.inputsChanged.connect(self._schedule_preview)
         inputs.statusExpired.connect(self._update_add_state)
         self.add_button.clicked.connect(self.add_subcatchment)
 
@@ -236,8 +236,8 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------------ engine & preview
     def _create_preview_controller(self, engine: FuzzyEngine | None) -> PreviewController:
-        # Created before the UI: building the inputs already schedules a preview.
-        controller = PreviewController(self._inputs_key, engine=engine, parent=self)
+        controller = PreviewController(self.inputs_card.inputs_key, engine=engine, parent=self)
+        self.inputs_card.inputsChanged.connect(controller.schedule)
         controller.engineReady.connect(self._update_add_state)
         controller.engineFailed.connect(self._on_engine_failed)
         controller.previewReady.connect(self._on_preview_ready)
@@ -245,10 +245,6 @@ class MainWindow(QMainWindow):
         controller.pinnedReady.connect(self._on_pinned_ready)
         controller.pinnedFailed.connect(self._on_pinned_failed)
         return controller
-
-    def _start_engine(self) -> None:
-        self.preview.show_preparing()
-        self.preview_controller.start()
 
     @property
     def engine_ready(self) -> bool:
@@ -260,12 +256,6 @@ class MainWindow(QMainWindow):
         self.preview.show_unavailable(ENGINE_FAILED_TEXT)
         self.banner.show_error(self._describe_error(exc, ENGINE_FAILED_TEXT))
         self._update_add_state()
-
-    def _inputs_key(self) -> InputsKey:
-        return self.inputs_card.inputs_key()
-
-    def _schedule_preview(self) -> None:
-        self.preview_controller.schedule()
 
     def _on_preview_ready(self, _key: InputsKey, params: SubcatchmentParameters) -> None:
         self.preview.show_parameters(params)
@@ -286,7 +276,7 @@ class MainWindow(QMainWindow):
 
     def current_parameters(self) -> SubcatchmentParameters | None:
         """Parameters shown in the preview, if they match the current inputs."""
-        return self.preview_controller.parameters_for(self._inputs_key())
+        return self.preview_controller.parameters_for(self.inputs_card.inputs_key())
 
     # ------------------------------------------------------------------ input handlers
     def _on_model_changed(self, info: ModelInfo | None) -> None:
@@ -341,7 +331,7 @@ class MainWindow(QMainWindow):
         self.banner.dismiss()
         # Disabling the button while busy moves keyboard focus away; give it back afterwards.
         self._refocus_add = self.add_button.hasFocus()
-        key = self._inputs_key()
+        key = self.inputs_card.inputs_key()
         ctx = _ApplyContext(source=source, output=output, key=key)
         self._apply_ctx = ctx
         self._set_busy(True)
@@ -400,7 +390,7 @@ class MainWindow(QMainWindow):
 
     def _on_apply_failed(self, exc: BaseException) -> None:
         if not isinstance(exc, RCGError):
-            self._log_unexpected("Adding the subcatchment failed", exc)
+            logger.error("Adding the subcatchment failed", exc_info=(type(exc), exc, exc.__traceback__))
         self.banner.show_error(self._describe_error(exc, "The subcatchment could not be added."))
 
     def _on_apply_finished(self) -> None:
@@ -463,10 +453,6 @@ class MainWindow(QMainWindow):
         where = f" Details were written to {self._log_path}." if self._log_path else " Details were written to the log."
         return f"{fallback} An unexpected error occurred.{where}"
 
-    @staticmethod
-    def _log_unexpected(message: str, exc: BaseException) -> None:
-        logger.error(message, exc_info=(type(exc), exc, exc.__traceback__))
-
     def report_unexpected_error(self) -> None:
         """Called by the application's exception hook for errors raised in slots."""
         self.banner.show_error(self._describe_error(RuntimeError(), "Something went wrong."))
@@ -525,10 +511,7 @@ class MainWindow(QMainWindow):
     def shutdown(self, wait_ms: int | None = None) -> None:
         """Stop background work, waiting at most *wait_ms* (``None``: until it is done)."""
         self.preview_controller.shutdown(wait_ms)
-        if wait_ms is None:
-            self._pool.waitForDone()
-        else:
-            self._pool.waitForDone(wait_ms)
+        self._pool.waitForDone(-1 if wait_ms is None else wait_ms)  # -1: no time limit
 
     def engine_thread_running(self) -> bool:
         return self.preview_controller.thread_running()
