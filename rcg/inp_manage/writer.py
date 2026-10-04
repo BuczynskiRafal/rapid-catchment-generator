@@ -56,6 +56,7 @@ from rcg.catchment import (
     SubcatchmentParameters,
     base_infiltration_method,
     infiltration_for,
+    is_metric,
 )
 from rcg.exceptions import ModelOperationError
 from rcg.inp_manage.backups import BACKUP_DIR_NAME, create_backup
@@ -255,7 +256,7 @@ class _Model:
 
     @property
     def is_metric(self) -> bool:
-        return self.flow_units in FLOW_UNITS_SI
+        return is_metric(self.flow_units)  # the module-level rcg.catchment.is_metric
 
 
 def _check_structure(raw: bytes, doc: _InpDocument, path: Path) -> None:
