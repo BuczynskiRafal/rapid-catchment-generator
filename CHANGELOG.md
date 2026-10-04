@@ -12,6 +12,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   height, so no empty gaps open up when the window grows. The header shows the application icon.
 - New application icon (a water drop over layered terrain), drawn as a vector source (`rcg/gui/resources/icon.svg`);
   `packaging/make_icons.py` renders `icon.png` and a multi-size `icon.ico` from it.
+- The fuzzy rules are defined as one table, `rcg.fuzzy.rule_definitions.RULE_TABLE` (a row per land cover and output
+  combination). `define_all_rules` accepts another table and raises `RuleDefinitionError` when it misses or repeats a
+  land cover x land form pair. Rule names follow the pair (`<land_cover>_on_<land_form>`); the results are unchanged.
 
 ## [2.0.0]
 

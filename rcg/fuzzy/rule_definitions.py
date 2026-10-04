@@ -12,6 +12,10 @@ outputs to several land forms of one land cover.
 from __future__ import annotations
 
 import threading
+from collections import Counter
+from collections.abc import Sequence
+
+from rcg.exceptions import RuleDefinitionError
 
 from .categories import Catchments, Impervious, LandCover, LandForm, Slope
 from .rule_engine import RuleEngine, rule
@@ -184,20 +188,48 @@ RULE_TABLE: tuple[RuleRow, ...] = (
 # fmt: on
 
 
-def define_all_rules(engine: RuleEngine) -> RuleEngine:
+def check_rule_table(table: Sequence[RuleRow]) -> None:
+    """Make sure ``table`` has exactly one row for every land cover x land form pair.
+
+    Raises
+    ------
+    RuleDefinitionError
+        If a pair is missing or listed more than once.
+    """
+    cells = Counter((cover, form) for cover, forms, *_ in table for form in forms)
+    missing = [f"{c.name}/{f.name}" for c in LandCover for f in LandForm if (c, f) not in cells]
+    repeated = [f"{c.name}/{f.name}" for (c, f), n in cells.items() if n > 1]
+    problems = []
+    if missing:
+        problems.append(f"missing {', '.join(missing)}")
+    if repeated:
+        problems.append(f"repeated {', '.join(repeated)}")
+    if problems:
+        raise RuleDefinitionError(f"The rule table must cover each land cover/land form pair once: {'; '.join(problems)}")
+
+
+def define_all_rules(engine: RuleEngine, table: Sequence[RuleRow] = RULE_TABLE) -> RuleEngine:
     """Add every catchment rule to ``engine`` and build its skfuzzy rule systems.
 
     Parameters
     ----------
     engine : RuleEngine
         Engine to populate. It should be empty; rules are appended.
+    table : sequence of RuleRow, optional
+        Rules to add. Defaults to :data:`RULE_TABLE`.
 
     Returns
     -------
     RuleEngine
         The same engine, with rule systems built.
+
+    Raises
+    ------
+    RuleDefinitionError
+        If ``table`` misses a land cover/land form pair or repeats one.
     """
-    for cover, forms, slope, impervious, catchment in RULE_TABLE:
+    check_rule_table(table)
+    for cover, forms, slope, impervious, catchment in table:
         for form in forms:
             engine.add_rule(
                 rule(f"{cover.name}_on_{form.name}")
