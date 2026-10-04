@@ -330,6 +330,21 @@ def test_failed_verification_writes_nothing(example_inp, urban_params, monkeypat
     assert sorted(p.name for p in example_inp.parent.iterdir()) == ["example.inp"]
 
 
+def test_parameters_are_validated_once_with_the_same_errors(example_inp, urban_params, forest_params, monkeypatch):
+    calls = []
+    real = writer.validate_parameters
+    monkeypatch.setattr(writer, "validate_parameters", lambda p: calls.append(p) or real(p))
+    apply(example_inp, [urban_params, forest_params], backup=False)
+    assert calls == [urban_params, forest_params]
+    original = example_inp.read_bytes()
+    with pytest.raises(ValidationError, match="At least one") as direct:
+        writer.append_subcatchments(example_inp, [])
+    assert direct.value.field == "parameters"
+    with pytest.raises(ValidationError, match="Area must be"):
+        writer.append_subcatchments(example_inp, [dataclasses.replace(urban_params, area_ha=-1.0)])
+    assert example_inp.read_bytes() == original
+
+
 def test_failed_backup_writes_nothing(example_inp, urban_params, monkeypatch):
     original = example_inp.read_bytes()
 

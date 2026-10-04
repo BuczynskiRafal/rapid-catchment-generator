@@ -58,7 +58,7 @@ from rcg.catchment import (
     infiltration_for,
     is_metric,
 )
-from rcg.exceptions import ModelOperationError
+from rcg.exceptions import ModelOperationError, ValidationError
 from rcg.inp_manage.backups import BACKUP_DIR_NAME, create_backup
 from rcg.logging_config import get_logger
 from rcg.validation import validate_parameters
@@ -684,20 +684,23 @@ def append_subcatchments(
     Raises
     ------
     ValidationError
-        If a parameter value is out of range.
+        If there are no parameters or a parameter value is out of range.
     ModelOperationError
         If the model cannot be read, verified or written, the target is read-only or
         the source changed while it was being edited. The target is untouched then.
     """
     source_path = _resolve(source)
     target = _resolve(output_path) if output_path is not None else source_path
-    if not parameters:
-        raise ModelOperationError("No subcatchments to add", operation="apply", model_path=str(source_path))
-    for item in parameters:
+    # The only parameter checks on the way to disk: rcg.apply relies on them, so direct
+    # callers of this function get exactly the same errors.
+    items = tuple(parameters)
+    if not items:
+        raise ValidationError("At least one subcatchment is required", field="parameters", value=parameters)
+    for item in items:
         validate_parameters(item)
 
     model = _read_model(source_path)
-    plan = _edit(model, parameters)
+    plan = _edit(model, items)
     updated = model.doc.render()
     _check_unique(updated, plan.ids)
     _verify(updated, plan.ids)
