@@ -57,34 +57,45 @@ class WrapLabel(QLabel):
     so alternating short and long texts do not make the layout jump.
     """
 
-    def __init__(self, text: str = "", role: str | None = None, parent: QWidget | None = None, *, reserve_lines: int = 0):
+    def __init__(
+        self,
+        text: str = "",
+        role: str | None = None,
+        parent: QWidget | None = None,
+        *,
+        reserve_lines: int = 0,
+        max_lines: int | None = None,
+    ):
         super().__init__(text, parent)
         if role:
             self.setProperty("role", role)
         self.setWordWrap(True)
         self._reserve_lines = reserve_lines
+        self._max_lines = max_lines
         self._last_width = -1
         policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         policy.setHeightForWidth(True)
         self.setSizePolicy(policy)
 
+    def _line_height_for(self, num_lines: int) -> int:
+        lines = "\n".join("X" * num_lines)
+        flags = int(Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap)
+        margins = self.contentsMargins()
+        return (
+            self.fontMetrics().boundingRect(QRect(0, 0, 10_000, 10_000), flags, lines).height()
+            + 2 * self.margin()
+            + margins.top()
+            + margins.bottom()
+        )
+
     def _height_for(self, width: int) -> int:
         self.ensurePolished()  # the style sheet may change the font size
-        reserved = 0
-        if self._reserve_lines:
-            # Measured like QLabel measures wrapped text, so a text that does take the
-            # reserved number of lines is exactly as tall as the reservation.
-            lines = "\n".join("X" * self._reserve_lines)
-            flags = int(Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap)
-            margins = self.contentsMargins()
-            reserved = (
-                self.fontMetrics().boundingRect(QRect(0, 0, 10_000, 10_000), flags, lines).height()
-                + 2 * self.margin()
-                + margins.top()
-                + margins.bottom()
-            )
-        needed = self.heightForWidth(width) if width > 0 else super().sizeHint().height()
-        return max(needed, reserved)
+        reserved = self._line_height_for(self._reserve_lines) if self._reserve_lines else 0
+        needed = self.heightForWidth(width) if width > 0 else (reserved or super().sizeHint().height())
+        height = max(needed, reserved)
+        if self._max_lines is not None:
+            height = min(height, self._line_height_for(self._max_lines))
+        return height
 
     def sizeHint(self) -> QSize:
         base = super().sizeHint()
@@ -93,7 +104,7 @@ class WrapLabel(QLabel):
 
     def minimumSizeHint(self) -> QSize:
         base = super().minimumSizeHint()
-        width = self.width() if self.width() > 0 else base.width()
+        width = self.width() if self.width() > 0 else 0
         return QSize(min(base.width(), 80), self._height_for(width))
 
     def setText(self, text: str) -> None:
