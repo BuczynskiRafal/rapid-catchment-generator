@@ -166,6 +166,15 @@ class _VerticalScrollArea(QScrollArea):
         content_hint = content.minimumSizeHint()
         width = content_hint.width() + frame
         height = content_hint.height() + frame
+        content_layout = content.layout()
+        if content_layout is not None and content_layout.hasHeightForWidth():
+            # QScrollArea uses heightForWidth when sizing its resizable content.
+            # The layout's minimumHeightForWidth can be smaller (e.g. baseline
+            # aligned labels), leaving a few pixels to scroll even on a large screen.
+            target_width = max(content_hint.width(), self.width() - frame)
+            hfw = content_layout.heightForWidth(target_width)
+            if hfw > 0:
+                height = max(height, hfw + frame)
         screen = self.screen()
         if screen is not None:
             cap = int(screen.availableGeometry().height() * self.SCREEN_SHARE)
@@ -175,12 +184,7 @@ class _VerticalScrollArea(QScrollArea):
         return QSize(max(hint.width(), width), max(hint.height(), height))
 
     def sizeHint(self) -> QSize:
-        content = self.widget()
-        if content is None:
-            return super().sizeHint()
-        minimum = self.minimumSizeHint()
-        height = max(content.sizeHint().height(), content.minimumSizeHint().height()) + 2 * self.frameWidth()
-        return QSize(minimum.width(), max(minimum.height(), height))
+        return self.minimumSizeHint()
 
 
 @dataclass
@@ -490,7 +494,7 @@ class MainWindow(QMainWindow):
     def _build_action_row(self, parent: QWidget) -> QHBoxLayout:
         # Two lines are always reserved, so a longer message never changes the row's (and
         # the window's minimum) height.
-        self.add_hint = WrapLabel("", "caption", parent, reserve_lines=2)
+        self.add_hint = WrapLabel("", "caption", parent, reserve_lines=2, max_lines=2)
         self.add_hint.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight)
         self.add_button = PrimaryButton(ADD_TEXT, parent)
         self.add_button.setAccessibleName(ADD_TEXT)
@@ -766,7 +770,7 @@ class MainWindow(QMainWindow):
         if not self._engine_ready:
             return PREPARING_TEXT
         if not has_model:
-            return "Fix the model path first." if self.path_field.text().strip() else "Choose a SWMM model first."
+            return "Fix the model path." if self.path_field.text().strip() else "Choose a SWMM model."
         shortcut = self.add_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
         return f"Press {shortcut} to add" if shortcut else ""
 
@@ -1062,9 +1066,20 @@ def _invalidate_layouts(layout: QLayout) -> None:
     """Drop the cached sizes of *layout* and every layout nested in it (innermost first)."""
     for index in range(layout.count()):
         item = layout.itemAt(index)
-        child = item.layout() if item is not None else None
+        if item is None:
+            continue
+        child = item.layout()
         if child is not None:
             _invalidate_layouts(child)
+        widget = item.widget()
+        if widget is not None:
+            widget_layout = widget.layout()
+            if widget_layout is not None:
+                _invalidate_layouts(widget_layout)
+            for sub in widget.findChildren(QWidget):
+                sub_layout = sub.layout()
+                if sub_layout is not None:
+                    sub_layout.invalidate()
     layout.invalidate()
 
 

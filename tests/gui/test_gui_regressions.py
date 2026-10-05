@@ -32,6 +32,62 @@ from rcg.catchment import INFILTRATION_FIELDS, infiltration_for
 from rcg.fuzzy.categories import LandCover, LandForm
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+LAYOUT_FONTS = [
+    pytest.param(None, id="system-font"),
+    pytest.param(("Arial", 9), id="arial-9pt"),
+    pytest.param(("Helvetica", 10), id="helvetica-10pt"),
+    # This font has extra leading: empty labels are taller than populated labels.
+    pytest.param(("Times New Roman", 10), id="times-10pt"),
+]
+
+
+@pytest.mark.parametrize("gui_font", [("Times New Roman", 10)], indirect=True)
+@pytest.mark.parametrize("kind", ["reserved", "elided"])
+@pytest.mark.parametrize("role", ["caption", "value"])
+def test_single_line_labels_keep_height_when_empty_columns_are_filled(qtbot, gui_font, kind, role):
+    from rcg.gui.widgets._util import ElidedLabel, ReservedLabel
+
+    widget = {"reserved": ReservedLabel, "elided": ElidedLabel}[kind]("", role)
+    qtbot.addWidget(widget)
+    widget.setMargin(2)
+    widget.setContentsMargins(1, 2, 3, 4)
+    widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    before = (widget.minimumSizeHint().height(), widget.sizeHint().height())
+    for text in ("—", "MaxInfil", "3.5 mm", "0.5 in/h", "Horton, from the model", ""):
+        widget.setText(text)
+        assert (widget.minimumSizeHint().height(), widget.sizeHint().height()) == before, text
+
+
+def test_action_hint_height_is_reserved_even_when_layout_queries_it_directly(qtbot, rcg_app):
+    from rcg.gui.widgets._util import WrapLabel
+
+    widget = WrapLabel("", "caption", reserve_lines=2, max_lines=2)
+    qtbot.addWidget(widget)
+    widget.resize(40, 100)
+    before = widget.heightForWidth(40)
+    assert before > 0
+    widget.setText("Preparing fuzzy engine…\nChoose a model.\nAdditional details.\nOne more line.")
+    for width in (40, 200, 500):
+        assert widget.heightForWidth(width) == before
+    assert widget.sizeHint().height() == widget.minimumSizeHint().height() == before
+
+
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_wrapped_label_hints_do_not_depend_on_temporary_geometry(qtbot, gui_font):
+    from rcg.gui.widgets._util import WrapLabel
+
+    widget = WrapLabel(
+        "Subcatchments you add appear here. The latest one can be undone from its backup.",
+        "placeholder",
+    )
+    qtbot.addWidget(widget)
+    widget.setMinimumHeight(48)
+    widget.resize(100, 100)  # before the parent's first layout pass
+    before = (widget.minimumSizeHint(), widget.sizeHint())
+    narrow_height = widget.heightForWidth(100)
+    widget.resize(800, 100)  # the width ultimately assigned by the window
+    assert widget.heightForWidth(800) < narrow_height, "wrapping still follows the available width"
+    assert (widget.minimumSizeHint(), widget.sizeHint()) == before, "intrinsic hints must not follow temporary geometry"
 
 
 @pytest.fixture
@@ -179,17 +235,21 @@ def _assert_preview_not_squeezed(window) -> None:
             assert lbl.height() >= lbl.minimumSizeHint().height(), repr(lbl.text())
 
 
-def test_cards_fit_at_minimum_size(qtbot, window, screenshot_dirs):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_cards_fit_at_minimum_size(qtbot, window, screenshot_dirs, gui_font):
     window.resize(window.minimumSizeHint())
     qtbot.waitUntil(lambda: window.size() == window.minimumSizeHint(), timeout=2_000)
     QApplication.processEvents()
     _assert_inputs_fully_visible(window)
     _assert_preview_not_squeezed(window)
+    placeholder = window.history.placeholder
+    assert placeholder.height() >= placeholder.heightForWidth(placeholder.width()), "the history text is not clipped"
     save_screenshot(window, screenshot_dirs, "rcg-gui-min.png")
 
 
 @pytest.mark.parametrize("grow", [0, 100], ids=["minimum", "taller"])
-def test_cards_are_level_and_only_the_history_grows(qtbot, window, grow):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_cards_are_level_and_only_the_history_grows(qtbot, window, grow, gui_font):
     from PySide6.QtCore import QPoint
 
     window.resize(window.minimumSizeHint())
@@ -216,7 +276,8 @@ def test_cards_are_level_and_only_the_history_grows(qtbot, window, grow):
     assert window.history.height() == history_height + grow, "the extra height goes to the history"
 
 
-def test_long_banner_grows_the_window_instead_of_squeezing(qtbot, window, model_copy, screenshot_dirs):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_long_banner_grows_the_window_instead_of_squeezing(qtbot, window, model_copy, screenshot_dirs, gui_font):
     window.path_field.set_path(model_copy)
     window.resize(window.minimumSizeHint())
     QApplication.processEvents()
@@ -241,6 +302,25 @@ def test_long_banner_grows_the_window_instead_of_squeezing(qtbot, window, model_
     window.banner.dismiss()
     QApplication.processEvents()
     assert window.minimumSizeHint() == before
+
+
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_preview_returns_to_normal_size_after_error(qtbot, window, gui_font):
+    panel = window.preview
+    params = window.current_parameters()
+    QApplication.processEvents()
+    before = (panel.minimumSizeHint(), window.inputs_scroll.minimumSizeHint(), window.minimumSizeHint())
+
+    panel.show_error("\n".join([LONG_ERROR] * 4))
+    qtbot.waitUntil(lambda: panel.minimumSizeHint().height() > before[0].height(), timeout=2_000)
+    assert panel.error.isVisible()
+
+    panel.show_parameters(params)
+    qtbot.waitUntil(
+        lambda: (panel.minimumSizeHint(), window.inputs_scroll.minimumSizeHint(), window.minimumSizeHint()) == before,
+        timeout=2_000,
+    )
+    assert not panel.error.isVisible()
 
 
 # --------------------------------------------------------------------------- 5. focus
@@ -358,7 +438,8 @@ def _min_width_breakdown(win) -> str:
     return head + " | widest: " + ", ".join(f"{cls}({name})={width}" for width, cls, name in widest)
 
 
-def test_minimum_size_is_stable_from_construction(qtbot, rcg_app, gui_settings, gui_engine, model_copy, us_model):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_minimum_size_is_stable_from_construction(qtbot, rcg_app, gui_settings, gui_engine, model_copy, us_model, gui_font):
     from rcg.gui.main_window import MainWindow
 
     win = MainWindow(gui_settings, engine=gui_engine)
