@@ -7,11 +7,19 @@ membership function instances with proper dependency injection support.
 
 from __future__ import annotations
 
-import threading
+from collections.abc import Mapping, Sequence
+from enum import Enum, IntEnum
+from types import MappingProxyType
+from typing import Any
 
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
+
+from rcg.exceptions import RuleDefinitionError
+
+from ._lazy import lazy_singleton
+from .categories import Catchments, Impervious, LandCover, LandForm, Slope
 
 
 class Memberships:
@@ -38,96 +46,90 @@ class Memberships:
         self._populate_impervious()
         self._populate_catchment()
 
+        self.variables: Mapping[str, ctrl.Antecedent | ctrl.Consequent] = MappingProxyType(
+            {v.label: v for v in (self.land_form_type, self.land_cover_type, self.slope, self.impervious, self.catchment)}
+        )
+        """Every fuzzy variable by label: ``land_form``, ``land_cover``, ``slope``, ``impervious``, ``catchment``."""
+
+    def term(self, variable: str, name: str) -> Any:
+        """Return the term ``name`` of the fuzzy variable labelled ``variable``.
+
+        Raises
+        ------
+        RuleDefinitionError
+            If there is no such variable or the variable has no such term.
+        """
+        fuzzy_variable = self.variables.get(variable)
+        if fuzzy_variable is None:
+            raise RuleDefinitionError(f"Unknown fuzzy variable {variable!r}; expected one of {', '.join(self.variables)}")
+        if name not in fuzzy_variable.terms:
+            raise RuleDefinitionError(f"Fuzzy variable {variable!r} has no term {name!r}")
+        return fuzzy_variable[name]
+
+    @staticmethod
+    def _add_terms(variable: ctrl.Antecedent | ctrl.Consequent, params: Mapping[Enum, Sequence[float]]) -> None:
+        """Add one triangular term per category, named after the enum member."""
+        for member, abc in params.items():
+            variable[member.name] = fuzz.trimf(variable.universe, list(abc))
+
+    @staticmethod
+    def _peaks(enum_cls: type[IntEnum]) -> dict[Enum, tuple[int, int, int]]:
+        """Triangles peaking at each member's value: ``[value - 1, value, value + 1]``."""
+        return {member: (member.value - 1, member.value, member.value + 1) for member in enum_cls}
+
     def _populate_land_form(self) -> None:
         """Populate land form memberships with trimf functions."""
-        params: dict[str, list[int]] = {
-            "marshes_and_lowlands": [0, 1, 2],
-            "flats_and_plateaus": [1, 2, 3],
-            "flats_and_plateaus_in_combination_with_hills": [2, 3, 4],
-            "hills_with_gentle_slopes": [3, 4, 5],
-            "steeper_hills_and_foothills": [4, 5, 6],
-            "hills_and_outcrops_of_mountain_ranges": [5, 6, 7],
-            "higher_hills": [6, 7, 8],
-            "mountains": [7, 8, 9],
-            "highest_mountains": [8, 9, 10],
-        }
-        for name, param in params.items():
-            self.land_form_type[name] = fuzz.trimf(self.land_form_type.universe, param)
+        self._add_terms(self.land_form_type, self._peaks(LandForm))
 
     def _populate_land_cover(self) -> None:
         """Populate land cover memberships with trimf functions."""
-        params: dict[str, list[int]] = {
-            "permeable_areas": [0, 1, 2],
-            "permeable_terrain_on_plains": [1, 2, 3],
-            "mountains_vegetated": [2, 3, 4],
-            "mountains_rocky": [3, 4, 5],
-            "urban_weakly_impervious": [4, 5, 6],
-            "urban_moderately_impervious": [5, 6, 7],
-            "urban_highly_impervious": [6, 7, 8],
-            "suburban_weakly_impervious": [7, 8, 9],
-            "suburban_highly_impervious": [8, 9, 10],
-            "rural": [9, 10, 11],
-            "forests": [10, 11, 12],
-            "meadows": [11, 12, 13],
-            "arable": [12, 13, 14],
-            "marshes": [13, 14, 15],
-        }
-        for name, param in params.items():
-            self.land_cover_type[name] = fuzz.trimf(self.land_cover_type.universe, param)
+        self._add_terms(self.land_cover_type, self._peaks(LandCover))
 
     def _populate_slope(self) -> None:
         """Populate slope memberships with trimf functions."""
-        params: dict[str, list[float]] = {
-            "marshes_and_lowlands": [0, 0, 1],
-            "flats_and_plateaus": [0, 1, 2.5],
-            "flats_and_plateaus_in_combination_with_hills": [1, 2.5, 5],
-            "hills_with_gentle_slopes": [2.5, 5, 8],
-            "steeper_hills_and_foothills": [5, 8, 15],
-            "hills_and_outcrops_of_mountain_ranges": [8, 15, 20],
-            "higher_hills": [15, 20, 30],
-            "mountains": [20, 30, 40],
-            "highest_mountains": [30, 50, 60],
+        params: dict[Enum, tuple[float, float, float]] = {
+            Slope.marshes_and_lowlands: (0, 0, 1),
+            Slope.flats_and_plateaus: (0, 1, 2.5),
+            Slope.flats_and_plateaus_in_combination_with_hills: (1, 2.5, 5),
+            Slope.hills_with_gentle_slopes: (2.5, 5, 8),
+            Slope.steeper_hills_and_foothills: (5, 8, 15),
+            Slope.hills_and_outcrops_of_mountain_ranges: (8, 15, 20),
+            Slope.higher_hills: (15, 20, 30),
+            Slope.mountains: (20, 30, 40),
+            Slope.highest_mountains: (30, 50, 60),
         }
-        for name, param in params.items():
-            self.slope[name] = fuzz.trimf(self.slope.universe, param)
+        self._add_terms(self.slope, params)
 
     def _populate_impervious(self) -> None:
         """Populate impervious memberships with trimf functions."""
-        params: dict[str, list[int]] = {
-            "marshes": [0, 0, 2],
-            "arable": [0, 2, 4],
-            "meadows": [2, 5, 8],
-            "forests": [5, 7, 9],
-            "rural": [7, 11, 15],
-            "suburban_weakly_impervious": [10, 25, 40],
-            "suburban_highly_impervious": [35, 50, 65],
-            "urban_weakly_impervious": [30, 45, 60],
-            "urban_moderately_impervious": [50, 65, 80],
-            "urban_highly_impervious": [75, 85, 100],
-            "mountains_rocky": [20, 40, 60],
-            "mountains_vegetated": [5, 15, 25],
+        params: dict[Enum, tuple[float, float, float]] = {
+            Impervious.marshes: (0, 0, 2),
+            Impervious.arable: (0, 2, 4),
+            Impervious.meadows: (2, 5, 8),
+            Impervious.forests: (5, 7, 9),
+            Impervious.rural: (7, 11, 15),
+            Impervious.suburban_weakly_impervious: (10, 25, 40),
+            Impervious.suburban_highly_impervious: (35, 50, 65),
+            Impervious.urban_weakly_impervious: (30, 45, 60),
+            Impervious.urban_moderately_impervious: (50, 65, 80),
+            Impervious.urban_highly_impervious: (75, 85, 100),
+            Impervious.mountains_rocky: (20, 40, 60),
+            Impervious.mountains_vegetated: (5, 15, 25),
         }
-        for name, param in params.items():
-            self.impervious[name] = fuzz.trimf(self.impervious.universe, param)
+        self._add_terms(self.impervious, params)
 
     def _populate_catchment(self) -> None:
         """Populate catchment memberships with trimf functions."""
-        params: dict[str, list[int]] = {
-            "urban": [0, 0, 15],
-            "suburban": [0, 15, 30],
-            "rural": [15, 30, 45],
-            "forests": [30, 45, 60],
-            "meadows": [45, 60, 75],
-            "arable": [60, 75, 90],
-            "mountains": [75, 87, 100],
+        params: dict[Enum, tuple[float, float, float]] = {
+            Catchments.urban: (0, 0, 15),
+            Catchments.suburban: (0, 15, 30),
+            Catchments.rural: (15, 30, 45),
+            Catchments.forests: (30, 45, 60),
+            Catchments.meadows: (45, 60, 75),
+            Catchments.arable: (60, 75, 90),
+            Catchments.mountains: (75, 87, 100),
         }
-        for name, param in params.items():
-            self.catchment[name] = fuzz.trimf(self.catchment.universe, param)
-
-
-# Cache for default memberships instance (lazy initialization)
-_default_memberships: Memberships | None = None
-_default_lock = threading.Lock()
+        self._add_terms(self.catchment, params)
 
 
 def create_memberships() -> Memberships:
@@ -150,6 +152,7 @@ def create_memberships() -> Memberships:
     return Memberships()
 
 
+@lazy_singleton
 def get_default_memberships() -> Memberships:
     """
     Get the default (shared) Memberships instance.
@@ -162,9 +165,4 @@ def get_default_memberships() -> Memberships:
     Memberships
         The shared default Memberships instance.
     """
-    global _default_memberships
-    if _default_memberships is None:
-        with _default_lock:
-            if _default_memberships is None:
-                _default_memberships = Memberships()
-    return _default_memberships
+    return Memberships()

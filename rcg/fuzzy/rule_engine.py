@@ -17,6 +17,8 @@ from skfuzzy import control as ctrl
 from skfuzzy.control import Antecedent, Consequent
 from skfuzzy.control import Rule as SkfuzzyRule
 
+from rcg.exceptions import RuleDefinitionError
+
 if TYPE_CHECKING:
     from .memberships import Memberships
 
@@ -41,13 +43,13 @@ class Condition:
         -------
         Any
             skfuzzy antecedent term.
+
+        Raises
+        ------
+        RuleDefinitionError
+            If the variable or its term does not exist.
         """
-        if self.variable == "land_form":
-            return memberships.land_form_type[self.value.name]
-        elif self.variable == "land_cover":
-            return memberships.land_cover_type[self.value.name]
-        else:
-            raise ValueError(f"Unknown variable: {self.variable}")
+        return memberships.term(self.variable, self.value.name)
 
 
 @dataclass
@@ -73,7 +75,7 @@ class FuzzyRule:
             Combined antecedent for all conditions.
         """
         if not self.conditions:
-            raise ValueError("Rule must have at least one condition")
+            raise RuleDefinitionError("Rule must have at least one condition", rule_name=self.name)
 
         skfuzzy_conditions = [cond.to_skfuzzy(memberships) for cond in self.conditions]
         antecedent = skfuzzy_conditions[0]
@@ -99,17 +101,7 @@ class FuzzyRule:
         """
         if output_type not in self.consequences:
             return None
-
-        consequence_value = self.consequences[output_type]
-
-        if output_type == "slope":
-            return memberships.slope[consequence_value.value]
-        elif output_type == "impervious":
-            return memberships.impervious[consequence_value.value]
-        elif output_type == "catchment":
-            return memberships.catchment[consequence_value.value]
-        else:
-            raise ValueError(f"Unknown output type: {output_type}")
+        return memberships.term(output_type, self.consequences[output_type].name)
 
 
 class RuleBuilder:
@@ -136,7 +128,7 @@ class RuleBuilder:
         """Add conditions to the rule."""
         for variable, value in conditions.items():
             if not isinstance(value, Enum):
-                raise ValueError(f"Condition value must be an Enum, got {type(value)}")
+                raise RuleDefinitionError(f"Condition value must be an Enum, got {type(value)}", rule_name=self.rule_name)
             self.conditions.append(Condition(variable, value))
         return self
 
@@ -144,14 +136,14 @@ class RuleBuilder:
         """Set consequences for the rule."""
         for key, value in consequences.items():
             if not isinstance(value, Enum):
-                raise ValueError(f"Consequence value must be an Enum, got {type(value)}")
+                raise RuleDefinitionError(f"Consequence value must be an Enum, got {type(value)}", rule_name=self.rule_name)
             self.consequences[key] = value
         return self
 
     def build(self) -> FuzzyRule:
         """Build and validate the final rule."""
         if not self.conditions or not self.consequences:
-            raise ValueError("Rule must have conditions and consequences")
+            raise RuleDefinitionError("Rule must have conditions and consequences", rule_name=self.rule_name)
 
         if not self.rule_name:
             self.rule_name = f"rule_{len(self.conditions)}_conditions"
@@ -192,17 +184,31 @@ class RuleEngine:
         self.rules.append(rule)
 
     def build_rule_systems(self) -> None:
-        """Build skfuzzy control systems from the defined rules."""
+        """Build skfuzzy control systems from the defined rules.
+
+        Raises
+        ------
+        RuleDefinitionError
+            If a rule names an unknown variable, term or output; the message names the rule.
+        """
         self._rule_systems = {k: [] for k in self._rule_systems}  # Clear existing
         memberships = self._get_memberships()
 
         for rule in self.rules:
-            antecedent = rule.build_antecedent(memberships)
-            for output_type in self._rule_systems:
-                consequent = rule.get_consequence(output_type, memberships)
-                if consequent:
-                    skfuzzy_rule = ctrl.Rule(antecedent=antecedent, consequent=consequent)
-                    self._rule_systems[output_type].append(skfuzzy_rule)
+            try:
+                unknown = sorted(set(rule.consequences) - set(self._rule_systems))
+                if unknown:
+                    raise RuleDefinitionError(
+                        f"Unknown output {', '.join(map(repr, unknown))}; expected one of {', '.join(self._rule_systems)}"
+                    )
+                antecedent = rule.build_antecedent(memberships)
+                for output_type in self._rule_systems:
+                    consequent = rule.get_consequence(output_type, memberships)
+                    if consequent:
+                        skfuzzy_rule = ctrl.Rule(antecedent=antecedent, consequent=consequent)
+                        self._rule_systems[output_type].append(skfuzzy_rule)
+            except RuleDefinitionError as e:
+                raise RuleDefinitionError(f"Rule {rule.name!r}: {e}", rule_name=rule.name) from e
 
     @property
     def slope_rules(self) -> list[SkfuzzyRule]:

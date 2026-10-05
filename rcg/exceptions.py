@@ -44,8 +44,10 @@ class ConfigurationError(RCGError):
         self.config_file = config_file
 
 
-class FuzzyEngineError(RCGError):
-    """Fuzzy inference failed.
+class FuzzyEngineError(RCGError, ValueError):
+    """Fuzzy inference failed or was given inputs outside the category ranges.
+
+    Also a :class:`ValueError`: 2.0.0 raised plain ``ValueError`` for out-of-range inputs.
 
     Attributes
     ----------
@@ -90,8 +92,10 @@ class BackupError(RCGError):
         self.backup_path = backup_path
 
 
-class RuleDefinitionError(RCGError):
+class RuleDefinitionError(RCGError, ValueError):
     """A fuzzy rule is malformed.
+
+    Also a :class:`ValueError`: 2.0.0 raised plain ``ValueError`` for these mistakes.
 
     Attributes
     ----------

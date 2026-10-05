@@ -1,5 +1,6 @@
 """The module contains classes specified in the RCG divided into categories."""
 
+import warnings
 from enum import Enum, IntEnum
 
 
@@ -121,8 +122,24 @@ class Catchments(Enum):
         return [member.value for member in cls]
 
 
-land_form = LandForm
-land_cover = LandCover
-slope_ctgr = Slope
-impervious_ctgr = Impervious
-catchment_ctgr = Catchments
+# 1.x module-level aliases, kept for compatibility and resolved on access with a warning.
+_DEPRECATED_ALIASES: dict[str, type[Enum]] = {
+    "land_form": LandForm,
+    "land_cover": LandCover,
+    "slope_ctgr": Slope,
+    "impervious_ctgr": Impervious,
+    "catchment_ctgr": Catchments,
+}
+
+
+def __getattr__(name: str) -> type[Enum]:
+    """Resolve the deprecated 1.x aliases (``land_form``, ``slope_ctgr``, ...).
+
+    .. deprecated:: 2.1
+        Use the enum classes (``LandForm``, ``Slope``, ...) instead.
+    """
+    target = _DEPRECATED_ALIASES.get(name)
+    if target is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    warnings.warn(f"{__name__}.{name} is deprecated; use {target.__name__} instead", DeprecationWarning, stacklevel=2)
+    return target
