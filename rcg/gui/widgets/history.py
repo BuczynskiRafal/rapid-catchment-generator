@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 
 from rcg.gui.categories import catchment_type_label
 from rcg.gui.widgets._util import ElidedLabel, divider, hbox, label, set_prop
+
+if TYPE_CHECKING:
+    from rcg.catchment import ApplyResult, SubcatchmentParameters
 
 __all__ = ["HistoryEntry", "HistoryPanel"]
 
@@ -27,6 +31,18 @@ class HistoryEntry:
     backup_path: Path | None
     undone: bool = False
     written_sha256: str | None = None  # file as RCG wrote it; undo refuses once it changed
+
+    @classmethod
+    def from_apply(cls, result: ApplyResult, params: SubcatchmentParameters | None) -> HistoryEntry:
+        """The entry for a successful apply of *params* (``None`` if they are not known)."""
+        return cls(
+            subcatchment_ids=tuple(result.subcatchment_ids),
+            area_ha=params.area_ha if params is not None else float("nan"),
+            catchment_type=params.catchment_type if params is not None else "",
+            output_path=Path(result.output_path),
+            backup_path=Path(result.backup_path) if result.backup_path is not None else None,
+            written_sha256=result.written_sha256,
+        )
 
     @property
     def title(self) -> str:
