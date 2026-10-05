@@ -7,7 +7,6 @@ the session history across the full width, which takes whatever height is left.
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -59,6 +58,7 @@ from rcg.gui.widgets._util import ElidedLabel, WrapLabel, card, divider, label, 
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.path_field import INP_FILTER
 from rcg.gui.workers import EngineWorker, Task
+from rcg.logging_config import get_logger
 
 if TYPE_CHECKING:
     from rcg.catchment import ApplyResult, ModelInfo, SubcatchmentParameters
@@ -67,7 +67,7 @@ if TYPE_CHECKING:
 
 __all__ = ["MainWindow", "OUTPUT_COPY", "OUTPUT_IN_PLACE", "normalise_output_path"]
 
-logger = logging.getLogger("rcg.gui")
+logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 APP_TITLE = "Rapid Catchment Generator"
 OUTPUT_IN_PLACE = "in_place"

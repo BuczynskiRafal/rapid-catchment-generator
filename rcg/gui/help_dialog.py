@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import logging
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QTextBrowser, QVBoxLayout, QWidget
 
 from rcg.gui.resources import read_text
+from rcg.logging_config import get_logger
 
 __all__ = ["HelpDialog", "load_help_markdown"]
 
-logger = logging.getLogger("rcg.gui")
+logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 _FALLBACK = (
     "# Rapid Catchment Generator\n\nThe help file could not be found. See "

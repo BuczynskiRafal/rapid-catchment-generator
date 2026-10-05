@@ -30,6 +30,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - `rcg.inp_manage.writer.append_subcatchments` called with no parameters raises `ValidationError` ("At least one
   subcatchment is required"), the same error as `rcg.apply`, instead of `ModelOperationError`. Parameters are validated
   once per apply instead of twice.
+- Logging: the CLI and the desktop app both configure it through `rcg.logging_config.setup_logging`, which gained
+  `console_level` and `propagate` arguments, replaces only the handlers it installed when called again, writes to the
+  current `sys.stderr` and opens the log file before changing anything. `log_file_path()` returns the file in use.
+  `rcg -v` now shows RCG's debug messages only (it configures the `rcg` logger, not the root logger).
 
 ### Deprecated
 - `rcg.fuzzy.engine.create_fuzzy_engine`: call `FuzzyEngine(...)` directly.

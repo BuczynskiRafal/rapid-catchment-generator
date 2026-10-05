@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from rcg import __version__
-from rcg.cli import main
+from rcg.cli import build_parser, main
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ADD_ARGS = ["--area", "5", "--land-form", "flats_and_plateaus", "--land-cover", "urban_moderately_impervious"]
@@ -29,6 +29,19 @@ def test_python_dash_m_help_and_version():
     assert "add" in help_run.stdout and "list-options" in help_run.stdout and "inspect" in help_run.stdout
     version_run = subprocess.run([sys.executable, "-m", "rcg", "--version"], capture_output=True, text=True, cwd=REPO_ROOT)
     assert version_run.stdout.strip() == f"rcg {__version__}"
+
+
+@pytest.mark.parametrize(
+    ("argv", "handler"),
+    [
+        (["add", "x.inp", *ADD_ARGS], "_cmd_add"),
+        (["preview", *ADD_ARGS], "_cmd_preview"),
+        (["inspect", "x.inp"], "_cmd_inspect"),
+        (["list-options"], "_cmd_list_options"),
+    ],
+)
+def test_every_subcommand_has_a_handler(argv, handler):
+    assert build_parser().parse_args(argv).handler.__name__ == handler
 
 
 def test_add_json(capsys, example_inp):
