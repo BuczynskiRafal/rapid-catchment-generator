@@ -206,14 +206,19 @@ class _InfiltrationRow(QWidget):
 
     def minimumSizeHint(self) -> QSize:
         self.ensurePolished()
-        for widget in (self.headers[0], self.values[0]):
+        for widget in (*self.headers, *self.values):
             widget.ensurePolished()
         hint = super().minimumSizeHint()
-        return QSize(max(hint.width(), self._widest_method_width()), hint.height())
+        row_h = (
+            max((h.minimumSizeHint().height() for h in self.headers), default=0)
+            + self._grid.verticalSpacing()
+            + max((v.minimumSizeHint().height() for v in self.values), default=0)
+        )
+        return QSize(max(hint.width(), self._widest_method_width()), max(hint.height(), row_h))
 
     def sizeHint(self) -> QSize:
         hint = super().sizeHint()
-        return QSize(max(hint.width(), self.minimumSizeHint().width()), hint.height())
+        return QSize(max(hint.width(), self.minimumSizeHint().width()), max(hint.height(), self.minimumSizeHint().height()))
 
     def text_by_field(self) -> dict[str, str]:
         return {header.text(): value.text() for header, value in zip(self.headers, self.values) if header.text()}
@@ -455,3 +460,16 @@ class PreviewPanel(QFrame):
     def infiltration_text(self) -> dict[str, str]:
         """Displayed infiltration values by SWMM field name (for tests and accessibility)."""
         return self.infiltration_row.text_by_field()
+
+    def minimumSizeHint(self) -> QSize:
+        self.ensurePolished()
+        hint = super().minimumSizeHint()
+        min_h = getattr(self, "_min_height", 0)
+        self._min_height = max(min_h, hint.height())
+        return QSize(hint.width(), self._min_height)
+
+    def sizeHint(self) -> QSize:
+        self.ensurePolished()
+        hint = super().sizeHint()
+        min_hint = self.minimumSizeHint()
+        return QSize(max(hint.width(), min_hint.width()), max(hint.height(), min_hint.height()))

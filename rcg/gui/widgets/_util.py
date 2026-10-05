@@ -157,8 +157,10 @@ class ElidedLabel(QLabel):
     def _line_height(self, base: int) -> int:
         """One line's height whether or not there is text (an empty QLabel is a pixel shorter)."""
         margins = self.contentsMargins()
-        line = self.fontMetrics().boundingRect(QRect(0, 0, 10_000, 1_000), int(Qt.AlignmentFlag.AlignLeft), "X").height()
-        return max(base, line + 2 * self.margin() + margins.top() + margins.bottom())
+        fm = self.fontMetrics()
+        line = fm.boundingRect(QRect(0, 0, 10_000, 1_000), int(Qt.AlignmentFlag.AlignLeft), "Xy").height()
+        full_line = max(fm.height(), line) + 2 * self.margin() + margins.top() + margins.bottom()
+        return max(base, full_line)
 
     def minimumSizeHint(self) -> QSize:
         return QSize(24, self._line_height(super().minimumSizeHint().height()))
@@ -203,6 +205,14 @@ class ReservedLabel(QLabel):
         self._samples = tuple(samples)
         self.updateGeometry()
 
+    def _line_height(self, base: int) -> int:
+        self.ensurePolished()
+        margins = self.contentsMargins()
+        fm = self.fontMetrics()
+        line = fm.boundingRect(QRect(0, 0, 10_000, 1_000), int(Qt.AlignmentFlag.AlignLeft), "Xy").height()
+        full_line = max(fm.height(), line) + 2 * self.margin() + margins.top() + margins.bottom()
+        return max(base, full_line)
+
     def _reserved_width(self) -> int:
         self.ensurePolished()
         metrics = self.fontMetrics()
@@ -211,10 +221,10 @@ class ReservedLabel(QLabel):
         return widest + 2 * self.margin() + margins.left() + margins.right() + 2
 
     def sizeHint(self) -> QSize:
-        return QSize(self._reserved_width(), super().sizeHint().height())
+        return QSize(self._reserved_width(), self._line_height(super().sizeHint().height()))
 
     def minimumSizeHint(self) -> QSize:
-        return QSize(self._reserved_width(), super().minimumSizeHint().height())
+        return QSize(self._reserved_width(), self._line_height(super().minimumSizeHint().height()))
 
     def changeEvent(self, event: QEvent) -> None:
         super().changeEvent(event)
