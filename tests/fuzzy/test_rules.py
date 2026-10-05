@@ -1,8 +1,9 @@
 import pytest
 from skfuzzy import control as ctrl
 
+from rcg.exceptions import RuleDefinitionError
 from rcg.fuzzy.categories import Catchments, Impervious, LandCover, LandForm, Slope
-from rcg.fuzzy.rule_definitions import get_default_rules
+from rcg.fuzzy.rule_definitions import RULE_TABLE, check_rule_table, define_all_rules, get_default_rules
 from rcg.fuzzy.rule_engine import FuzzyRule, RuleEngine, create_rule_engine, rule
 
 
@@ -41,6 +42,23 @@ def test_rule_names_are_unique(rules):
 
 def test_default_rules_are_built_once(rules):
     assert get_default_rules() is rules
+
+
+def test_rule_table_has_one_row_per_cell():
+    check_rule_table(RULE_TABLE)  # does not raise
+    assert sum(len(forms) for _, forms, *_ in RULE_TABLE) == len(LandForm) * len(LandCover)
+
+
+def test_rule_table_missing_cell_is_rejected():
+    cover, forms, *outputs = RULE_TABLE[0]
+    table = (*RULE_TABLE[1:], (cover, forms[1:], *outputs))
+    with pytest.raises(RuleDefinitionError, match=f"missing {cover.name}/{forms[0].name}"):
+        define_all_rules(create_rule_engine(), table)
+
+
+def test_rule_table_repeated_cell_is_rejected():
+    with pytest.raises(RuleDefinitionError, match="repeated"):
+        define_all_rules(create_rule_engine(), (*RULE_TABLE, RULE_TABLE[0]))
 
 
 def test_builder_creates_rule():
