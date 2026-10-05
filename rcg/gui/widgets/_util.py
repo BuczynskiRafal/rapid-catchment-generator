@@ -49,11 +49,12 @@ def divider(parent: QWidget | None = None) -> QFrame:
 
 
 class WrapLabel(QLabel):
-    """Word-wrapped label whose height always matches its text at its current width.
+    """Word-wrapped label with stable hints and an explicit height for each width.
 
-    ``QLabel`` with word wrap reports a size hint for a heuristic width, which inside
-    nested layouts yields clipped or overly tall rows. This label reports the height
-    for the width it actually has. ``reserve_lines`` keeps a minimum number of lines
+    Size hints describe the text independently of the widget's current geometry;
+    layouts use ``heightForWidth`` to reserve its actual wrapped height. Deriving
+    hints from the current width would feed temporary startup geometry back into
+    the parent's minimum size. ``reserve_lines`` keeps a minimum number of lines
     so alternating short and long texts do not make the layout jump.
     """
 
@@ -72,17 +73,19 @@ class WrapLabel(QLabel):
         self.setWordWrap(True)
         self._reserve_lines = reserve_lines
         self._max_lines = max_lines
-        self._last_width = -1
         policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         policy.setHeightForWidth(True)
         self.setSizePolicy(policy)
 
     def _line_height_for(self, num_lines: int) -> int:
-        lines = "\n".join("X" * num_lines)
+        lines = "\n".join(["Xy"] * num_lines)
         flags = int(Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap)
         margins = self.contentsMargins()
         return (
-            self.fontMetrics().boundingRect(QRect(0, 0, 10_000, 10_000), flags, lines).height()
+            max(
+                self.fontMetrics().boundingRect(QRect(0, 0, 10_000, 10_000), flags, lines).height(),
+                self.fontMetrics().lineSpacing() * num_lines,
+            )
             + 2 * self.margin()
             + margins.top()
             + margins.bottom()
@@ -91,31 +94,28 @@ class WrapLabel(QLabel):
     def _height_for(self, width: int) -> int:
         self.ensurePolished()  # the style sheet may change the font size
         reserved = self._line_height_for(self._reserve_lines) if self._reserve_lines else 0
-        needed = self.heightForWidth(width) if width > 0 else (reserved or super().sizeHint().height())
+        needed = super().heightForWidth(width) if width > 0 else super().minimumSizeHint().height()
         height = max(needed, reserved)
         if self._max_lines is not None:
             height = min(height, self._line_height_for(self._max_lines))
         return height
 
+    def heightForWidth(self, width: int) -> int:
+        # Layouts query this directly, bypassing both size hints. Apply the same
+        # reservation and limit here so changing the text cannot change the row.
+        return self._height_for(width)
+
     def sizeHint(self) -> QSize:
         base = super().sizeHint()
-        width = self.width() if self.width() > 0 else base.width()
-        return QSize(base.width(), self._height_for(width))
+        return QSize(base.width(), self._height_for(base.width()))
 
     def minimumSizeHint(self) -> QSize:
         base = super().minimumSizeHint()
-        width = self.width() if self.width() > 0 else 0
-        return QSize(min(base.width(), 80), self._height_for(width))
+        return QSize(min(base.width(), 80), self._height_for(0))
 
     def setText(self, text: str) -> None:
         super().setText(text)
         self.updateGeometry()
-
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        super().resizeEvent(event)
-        if event.size().width() != self._last_width:
-            self._last_width = event.size().width()
-            self.updateGeometry()
 
     def changeEvent(self, event: QEvent) -> None:
         super().changeEvent(event)
@@ -159,7 +159,9 @@ class ElidedLabel(QLabel):
         margins = self.contentsMargins()
         fm = self.fontMetrics()
         line = fm.boundingRect(QRect(0, 0, 10_000, 1_000), int(Qt.AlignmentFlag.AlignLeft), "Xy").height()
-        full_line = max(fm.height(), line) + 2 * self.margin() + margins.top() + margins.bottom()
+        # QLabel measures empty text using lineSpacing, which can exceed height.
+        # Reserve both so filling an empty infiltration column cannot shrink a row.
+        full_line = max(fm.height(), fm.lineSpacing(), line) + 2 * self.margin() + margins.top() + margins.bottom()
         return max(base, full_line)
 
     def minimumSizeHint(self) -> QSize:
@@ -210,7 +212,7 @@ class ReservedLabel(QLabel):
         margins = self.contentsMargins()
         fm = self.fontMetrics()
         line = fm.boundingRect(QRect(0, 0, 10_000, 1_000), int(Qt.AlignmentFlag.AlignLeft), "Xy").height()
-        full_line = max(fm.height(), line) + 2 * self.margin() + margins.top() + margins.bottom()
+        full_line = max(fm.height(), fm.lineSpacing(), line) + 2 * self.margin() + margins.top() + margins.bottom()
         return max(base, full_line)
 
     def _reserved_width(self) -> int:

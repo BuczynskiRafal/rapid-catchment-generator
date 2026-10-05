@@ -82,10 +82,14 @@ jobs:
         run: uv run --no-sync pytest -p no:cacheprovider -rs --cov=rcg --cov-report=xml
       - name: Upload coverage reports to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
+        # Uploading coverage is optional, including failures before the uploader starts.
+        continue-on-error: true
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
+          disable_search: true
           fail_ci_if_error: false
+          verbose: true
 
   build:
     name: build (${{ matrix.os }})

@@ -36,7 +36,58 @@ LAYOUT_FONTS = [
     pytest.param(None, id="system-font"),
     pytest.param(("Arial", 9), id="arial-9pt"),
     pytest.param(("Helvetica", 10), id="helvetica-10pt"),
+    # This font has extra leading: empty labels are taller than populated labels.
+    pytest.param(("Times New Roman", 10), id="times-10pt"),
 ]
+
+
+@pytest.mark.parametrize("gui_font", [("Times New Roman", 10)], indirect=True)
+@pytest.mark.parametrize("kind", ["reserved", "elided"])
+@pytest.mark.parametrize("role", ["caption", "value"])
+def test_single_line_labels_keep_height_when_empty_columns_are_filled(qtbot, gui_font, kind, role):
+    from rcg.gui.widgets._util import ElidedLabel, ReservedLabel
+
+    widget = {"reserved": ReservedLabel, "elided": ElidedLabel}[kind]("", role)
+    qtbot.addWidget(widget)
+    widget.setMargin(2)
+    widget.setContentsMargins(1, 2, 3, 4)
+    widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    before = (widget.minimumSizeHint().height(), widget.sizeHint().height())
+    for text in ("—", "MaxInfil", "3.5 mm", "0.5 in/h", "Horton, from the model", ""):
+        widget.setText(text)
+        assert (widget.minimumSizeHint().height(), widget.sizeHint().height()) == before, text
+
+
+def test_action_hint_height_is_reserved_even_when_layout_queries_it_directly(qtbot, rcg_app):
+    from rcg.gui.widgets._util import WrapLabel
+
+    widget = WrapLabel("", "caption", reserve_lines=2, max_lines=2)
+    qtbot.addWidget(widget)
+    widget.resize(40, 100)
+    before = widget.heightForWidth(40)
+    assert before > 0
+    widget.setText("Preparing fuzzy engine…\nChoose a model.\nAdditional details.\nOne more line.")
+    for width in (40, 200, 500):
+        assert widget.heightForWidth(width) == before
+    assert widget.sizeHint().height() == widget.minimumSizeHint().height() == before
+
+
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_wrapped_label_hints_do_not_depend_on_temporary_geometry(qtbot, gui_font):
+    from rcg.gui.widgets._util import WrapLabel
+
+    widget = WrapLabel(
+        "Subcatchments you add appear here. The latest one can be undone from its backup.",
+        "placeholder",
+    )
+    qtbot.addWidget(widget)
+    widget.setMinimumHeight(48)
+    widget.resize(100, 100)  # before the parent's first layout pass
+    before = (widget.minimumSizeHint(), widget.sizeHint())
+    narrow_height = widget.heightForWidth(100)
+    widget.resize(800, 100)  # the width ultimately assigned by the window
+    assert widget.heightForWidth(800) < narrow_height, "wrapping still follows the available width"
+    assert (widget.minimumSizeHint(), widget.sizeHint()) == before, "intrinsic hints must not follow temporary geometry"
 
 
 @pytest.fixture
@@ -191,6 +242,8 @@ def test_cards_fit_at_minimum_size(qtbot, window, screenshot_dirs, gui_font):
     QApplication.processEvents()
     _assert_inputs_fully_visible(window)
     _assert_preview_not_squeezed(window)
+    placeholder = window.history.placeholder
+    assert placeholder.height() >= placeholder.heightForWidth(placeholder.width()), "the history text is not clipped"
     save_screenshot(window, screenshot_dirs, "rcg-gui-min.png")
 
 
