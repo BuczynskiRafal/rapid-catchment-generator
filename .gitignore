@@ -31,7 +31,9 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# (only root-level specs are generated; the maintained ones live in packaging/)
+/*.spec
+!packaging/*.spec
 
 # Installer logs
 pip-log.txt
@@ -137,3 +139,4 @@ dmypy.json
 .idea/modules.xml
 .idea/misc.xml
 .idea/vcs.xml
+.DS_Store

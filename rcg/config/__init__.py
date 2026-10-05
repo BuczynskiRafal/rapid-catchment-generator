@@ -1,9 +1,5 @@
-"""
-Configuration management for RCG.
+"""Packaged configuration (``defaults.json``) and its loader."""
 
-This package provides JSON-based configuration for fuzzy rules and default parameters.
-"""
+from .loader import DEFAULTS_PATH, Defaults, load_defaults
 
-from .loader import ConfigLoader, RuleConfig, load_defaults_config, load_rules_config
-
-__all__ = ["ConfigLoader", "RuleConfig", "load_rules_config", "load_defaults_config"]
+__all__ = ["DEFAULTS_PATH", "Defaults", "load_defaults"]

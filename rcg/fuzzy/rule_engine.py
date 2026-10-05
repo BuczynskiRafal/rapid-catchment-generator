@@ -1,15 +1,17 @@
 """
 Rule Engine for fuzzy logic rules with clean DSL.
 
-This module provides a clean, readable way to define and execute fuzzy logic rules,
-replacing the monolithic rules.py with a more maintainable architecture.
+This module provides a small builder DSL for fuzzy rules and compiles them to skfuzzy;
+the rule set itself lives in ``rule_definitions``.
 
 Supports dependency injection for memberships to enable isolated testing.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from skfuzzy import control as ctrl
 from skfuzzy.control import Antecedent, Consequent
@@ -26,7 +28,7 @@ class Condition:
     variable: str
     value: Enum
 
-    def to_skfuzzy(self, memberships: "Memberships") -> Any:
+    def to_skfuzzy(self, memberships: Memberships) -> Any:
         """
         Convert condition to skfuzzy format.
 
@@ -56,7 +58,7 @@ class FuzzyRule:
     conditions: list[Condition]
     consequences: dict[str, Enum]
 
-    def build_antecedent(self, memberships: "Memberships") -> Antecedent:
+    def build_antecedent(self, memberships: Memberships) -> Antecedent:
         """
         Build the antecedent (IF part) of the rule.
 
@@ -79,7 +81,7 @@ class FuzzyRule:
             antecedent = antecedent & condition
         return antecedent
 
-    def get_consequence(self, output_type: str, memberships: "Memberships") -> Optional[Consequent]:
+    def get_consequence(self, output_type: str, memberships: Memberships) -> Consequent | None:
         """
         Get the consequence for a specific output type.
 
@@ -92,7 +94,7 @@ class FuzzyRule:
 
         Returns
         -------
-        Optional[Consequent]
+        Consequent | None
             The consequent term, or None if not defined.
         """
         if output_type not in self.consequences:
@@ -120,17 +122,17 @@ class RuleBuilder:
             .build()
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.conditions: list[Condition] = []
         self.consequences: dict[str, Enum] = {}
         self.rule_name: str = ""
 
-    def named(self, name: str) -> "RuleBuilder":
+    def named(self, name: str) -> RuleBuilder:
         """Set the name of the rule."""
         self.rule_name = name
         return self
 
-    def when(self, **conditions) -> "RuleBuilder":
+    def when(self, **conditions) -> RuleBuilder:
         """Add conditions to the rule."""
         for variable, value in conditions.items():
             if not isinstance(value, Enum):
@@ -138,7 +140,7 @@ class RuleBuilder:
             self.conditions.append(Condition(variable, value))
         return self
 
-    def then(self, **consequences) -> "RuleBuilder":
+    def then(self, **consequences) -> RuleBuilder:
         """Set consequences for the rule."""
         for key, value in consequences.items():
             if not isinstance(value, Enum):
@@ -164,20 +166,20 @@ class RuleEngine:
     Supports dependency injection for memberships to enable isolated testing.
     """
 
-    def __init__(self, memberships: Optional["Memberships"] = None):
+    def __init__(self, memberships: Memberships | None = None):
         """
         Initialize the rule engine.
 
         Parameters
         ----------
-        memberships : Optional[Memberships]
+        memberships : Memberships, optional
             Memberships instance to use. If None, uses the default instance.
         """
         self.rules: list[FuzzyRule] = []
         self._rule_systems: dict[str, list[SkfuzzyRule]] = {"slope": [], "impervious": [], "catchment": []}
         self._memberships = memberships
 
-    def _get_memberships(self) -> "Memberships":
+    def _get_memberships(self) -> Memberships:
         """Get the memberships instance, loading default if needed."""
         if self._memberships is None:
             from .memberships import get_default_memberships
@@ -196,7 +198,7 @@ class RuleEngine:
 
         for rule in self.rules:
             antecedent = rule.build_antecedent(memberships)
-            for output_type in self._rule_systems.keys():
+            for output_type in self._rule_systems:
                 consequent = rule.get_consequence(output_type, memberships)
                 if consequent:
                     skfuzzy_rule = ctrl.Rule(antecedent=antecedent, consequent=consequent)
@@ -227,53 +229,18 @@ def rule(name: str) -> RuleBuilder:
     return RuleBuilder().named(name)
 
 
-# Cache for default rule engine instance (lazy initialization)
-_default_rule_engine: Optional[RuleEngine] = None
-
-
-def create_rule_engine(memberships: Optional["Memberships"] = None) -> RuleEngine:
-    """
-    Factory function to create a new RuleEngine instance.
-
-    Use this function when you need an isolated rule engine instance,
-    such as in tests or when you need custom configuration.
+def create_rule_engine(memberships: Memberships | None = None) -> RuleEngine:
+    """Create a new, empty :class:`RuleEngine`.
 
     Parameters
     ----------
-    memberships : Optional[Memberships]
-        Memberships instance to use. If None, uses the default instance.
+    memberships : Memberships, optional
+        Membership functions to use. Defaults to the shared instance.
 
     Returns
     -------
     RuleEngine
-        A new RuleEngine instance.
-
-    Example
-    -------
-    >>> from rcg.fuzzy.memberships import create_memberships
-    >>> memberships = create_memberships()
-    >>> engine = create_rule_engine(memberships)
+        An engine without rules; populate it with ``add_rule`` and call
+        ``build_rule_systems``.
     """
     return RuleEngine(memberships=memberships)
-
-
-def get_default_rule_engine() -> RuleEngine:
-    """
-    Get the default (shared) RuleEngine instance.
-
-    This function provides lazy initialization of a shared rule engine instance.
-    Use this for backward compatibility or when a shared instance is acceptable.
-
-    Returns
-    -------
-    RuleEngine
-        The shared default RuleEngine instance.
-    """
-    global _default_rule_engine
-    if _default_rule_engine is None:
-        _default_rule_engine = RuleEngine()
-    return _default_rule_engine
-
-
-# Backward compatibility alias (deprecated - use create_rule_engine() or get_default_rule_engine())
-default_engine = get_default_rule_engine()

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Rapid Catchment Generator app icon: a water drop holding layered terrain on a
+       rounded-square tile. Source of icon.png / icon.ico (packaging/make_icons.py).
+
+       Written for SVG Tiny, which is what Qt renders: no clipPath, masks or filters.
+       The drop's lower half is the circle centred at (512, 606) with r = 212, so each
+       terrain band is closed along that arc (and, for the top band, along the drop's
+       side curves, sub-divided from the drop outline) and stays inside the drop
+       exactly. Soft shadows are stacked translucent copies. -->
+  <defs>
+    <linearGradient id="tile" gradientUnits="userSpaceOnUse" x1="0" y1="80" x2="0" y2="944">
+      <stop offset="0" stop-color="#2479BA"/>
+      <stop offset="1" stop-color="#0A325C"/>
+    </linearGradient>
+    <linearGradient id="sheen" gradientUnits="userSpaceOnUse" x1="0" y1="80" x2="0" y2="520">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="drop" gradientUnits="userSpaceOnUse" x1="0" y1="196" x2="0" y2="600">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E2F1FC"/>
+    </linearGradient>
+    <linearGradient id="band1" gradientUnits="userSpaceOnUse" x1="0" y1="530" x2="0" y2="680">
+      <stop offset="0" stop-color="#9BE2F5"/>
+      <stop offset="1" stop-color="#6FC9EA"/>
+    </linearGradient>
+    <linearGradient id="band2" gradientUnits="userSpaceOnUse" x1="0" y1="626" x2="0" y2="750">
+      <stop offset="0" stop-color="#45AAE2"/>
+      <stop offset="1" stop-color="#2B88CA"/>
+    </linearGradient>
+    <linearGradient id="band3" gradientUnits="userSpaceOnUse" x1="0" y1="706" x2="0" y2="818">
+      <stop offset="0" stop-color="#1F68AB"/>
+      <stop offset="1" stop-color="#154C84"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tile shadow -->
+  <g fill="#000000">
+    <rect x="72" y="94" width="880" height="870" rx="204" fill-opacity="0.035"/>
+    <rect x="76" y="90" width="872" height="866" rx="200" fill-opacity="0.05"/>
+    <rect x="78" y="87" width="868" height="862" rx="198" fill-opacity="0.07"/>
+  </g>
+
+  <!-- Tile, sheen, rim -->
+  <rect x="80" y="80" width="864" height="864" rx="196" fill="url(#tile)"/>
+  <path d="M80 276 A196 196 0 0 1 276 80 H748 A196 196 0 0 1 944 276 V520 H80 Z" fill="url(#sheen)"/>
+  <rect x="81.5" y="81.5" width="861" height="861" rx="194.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="3"/>
+
+  <!-- Drop shadow -->
+  <g fill="#03182F">
+    <path transform="translate(0 24)" fill-opacity="0.09" d="M512 196 C468 262 300 456 300 606 C300 723 395 818 512 818 C629 818 724 723 724 606 C724 456 556 262 512 196 Z"/>
+    <path transform="translate(0 15)" fill-opacity="0.12" d="M512 196 C468 262 300 456 300 606 C300 723 395 818 512 818 C629 818 724 723 724 606 C724 456 556 262 512 196 Z"/>
+    <path transform="translate(0 7)" fill-opacity="0.15" d="M512 196 C468 262 300 456 300 606 C300 723 395 818 512 818 C629 818 724 723 724 606 C724 456 556 262 512 196 Z"/>
+  </g>
+
+  <!-- Drop -->
+  <path d="M512 196 C468 262 300 456 300 606 C300 723 395 818 512 818 C629 818 724 723 724 606 C724 456 556 262 512 196 Z" fill="url(#drop)"/>
+
+  <!-- Terrain bands -->
+  <path fill="url(#band1)" d="M304.8 560 C380 522 440 540 512 566 C584 592 650 590 719.2 560 C722.32 575.56 724 591 724 606 A212 212 0 0 1 300 606 C300 591 301.68 575.56 304.8 560 Z"/>
+  <path fill="url(#band2)" d="M307 660 C376 628 440 630 510 652 C580 674 650 676 717 660 A212 212 0 0 1 307 660 Z"/>
+  <path fill="url(#band3)" d="M340 730 C394 708 446 706 512 722 C578 738 632 742 684 730 A212 212 0 0 1 340 730 Z"/>
+
+  <!-- Contour lines on the crests -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="butt">
+    <path stroke-opacity="0.95" d="M304.8 560 C380 522 440 540 512 566 C584 592 650 590 719.2 560"/>
+    <path stroke-opacity="0.80" d="M307 660 C376 628 440 630 510 652 C580 674 650 676 717 660"/>
+    <path stroke-opacity="0.60" d="M340 730 C394 708 446 706 512 722 C578 738 632 742 684 730"/>
+  </g>
+</svg>

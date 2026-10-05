@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rapid-catchment-generator"
-version = "1.0.0"
+version = "2.0.0"
 description = "Generate SWMM subcatchments using fuzzy logic"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "Rafal Buczynski"}
 ]
@@ -17,7 +17,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -25,31 +24,32 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Hydrology",
 ]
 dependencies = [
-    "numpy",
-    "pandas",
-    "scikit-fuzzy",
-    "swmmio",
+    "numpy>=1.21.6",
+    "pandas>=1.3.5",
+    "scikit-fuzzy>=0.4.2",
+    # scikit-fuzzy imports networkx and scipy at runtime without declaring them.
+    "networkx>=2.6",
+    "scipy>=1.7",
+    "swmmio>=0.6.0",
 ]
 
 [project.optional-dependencies]
+gui = [
+    "PySide6>=6.8",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov",
     "pytest-mock",
+    "pytest-qt",
+    "pyswmm",  # end-to-end tests run the written models in SWMM
     "mypy",
     "ruff",
 ]
-gui = [
-    "customtkinter>=5.2.0",
-]
-# Note: GUI requires tkinter which is part of Python's standard library
-# On some systems you may need to install it via system package manager:
-# - Ubuntu/Debian: sudo apt-get install python3-tk
-# - Fedora: sudo dnf install python3-tkinter
-# - macOS: tkinter is included with Python from python.org
 
 [project.scripts]
 rcg = "rcg.cli:main"
+rcg-gui = "rcg.gui.app:main"
 
 [project.urls]
 Homepage = "https://github.com/BuczynskiRafal/rapid-catchment-generator"
@@ -59,10 +59,10 @@ Repository = "https://github.com/BuczynskiRafal/rapid-catchment-generator"
 include = ["rcg*"]
 
 [tool.setuptools.package-data]
-rcg = ["py.typed", "config/*.json"]
+rcg = ["py.typed", "config/*.json", "example.inp", "gui/resources/*"]
 
 [tool.pytest.ini_options]
-testpaths = ["rcg"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -76,7 +76,7 @@ filterwarnings = [
 ]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -90,7 +90,6 @@ pretty = true
 module = [
     "skfuzzy.*",
     "swmmio.*",
-    "pandas.*",
     "numpy.*",
 ]
 ignore_missing_imports = true
@@ -112,7 +111,7 @@ exclude_lines = [
 ]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 127
 
 [tool.ruff.lint]

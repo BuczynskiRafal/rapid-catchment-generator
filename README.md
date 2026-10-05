@@ -1,48 +1,221 @@
 [![Documentation Status](https://readthedocs.org/projects/rapid-catchment-generator/badge/?version=latest)](https://rapid-catchment-generator.readthedocs.io/en/latest/?badge=latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/BuczynskiRafal/catchments_simulation/blob/main/LICENSE)
-[![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.org/project/rcg/)
-[![GitHub Actions Build Status](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml/badge.svg?branch=main)](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml/badge.svg?branch=main)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![GitHub Actions Build Status](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml/badge.svg?branch=main)](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml)
 [![codecov](https://codecov.io/gh/BuczynskiRafal/rapid-catchment-generator/branch/main/graph/badge.svg?token=57X9FHJNHJ)](https://codecov.io/gh/BuczynskiRafal/rapid-catchment-generator)
 
 
-# Rapid catchment generator
-Tool for rapid prototyping of a hydraulic model that can be read and edited with SWMM. The generator was created using feature analysis and surface runoff research from the literature. Fuzzy logic controller rules were developed using parameterized categories of soil, slope, and permeability. The catchment configuration procedure was simplified by mapping typical storage and Manning's coefficients. The use of fuzzy logic rules allows the system to be modified to adjust the categories to certain situations. The use of membership functions allows us to increase computation accuracy and customize the tool to diverse applications. Following alteration of the catchment in the SWMM GUI allows for accurate portrayal of the real condition of the catchment.
+# Rapid Catchment Generator
+
+Rapid Catchment Generator (RCG) is a tool for rapid prototyping of a hydraulic model that can be read and edited with SWMM. You pick a land form, a land cover and an area; a fuzzy logic controller built from rules found in the surface runoff literature derives the slope and the imperviousness, classifies the catchment, and maps it to typical Manning coefficients and depression storage. The result is appended to your EPA SWMM `.inp` file as a complete, correctly parameterised subcatchment, which you can then refine in the SWMM GUI. RCG is available as a desktop app, a command-line tool and a Python library, and all three share the same engine and the same numbers.
+
+* [Install](#install)
+* [Desktop app](#desktop-app)
+* [Command line](#command-line)
+* [Python API](#python-api)
+* [What gets written to the model](#what-gets-written-to-the-model)
+* [Migrating from 1.x](#migrating-from-1x)
+* [How it is built](#how-it-is-built) and [About](#about) (the scientific background: Tables 1-4)
 
 
-## Using the Graphical User Interface (GUI)
-One of the most user-friendly ways to utilize the capabilities of RCG is through its intuitive graphical user interface (GUI) application. The GUI provides an easy-to-navigate environment where users can input parameters, manipulate data, and visualize results, all without the need for complex coding or scripting.
+## Install
 
-## Getting Started
-To get started with the RCG GUI, simply follow these steps:
-1. Click the file "RCG.exe", gitchub will take you to "https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/RCG.exe". On the right side of the window is the "download" button, download the file. 
-2. Double-click on the file downloaded to the desired location. After installation, the RCG window will appear. 
-3. Fill in the data and generate the catchment with the "Run" button.
+RCG needs **Python 3.10 or newer**. Tkinter is no longer required.
 
-<div align="center">
-  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/img/RCG_GUI.png">
-</div>
+```
+pip install "rapid-catchment-generator[gui]"   # desktop app + CLI + library
+pip install rapid-catchment-generator          # CLI + library only
+```
 
-## Requirements
-* Python 3
+From a clone of the repository:
 
-## Usage from terminal
-Create a virtual environment:
 ```
 python3 -m venv venv
+venv/bin/pip install ".[gui]"      # or: venv/bin/pip install .
 ```
-Download and install the required dependencies: 
+
+The `gui` extra installs PySide6. Windows, macOS and Linux are supported. Ready-made desktop builds are also
+attached to each [GitHub Release](https://github.com/BuczynskiRafal/rapid-catchment-generator/releases).
+
+
+## Desktop app
+
+Launch it with either of
 
 ```
-python3 pip install -r requirements
-``` 
-To run the script, use the following command:
+rcg-gui
+python -m rcg.gui
 ```
-python3 rcg.runner file path
-``` 
-where `file path` is the path to the SWMM model file.
 
-Enter data into the terminal according to the instructions it displays.
-The file is automatically saved in the same directory.  
+<div align="center">
+  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/img/rcg-gui.png?raw=true" alt="The RCG desktop app">
+</div>
+
+Everything happens in one window:
+
+1. **Pick a model.** Click *Browse...* or drag and drop an `.inp` file onto the window. The card shows
+   how many subcatchments the model has, its flow units and infiltration method, and which rain gage and
+   outlet the new subcatchment will use.
+2. **Choose the output.** *Update model in place (backup kept)* or *Save as copy...*. After a copy is
+   written the app keeps working on that copy, so further additions land in the same file.
+3. **Choose the terrain.** Select a land cover, a land form and an area in hectares (0.0001 to 10 000 ha
+   in the library and CLI; the app's spin box starts at 0.01 ha). Hover a category to see its description.
+4. **Check the live preview.** The right-hand panel shows exactly what will be written (catchment type,
+   slope, imperviousness, width, Manning n, depression storage and the infiltration row in the model's
+   method and units) and updates as you change the inputs. The fuzzy engine is built in the background at
+   start-up; the preview appears after a few seconds.
+5. **Press *Add subcatchment*.**
+
+When the model is updated in place, the original is first copied to a `.rcg_backups` folder next to it
+(`<name>_backup_<timestamp>.inp`) and the new file is written atomically. Every subcatchment added in the
+session appears in the history list; **Undo** on the latest entry restores its backup, and *Show in folder*
+opens the folder of the written model.
+
+| Action | Shortcut |
+|---|---|
+| Open a model | Ctrl+O (Cmd+O on macOS) |
+| Add subcatchment | Ctrl+Return (Cmd+Return on macOS) |
+| Help | F1 |
+
+
+## Command line
+
+`rcg` (or `python -m rcg`) provides four subcommands.
+
+```
+rcg list-options                 # land forms and land covers with their names and labels
+rcg preview --area 5.5 --land-form flats_and_plateaus --land-cover urban_moderately_impervious
+rcg add model.inp --area 5.5 --land-form flats_and_plateaus --land-cover urban_moderately_impervious
+rcg inspect model.inp            # summarise what is in a model
+```
+
+* **`preview`** prints the computed parameters and writes nothing.
+* **`add`** appends a subcatchment to `MODEL.inp`. By default the model is updated in place and a timestamped backup is
+  kept in `.rcg_backups/` next to it. Use `--output OUT.inp` (`-o`) to write a copy and leave the source untouched, or
+  `--no-backup` to skip the backup when updating in place.
+* **`inspect`** reads a model without changing it and reports what RCG would work with: flow units (SI or US),
+  infiltration method, number of existing subcatchments, and the rain gage and outlet new subcatchments would get.
+* **`add --json`** additionally reports `flow_units` and `infiltration_method`. JSON floats are rounded to 4 decimals
+  (the model file keeps full precision).
+* **`list-options`** lists the accepted category names.
+
+Categories are case-insensitive and accept either the snake_case names or the labels printed by `rcg list-options`,
+so `--land-cover "Urban, moderately impervious"` works as well. `--json` (on `add`, `preview`, `inspect` and
+`list-options`) prints machine-readable output; `-v` logs debug information to stderr.
+
+```
+$ rcg preview --area 5 --land-form flats_and_plateaus --land-cover forests
+Land form          Flats and plateaus
+Land cover         Forests
+Area               5 ha
+Catchment type     forests
+Slope              1.25 %
+Impervious         7.00 %
+Width              111.80 m
+Manning n          imperv 0.4, perv 0.8
+Depression storage imperv 1.27 mm, perv 7.62 mm
+% zero storage     5
+Infiltration       Suction=3.5, Ksat=0.5, IMD=0.25, Param4=7, Param5=0
+
+$ rcg inspect rcg/example.inp
+Model              rcg/example.inp
+Flow units         CMS (SI: hectares, metres, millimetres)
+Infiltration       MODIFIED_GREEN_AMPT
+Subcatchments      15
+Rain gage          Raingage2
+Outlet             O4
+Size               9,971 bytes
+
+$ rcg inspect rcg/example.inp --json
+{
+  "path": "/path/to/rcg/example.inp",
+  "flow_units": "CMS",
+  "is_metric": true,
+  "infiltration_method": "MODIFIED_GREEN_AMPT",
+  "subcatchment_count": 15,
+  "raingage": "Raingage2",
+  "outlet": "O4",
+  "size_bytes": 9971
+}
+
+$ rcg add model.inp --area 2 --land-form mountains --land-cover Forests --output copy.inp --json
+```
+
+**Exit codes:** `0` success, `2` usage or validation error (unknown category, invalid area, missing file),
+`1` any other failure (for example an unreadable model). On failure the target model is never modified.
+Refused with an error: read-only targets, files that are not SWMM models (EPANET networks, UTF-16/32 files, binary data),
+and models with an unknown `FLOW_UNITS` or `INFILTRATION` option. If the source file changes while RCG is working
+(for example it is saved in the SWMM GUI), nothing is written. Symbolic links are resolved: the real file is updated and
+the link is kept.
+
+
+## Python API
+
+```python
+import rcg
+
+params = rcg.preview(5.5, "flats_and_plateaus", "Urban, moderately impervious")  # pure, no file access
+print(params.slope_pct, params.impervious_pct, params.catchment_type, params.width_m)
+
+result = rcg.apply("model.inp", params)  # backup kept, model updated in place
+print(result.subcatchment_ids, result.raingage, result.outlet, result.backup_path)
+
+copy = rcg.apply("model.inp", [params, params], output_path="copy.inp")  # several at once, one write
+
+info = rcg.inspect("model.inp")  # ModelInfo: flow_units, is_metric, infiltration_method, ...
+```
+
+`rcg.preview(area_ha, land_form, land_cover)` returns a frozen `SubcatchmentParameters` with the fields
+`land_form`, `land_cover`, `area_ha`, `slope_pct`, `impervious_pct`, `catchment_score`, `catchment_type`, `width_m`,
+`n_imperv`, `n_perv`, `s_imperv_mm`, `s_perv_mm`, `pct_zero` and `infiltration` (a mapping with `Suction`, `Ksat`,
+`IMD`, `Param4`, `Param5`), plus `to_dict()`. `rcg.apply(...)` returns an `ApplyResult` (`output_path`,
+`backup_path`, `subcatchment_ids`, `raingage`, `outlet`, `flow_units`, `infiltration_method`); `rcg.inspect(path)` returns a
+`ModelInfo` without loading the fuzzy engine. `rcg.warm_up()` builds the fuzzy engine ahead of time
+(a few seconds). Invalid input raises `rcg.exceptions.ValidationError` (areas must be between 0.0001 and 10 000 ha); failures while reading or writing a model raise
+`ModelOperationError`. See the [API documentation](https://rapid-catchment-generator.readthedocs.io/).
+
+
+## What gets written to the model
+
+RCG edits the model text directly and keeps everything it does not touch (comments, other sections, line endings) as it
+was. New rows are appended to `[SUBCATCHMENTS]`, `[SUBAREAS]`, `[INFILTRATION]` and `[Polygons]`; missing sections are
+created, and section headers are matched case-insensitively. The file is written to a temporary path next to the
+target and moved into place, so an interrupted write cannot leave a damaged model.
+
+* **Ids:** `S<n>`, the next free number after the existing subcatchments (`S1`, `S2`, ...), skipping names already
+  used in any of the edited sections.
+* **Rain gage:** the first rain gage of the model. If there is none, `RG1` is created and bound to the first time
+  series, with the interval derived from that series (`1:00` if it cannot be determined); if the model has no time
+  series either, the 12-value hourly design storm `generator_series` is added (interval `1:00`). An existing
+  `[RAINGAGES]` table is never overwritten.
+* **Outlet:** the last outfall, otherwise the last junction, otherwise the subcatchment itself.
+* **Polygon:** a square of the subcatchment's area placed to the right of the last polygon vertex (or at the origin).
+  Polygons are always in metres.
+* **Units:** the model's `FLOW_UNITS` decides. SI models (`CMS`, `LPS`, `MLD`) get hectares, metres and millimetres.
+  US models (`CFS`, `GPM`, `MGD`) get the area in acres (x 2.4710538), the width in feet (x 3.2808399) and depression
+  storage in inches (/ 25.4). Infiltration values are written as they are, without conversion.
+* **Infiltration:** the row follows the `INFILTRATION` option of `[OPTIONS]`: Green-Ampt and Modified Green-Ampt get the
+  Green-Ampt row (`3.5 0.5 0.25 7 0`), Horton and Modified Horton (also SWMM's default when the option is absent) get
+  `3 0.5 4 7 0`, and Curve Number gets `80 0.5 7`. The defaults are in `rcg/config/defaults.json`
+  (`infiltration_defaults`, keyed by method).
+* **Backups:** when a model is updated in place, or when `--output` points at an existing file, the file about to be
+  replaced is first copied to a `.rcg_backups` folder next to it (unless `--no-backup`).
+
+The meaning of every written value is listed in [Table 4](#table-4-swmm-catchment-data).
+
+
+## Migrating from 1.x
+
+* `rcg.runner` is removed; use `rcg.preview` / `rcg.apply` or the `rcg` command.
+* `rcg.inp_manage.inp.BuildCatchments` still works but is deprecated; it forwards to the new service.
+* Python 3.10 or newer is required (1.x supported older versions).
+* The Tkinter GUI is replaced by a PySide6 app (`pip install ".[gui]"`, then `rcg-gui`).
+* The `RCG.exe` download from the repository is replaced by **GitHub Releases** assets, built from the PyInstaller
+  specs in `packaging/`.
+* Numbers are unchanged, with one intentional exception (the slope for `mountains_vegetated` on `hills_and_outcrops_of_mountain_ranges`
+  is 14.33 instead of 12.16). Models in US units and with non-Green-Ampt infiltration now receive matching values; see
+  [CHANGELOG.md](CHANGELOG.md).
+
 
 ## How it is built
 
@@ -192,13 +365,22 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 |-----|--------------------------------------------------|
 | 1   | Permeable areas                                  |
 | 2   | Permeable terrain on plains                      |
-| 3   | Vegetated mountains                              |
-| 4   | Rocky hilly mountains                            |
-| 5   | Urban weakly impervious                          |
-| 6   | Urban moderately impervious                      |
-| 7   | Urban highly impervious                          |
-| 8   | Suburban weakly impervious                       |
-| 9   | Suburban highly impervious                       |
+| 3   | Mountains, vegetated                             |
+| 4   | Mountains, rocky                                 |
+| 5   | Urban, weakly impervious                         |
+| 6   | Urban, moderately impervious                     |
+| 7   | Urban, highly impervious                         |
+| 8   | Suburban, weakly impervious                      |
+| 9   | Suburban, highly impervious                      |
+| 10  | Rural                                            |
+| 11  | Forests                                          |
+| 12  | Meadows                                          |
+| 13  | Arable                                           |
+| 14  | Marshes                                          |
+
+Categories 1-9 are described in detail below; categories 10-14 get a one-line description each after the detailed ones.
+In the desktop app and on the command line the land covers appear under the labels used in this table
+(`rcg list-options` prints the matching snake_case names, e.g. `mountains_vegetated`).
 
 
 ### Permeable Areas 
@@ -297,6 +479,15 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 
 
 
+### Additional land covers (10-14)
+* **Rural**: villages and farmsteads, with scattered buildings among largely permeable land.
+* **Forests**: woodland with a dense canopy and litter layer; high retention and slow, rough overland flow.
+* **Meadows**: grassland and pasture with continuous vegetation cover.
+* **Arable**: cultivated fields; permeable soil that is often bare or compacted between crops.
+* **Marshes**: wetlands and water-saturated ground with very high retention.
+
+***
+
 ### Table 3. Runoff Coefficients According to Iszkowski
 
 | Number | Topographic Terrain Definition                 | Drainage Coefficient ϕ |
@@ -317,20 +508,20 @@ The categories were determined on the basis of the data presented by (Dołęga, 
 
 | Parameter Name      | Explanation                                                                                         |
 |---------------------|-----------------------------------------------------------------------------------------------------|
-| Name                | Catchment names (ID) are generated by adding a number.                                               |
-| Raingage            | When "raingage" exists in the uploaded file, it will be assigned to the catchment area being built. If it does not exist, it will be added to the file along with the "timeseries" and assigned to the catchment area being generated. |
-| Outlet              | If there are receivers in the transferred file, the program will automatically assign it to the catchment area. If there are none, the name of the generated catchment area will be assigned. |
+| Name                | Catchment names (ID) are generated as `S<n>`, the next free number.                                   |
+| Raingage            | When a rain gage exists in the uploaded file, the first one will be assigned to the catchment area being built. If it does not exist, it will be added to the file along with the "timeseries" and assigned to the catchment area being generated. |
+| Outlet              | The last outfall of the model; if there is none, the last junction; if there is none, the name of the generated catchment area itself. |
 | Area                | A parameter passed by the user.                                                                     |
 | Percent Imperv      | Parameter calculated as described above and assigned to the catchment area.                          |
-| Width               | The generated catchment areas are square in shape; therefore, the length of the side of the catchment area is assigned. |
+| Width               | Characteristic width `sqrt(area_m2) / 2`, i.e. half the side of the square catchment (area in square metres), rounded to 2 decimals. |
 | Percent Slope       | Parameter calculated as described above and assigned to the catchment area.                          |
 | N-Imperv            | The value taken based on the linguistic variables passed to the fuzzy logic controller, which were previously mapped with Manning coefficients. |
 | N-Perv              | The value taken based on the linguistic variables passed to the fuzzy logic controller, which were previously mapped with Manning coefficients. |
 | Dstore-Imperv       | The value taken based on the linguistic variables passed to the fuzzy logic controller, which were previously mapped with typical storage values. |
 | Dstore-Perv         | The value taken based on the linguistic variables passed to the fuzzy logic controller, which were previously mapped with typical storage values. |
 | Percent Zero Imperv | The value taken based on the linguistic variables passed to the fuzzy logic controller, which were previously mapped with typical storage values. |
-| RouteTo             | Odpływ z obszarów imperv i perv spływa bezpośrednio do wylotu.                                       |
-| Coordinate          | Square-shaped catchments are generated, located so that one side is the edge of the contact.         |
+| RouteTo             | Runoff from the impervious and pervious areas flows directly to the outlet (`OUTLET`).              |
+| Coordinate          | Square-shaped catchments are generated and placed to the right of the last polygon vertex already in the model.         |
 
 
 
@@ -363,5 +554,4 @@ For more information about contributing to the project, please see our [contribu
 
 # License
 
-License
 This project is licensed under the [MIT License](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE). By using, distributing, or contributing to this project, you agree to the terms and conditions of the license. Please refer to the [LICENSE.md](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE) file for the full text of the license.

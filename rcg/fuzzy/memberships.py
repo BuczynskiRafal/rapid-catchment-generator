@@ -5,7 +5,9 @@ This module provides the Memberships class and factory functions for creating
 membership function instances with proper dependency injection support.
 """
 
-from typing import Optional
+from __future__ import annotations
+
+import threading
 
 import numpy as np
 import skfuzzy as fuzz
@@ -124,7 +126,8 @@ class Memberships:
 
 
 # Cache for default memberships instance (lazy initialization)
-_default_memberships: Optional[Memberships] = None
+_default_memberships: Memberships | None = None
+_default_lock = threading.Lock()
 
 
 def create_memberships() -> Memberships:
@@ -161,9 +164,7 @@ def get_default_memberships() -> Memberships:
     """
     global _default_memberships
     if _default_memberships is None:
-        _default_memberships = Memberships()
+        with _default_lock:
+            if _default_memberships is None:
+                _default_memberships = Memberships()
     return _default_memberships
-
-
-# Backward compatibility alias (deprecated - use create_memberships() or get_default_memberships())
-membership = get_default_memberships()

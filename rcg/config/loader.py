@@ -1,252 +1,128 @@
-"""
-Configuration loader for RCG.
+"""Load the canonical default parameters from ``defaults.json``.
 
-This module provides utilities for loading JSON configuration files,
-including rules and default parameters.
+``defaults.json`` is the single source of truth for Manning coefficients,
+depression storage, infiltration defaults (per SWMM infiltration method) and
+validation limits.
 """
+
+from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
-from typing import Any, Optional
+from types import MappingProxyType
+from typing import Any
 
 from rcg.exceptions import ConfigurationError
 
+DEFAULTS_PATH = Path(__file__).resolve().with_name("defaults.json")
 
-@dataclass
-class RuleConfig:
-    """
-    Configuration for a single fuzzy rule.
-
-    Attributes
-    ----------
-    name : str
-        Unique identifier for the rule.
-    conditions : Dict[str, str]
-        Mapping of variable names to condition values (land_form, land_cover).
-    consequences : Dict[str, str]
-        Mapping of output types to consequence values (slope, impervious, catchment).
-    """
-
-    name: str
-    conditions: dict[str, str]
-    consequences: dict[str, str]
+INFILTRATION_DEFAULT_METHODS = ("GREEN_AMPT", "HORTON", "CURVE_NUMBER")
+"""Infiltration methods ``defaults.json`` must define (``MODIFIED_*`` reuse these)."""
 
 
-@dataclass
-class DefaultsConfig:
-    """
-    Configuration for default parameters.
+@dataclass(frozen=True)
+class Defaults:
+    """Read-only view of ``defaults.json``.
 
     Attributes
     ----------
-    manning_coefficients : Dict[str, Tuple[float, float]]
-        Manning's n coefficients for each catchment type.
-    depression_storage : Dict[str, Tuple[float, float, int]]
-        Depression storage parameters for each catchment type.
-    infiltration_defaults : Dict[str, Any]
-        Default infiltration parameters.
-    validation_limits : Dict[str, Any]
-        Validation limits for input parameters.
+    manning_coefficients : Mapping[str, tuple[float, float]]
+        ``(n_imperv, n_perv)`` per catchment type.
+    depression_storage : Mapping[str, tuple[float, float, int]]
+        ``(s_imperv_in, s_perv_in, pct_zero)`` per catchment type. Storage depths are in
+        inches, as in 1.x; callers convert to millimetres.
+    infiltration : Mapping[str, float]
+        Green-Ampt parameters (``Suction``, ``Ksat``, ``IMD``, ``Param4``, ``Param5``);
+        the same mapping as ``infiltration_by_method["GREEN_AMPT"]``.
+    infiltration_by_method : Mapping[str, Mapping[str, float]]
+        Ordered ``[INFILTRATION]`` values for ``GREEN_AMPT``, ``HORTON`` and
+        ``CURVE_NUMBER`` (the ``MODIFIED_*`` variants share their base method's row).
+    validation_limits : Mapping[str, Any]
+        Input validation limits (``area_max_hectares``, ...).
     """
 
-    manning_coefficients: dict[str, tuple[float, float]] = field(default_factory=dict)
-    depression_storage: dict[str, tuple[float, float, int]] = field(default_factory=dict)
-    infiltration_defaults: dict[str, Any] = field(default_factory=dict)
-    validation_limits: dict[str, Any] = field(default_factory=dict)
+    manning_coefficients: Mapping[str, tuple[float, float]]
+    depression_storage: Mapping[str, tuple[float, float, int]]
+    infiltration: Mapping[str, float]
+    infiltration_by_method: Mapping[str, Mapping[str, float]]
+    validation_limits: Mapping[str, Any]
 
 
-class ConfigLoader:
-    """
-    Loader for JSON configuration files.
+def _section(data: dict[str, Any], key: str, path: Path) -> dict[str, Any]:
+    try:
+        section = data[key]
+    except KeyError as e:
+        raise ConfigurationError(f"Missing section '{key}' in defaults file", config_file=str(path)) from e
+    if not isinstance(section, dict):
+        raise ConfigurationError(f"Section '{key}' must be an object", config_file=str(path))
+    return {k: v for k, v in section.items() if k != "description"}
 
-    Provides caching and validation of configuration data.
 
-    Attributes
-    ----------
-    config_dir : Path
-        Directory containing configuration files.
+def _object(value: Any, key: str, path: Path) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ConfigurationError(f"'{key}' must be an object", config_file=str(path))
+    return value
 
-    Example
-    -------
-    >>> loader = ConfigLoader()
-    >>> rules = loader.load_rules()
-    >>> defaults = loader.load_defaults()
-    """
 
-    _instance: Optional["ConfigLoader"] = None
-    _rules_cache: Optional[list[RuleConfig]] = None
-    _defaults_cache: Optional[DefaultsConfig] = None
+def _parse(data: dict[str, Any], path: Path) -> Defaults:
+    try:
+        manning = {k: (float(v[0]), float(v[1])) for k, v in _section(data, "manning_coefficients", path).items()}
+        storage = {k: (float(v[0]), float(v[1]), int(v[2])) for k, v in _section(data, "depression_storage", path).items()}
+        infiltration = {
+            method.upper(): MappingProxyType({k: float(v) for k, v in _object(values, method, path).items()})
+            for method, values in _section(data, "infiltration_defaults", path).items()
+        }
+    except (TypeError, ValueError, IndexError) as e:
+        raise ConfigurationError(f"Malformed value in defaults file: {e}", config_file=str(path)) from e
 
-    def __new__(cls, config_dir: Optional[Path] = None) -> "ConfigLoader":
-        """Singleton pattern for configuration loader."""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-
-    def __init__(self, config_dir: Optional[Path] = None):
-        """
-        Initialize the configuration loader.
-
-        Parameters
-        ----------
-        config_dir : Optional[Path]
-            Directory containing configuration files.
-            Defaults to the package's config directory.
-        """
-        if self._initialized:
-            return
-
-        if config_dir is None:
-            config_dir = Path(__file__).parent
-        self.config_dir = config_dir
-        self._initialized = True
-
-    def load_rules(self, force_reload: bool = False) -> list[RuleConfig]:
-        """
-        Load fuzzy rules from configuration.
-
-        Parameters
-        ----------
-        force_reload : bool
-            If True, bypasses the cache and reloads from file.
-
-        Returns
-        -------
-        List[RuleConfig]
-            List of rule configurations.
-
-        Raises
-        ------
-        ConfigurationError
-            If the rules file is invalid or cannot be read.
-        """
-        if self._rules_cache is not None and not force_reload:
-            return self._rules_cache
-
-        rules_path = self.config_dir / "rules.json"
-
-        if not rules_path.exists():
-            # Return empty list if no config file (use programmatic rules)
-            return []
-
-        try:
-            with open(rules_path, encoding="utf-8") as f:
-                data = json.load(f)
-        except json.JSONDecodeError as e:
-            raise ConfigurationError(f"Invalid JSON in rules file: {e}", config_file=str(rules_path)) from e
-        except OSError as e:
-            raise ConfigurationError(f"Cannot read rules file: {e}", config_file=str(rules_path)) from e
-
-        rules = []
-        for rule_data in data.get("rules", []):
-            try:
-                rule = RuleConfig(name=rule_data["name"], conditions=rule_data["when"], consequences=rule_data["then"])
-                rules.append(rule)
-            except KeyError as e:
-                raise ConfigurationError(f"Missing required field in rule: {e}", config_file=str(rules_path)) from e
-
-        self._rules_cache = rules
-        return rules
-
-    def load_defaults(self, force_reload: bool = False) -> DefaultsConfig:
-        """
-        Load default parameters from configuration.
-
-        Parameters
-        ----------
-        force_reload : bool
-            If True, bypasses the cache and reloads from file.
-
-        Returns
-        -------
-        DefaultsConfig
-            Default configuration parameters.
-
-        Raises
-        ------
-        ConfigurationError
-            If the defaults file is invalid or cannot be read.
-        """
-        if self._defaults_cache is not None and not force_reload:
-            return self._defaults_cache
-
-        defaults_path = self.config_dir / "defaults.json"
-
-        if not defaults_path.exists():
-            # Return empty defaults if no config file
-            return DefaultsConfig()
-
-        try:
-            with open(defaults_path, encoding="utf-8") as f:
-                data = json.load(f)
-        except json.JSONDecodeError as e:
-            raise ConfigurationError(f"Invalid JSON in defaults file: {e}", config_file=str(defaults_path)) from e
-        except OSError as e:
-            raise ConfigurationError(f"Cannot read defaults file: {e}", config_file=str(defaults_path)) from e
-
-        # Convert list values to tuples for manning coefficients and depression storage
-        manning = {}
-        for key, value in data.get("manning_coefficients", {}).items():
-            if key != "description" and isinstance(value, list):
-                manning[key] = tuple(value)
-
-        depression = {}
-        for key, value in data.get("depression_storage", {}).items():
-            if key != "description" and isinstance(value, list):
-                depression[key] = tuple(value)
-
-        defaults = DefaultsConfig(
-            manning_coefficients=manning,
-            depression_storage=depression,
-            infiltration_defaults=data.get("infiltration_defaults", {}),
-            validation_limits=data.get("validation_limits", {}),
+    if set(manning) != set(storage):
+        raise ConfigurationError(
+            "manning_coefficients and depression_storage must define the same catchment types", config_file=str(path)
         )
+    missing = [m for m in INFILTRATION_DEFAULT_METHODS if m not in infiltration]
+    if missing:
+        raise ConfigurationError(f"infiltration_defaults must define {', '.join(missing)}", config_file=str(path))
+    return Defaults(
+        manning_coefficients=MappingProxyType(manning),
+        depression_storage=MappingProxyType(storage),
+        infiltration=infiltration["GREEN_AMPT"],
+        infiltration_by_method=MappingProxyType(infiltration),
+        validation_limits=MappingProxyType(_section(data, "validation_limits", path)),
+    )
 
-        self._defaults_cache = defaults
-        return defaults
 
-    def clear_cache(self) -> None:
-        """Clear all cached configuration data."""
-        self._rules_cache = None
-        self._defaults_cache = None
-
-
-# Module-level convenience functions
-
-
-def load_rules_config(config_dir: Optional[Path] = None) -> list[RuleConfig]:
-    """
-    Load fuzzy rules from configuration.
+def load_defaults(path: str | Path | None = None) -> Defaults:
+    """Load the default parameters (cached per file).
 
     Parameters
     ----------
-    config_dir : Optional[Path]
-        Directory containing configuration files.
+    path : str or Path, optional
+        JSON file to read. Defaults to the packaged ``defaults.json``.
 
     Returns
     -------
-    List[RuleConfig]
-        List of rule configurations.
+    Defaults
+        Parsed, read-only defaults.
+
+    Raises
+    ------
+    ConfigurationError
+        If the file cannot be read or is malformed.
     """
-    loader = ConfigLoader(config_dir)
-    return loader.load_rules()
+    return _load(DEFAULTS_PATH if path is None else Path(path).resolve())
 
 
-def load_defaults_config(config_dir: Optional[Path] = None) -> DefaultsConfig:
-    """
-    Load default parameters from configuration.
-
-    Parameters
-    ----------
-    config_dir : Optional[Path]
-        Directory containing configuration files.
-
-    Returns
-    -------
-    DefaultsConfig
-        Default configuration parameters.
-    """
-    loader = ConfigLoader(config_dir)
-    return loader.load_defaults()
+@cache
+def _load(path: Path) -> Defaults:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as e:
+        raise ConfigurationError(f"Cannot read defaults file: {e}", config_file=str(path)) from e
+    except json.JSONDecodeError as e:
+        raise ConfigurationError(f"Invalid JSON in defaults file: {e}", config_file=str(path)) from e
+    if not isinstance(data, dict):
+        raise ConfigurationError("Defaults file must contain a JSON object", config_file=str(path))
+    return _parse(data, path)
