@@ -32,6 +32,11 @@ from rcg.catchment import INFILTRATION_FIELDS, infiltration_for
 from rcg.fuzzy.categories import LandCover, LandForm
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+LAYOUT_FONTS = [
+    pytest.param(None, id="system-font"),
+    pytest.param(("Arial", 9), id="arial-9pt"),
+    pytest.param(("Helvetica", 10), id="helvetica-10pt"),
+]
 
 
 @pytest.fixture
@@ -179,7 +184,8 @@ def _assert_preview_not_squeezed(window) -> None:
             assert lbl.height() >= lbl.minimumSizeHint().height(), repr(lbl.text())
 
 
-def test_cards_fit_at_minimum_size(qtbot, window, screenshot_dirs):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_cards_fit_at_minimum_size(qtbot, window, screenshot_dirs, gui_font):
     window.resize(window.minimumSizeHint())
     qtbot.waitUntil(lambda: window.size() == window.minimumSizeHint(), timeout=2_000)
     QApplication.processEvents()
@@ -189,7 +195,8 @@ def test_cards_fit_at_minimum_size(qtbot, window, screenshot_dirs):
 
 
 @pytest.mark.parametrize("grow", [0, 100], ids=["minimum", "taller"])
-def test_cards_are_level_and_only_the_history_grows(qtbot, window, grow):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_cards_are_level_and_only_the_history_grows(qtbot, window, grow, gui_font):
     from PySide6.QtCore import QPoint
 
     window.resize(window.minimumSizeHint())
@@ -216,7 +223,8 @@ def test_cards_are_level_and_only_the_history_grows(qtbot, window, grow):
     assert window.history.height() == history_height + grow, "the extra height goes to the history"
 
 
-def test_long_banner_grows_the_window_instead_of_squeezing(qtbot, window, model_copy, screenshot_dirs):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_long_banner_grows_the_window_instead_of_squeezing(qtbot, window, model_copy, screenshot_dirs, gui_font):
     window.path_field.set_path(model_copy)
     window.resize(window.minimumSizeHint())
     QApplication.processEvents()
@@ -241,6 +249,25 @@ def test_long_banner_grows_the_window_instead_of_squeezing(qtbot, window, model_
     window.banner.dismiss()
     QApplication.processEvents()
     assert window.minimumSizeHint() == before
+
+
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_preview_returns_to_normal_size_after_error(qtbot, window, gui_font):
+    panel = window.preview
+    params = window.current_parameters()
+    QApplication.processEvents()
+    before = (panel.minimumSizeHint(), window.inputs_scroll.minimumSizeHint(), window.minimumSizeHint())
+
+    panel.show_error("\n".join([LONG_ERROR] * 4))
+    qtbot.waitUntil(lambda: panel.minimumSizeHint().height() > before[0].height(), timeout=2_000)
+    assert panel.error.isVisible()
+
+    panel.show_parameters(params)
+    qtbot.waitUntil(
+        lambda: (panel.minimumSizeHint(), window.inputs_scroll.minimumSizeHint(), window.minimumSizeHint()) == before,
+        timeout=2_000,
+    )
+    assert not panel.error.isVisible()
 
 
 # --------------------------------------------------------------------------- 5. focus
@@ -358,7 +385,8 @@ def _min_width_breakdown(win) -> str:
     return head + " | widest: " + ", ".join(f"{cls}({name})={width}" for width, cls, name in widest)
 
 
-def test_minimum_size_is_stable_from_construction(qtbot, rcg_app, gui_settings, gui_engine, model_copy, us_model):
+@pytest.mark.parametrize("gui_font", LAYOUT_FONTS, indirect=True)
+def test_minimum_size_is_stable_from_construction(qtbot, rcg_app, gui_settings, gui_engine, model_copy, us_model, gui_font):
     from rcg.gui.main_window import MainWindow
 
     win = MainWindow(gui_settings, engine=gui_engine)

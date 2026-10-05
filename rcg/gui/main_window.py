@@ -179,8 +179,11 @@ class _VerticalScrollArea(QScrollArea):
         height = content_hint.height() + frame
         content_layout = content.layout()
         if content_layout is not None and content_layout.hasHeightForWidth():
-            target_width = self.width() if self.width() > 0 else width
-            hfw = content_layout.minimumHeightForWidth(target_width)
+            # QScrollArea uses heightForWidth when sizing its resizable content.
+            # The layout's minimumHeightForWidth can be smaller (e.g. baseline
+            # aligned labels), leaving a few pixels to scroll even on a large screen.
+            target_width = max(content_hint.width(), self.width() - frame)
+            hfw = content_layout.heightForWidth(target_width)
             if hfw > 0:
                 height = max(height, hfw + frame)
         screen = self.screen()

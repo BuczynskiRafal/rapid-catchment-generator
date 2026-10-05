@@ -460,16 +460,3 @@ class PreviewPanel(QFrame):
     def infiltration_text(self) -> dict[str, str]:
         """Displayed infiltration values by SWMM field name (for tests and accessibility)."""
         return self.infiltration_row.text_by_field()
-
-    def minimumSizeHint(self) -> QSize:
-        self.ensurePolished()
-        hint = super().minimumSizeHint()
-        min_h = getattr(self, "_min_height", 0)
-        self._min_height = max(min_h, hint.height())
-        return QSize(hint.width(), self._min_height)
-
-    def sizeHint(self) -> QSize:
-        self.ensurePolished()
-        hint = super().sizeHint()
-        min_hint = self.minimumSizeHint()
-        return QSize(max(hint.width(), min_hint.width()), max(hint.height(), min_hint.height()))
