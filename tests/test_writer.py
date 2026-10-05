@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import difflib
+import hashlib
 import math
 import os
 import re
@@ -238,6 +239,14 @@ def test_backup_created_when_updating_in_place(example_inp, urban_params):
     assert result.backup_path.name.startswith("example_backup_")
     assert result.backup_path.read_bytes() == original
     assert example_inp.read_bytes() != original
+
+
+def test_written_sha256_fingerprints_the_output(example_inp, urban_params, tmp_path):
+    result = apply(example_inp, urban_params, backup=False)
+    assert result.written_sha256 == hashlib.sha256(example_inp.read_bytes()).hexdigest()
+    out = tmp_path / "copy.inp"
+    copy = apply(example_inp, urban_params, output_path=out)
+    assert copy.written_sha256 == hashlib.sha256(out.read_bytes()).hexdigest()
 
 
 def test_no_backup_when_opted_out(example_inp, urban_params):

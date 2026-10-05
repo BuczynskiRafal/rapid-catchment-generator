@@ -30,6 +30,7 @@ __all__ = [
     "apply",
     "inspect",
     "preview",
+    "restore",
     "warm_up",
 ]
 
@@ -42,6 +43,7 @@ _LAZY: dict[str, str] = {
     "apply": "rcg.service",
     "inspect": "rcg.service",
     "preview": "rcg.service",
+    "restore": "rcg.service",
     "warm_up": "rcg.service",
 }
 
@@ -52,7 +54,7 @@ _SUBMODULES = frozenset({"catchment", "cli", "config", "exceptions", "fuzzy", "i
 if TYPE_CHECKING:
     from rcg.catchment import ApplyResult, ModelInfo, SubcatchmentParameters
     from rcg.fuzzy.categories import LandCover, LandForm
-    from rcg.service import apply, inspect, preview, warm_up
+    from rcg.service import apply, inspect, preview, restore, warm_up
 
 
 def __getattr__(name: str) -> Any:

@@ -163,16 +163,19 @@ print(result.subcatchment_ids, result.raingage, result.outlet, result.backup_pat
 copy = rcg.apply("model.inp", [params, params], output_path="copy.inp")  # several at once, one write
 
 info = rcg.inspect("model.inp")  # ModelInfo: flow_units, is_metric, infiltration_method, ...
+
+rcg.restore(result.backup_path, result.output_path, expected_sha256=result.written_sha256)  # undo
 ```
 
 `rcg.preview(area_ha, land_form, land_cover)` returns a frozen `SubcatchmentParameters` with the fields
 `land_form`, `land_cover`, `area_ha`, `slope_pct`, `impervious_pct`, `catchment_score`, `catchment_type`, `width_m`,
 `n_imperv`, `n_perv`, `s_imperv_mm`, `s_perv_mm`, `pct_zero` and `infiltration` (a mapping with `Suction`, `Ksat`,
 `IMD`, `Param4`, `Param5`), plus `to_dict()`. `rcg.apply(...)` returns an `ApplyResult` (`output_path`,
-`backup_path`, `subcatchment_ids`, `raingage`, `outlet`, `flow_units`, `infiltration_method`); `rcg.inspect(path)` returns a
-`ModelInfo` without loading the fuzzy engine. `rcg.warm_up()` builds the fuzzy engine ahead of time
+`backup_path`, `subcatchment_ids`, `raingage`, `outlet`, `flow_units`, `infiltration_method`, `written_sha256`); `rcg.inspect(path)` returns a
+`ModelInfo` without loading the fuzzy engine. `rcg.restore(backup, target, expected_sha256=...)` undoes an apply and
+refuses when the file was edited after RCG wrote it. `rcg.warm_up()` builds the fuzzy engine ahead of time
 (a few seconds). Invalid input raises `rcg.exceptions.ValidationError` (areas must be between 0.0001 and 10 000 ha); failures while reading or writing a model raise
-`ModelOperationError`. See the [API documentation](https://rapid-catchment-generator.readthedocs.io/).
+`ModelOperationError`, and a refused or failed restore raises `BackupError`. See the [API documentation](https://rapid-catchment-generator.readthedocs.io/).
 
 
 ## What gets written to the model

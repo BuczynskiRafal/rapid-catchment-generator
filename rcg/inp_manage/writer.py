@@ -30,6 +30,7 @@ spell it ``[POLYGONS]``, and its index parsing turns ids such as ``001`` into ``
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import math
 import os
 import re
@@ -57,14 +58,14 @@ from rcg.catchment import (
     infiltration_for,
 )
 from rcg.exceptions import ModelOperationError
+from rcg.inp_manage.backups import BACKUP_DIR_NAME, create_backup
 from rcg.logging_config import get_logger
 from rcg.validation import validate_parameters
 
+# BACKUP_DIR_NAME and create_backup live in rcg.inp_manage.backups; re-exported for 2.0.0 callers.
 __all__ = ["BACKUP_DIR_NAME", "DESIGN_STORM", "append_subcatchments", "create_backup", "inspect_model"]
 
 logger = get_logger("inp_manage.writer")
-
-BACKUP_DIR_NAME = ".rcg_backups"
 
 DESIGN_STORM: tuple[tuple[str, float], ...] = (
     ("1:00", 1),
@@ -603,37 +604,6 @@ def _verify(text: str, ids: Sequence[str]) -> None:
 # --------------------------------------------------------------------------- file ops
 
 
-def create_backup(path: Path) -> Path:
-    """Copy ``path`` to ``<dir>/.rcg_backups/<stem>_backup_<timestamp><suffix>`` and return the copy.
-
-    The name is reserved with an exclusive create, so a backup never replaces another one:
-    when the timestamp repeats (the clock on Windows is coarse), ``_1``, ``_2``, ... is appended.
-    """
-    backup_dir = path.parent / BACKUP_DIR_NAME
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    try:
-        backup_dir.mkdir(exist_ok=True)
-        target = _reserve_backup_name(backup_dir, f"{path.stem}_backup_{stamp}", path.suffix)
-        shutil.copy2(path, target)
-    except OSError as e:
-        raise ModelOperationError(
-            f"Cannot create backup in {backup_dir}: {e}", operation="backup", model_path=str(path)
-        ) from e
-    return target
-
-
-def _reserve_backup_name(directory: Path, base: str, suffix: str) -> Path:
-    """Create an empty, previously non-existent ``<base>[_n]<suffix>`` in *directory* and return it."""
-    for n in range(10_000):
-        candidate = directory / (f"{base}{suffix}" if n == 0 else f"{base}_{n}{suffix}")
-        try:
-            with open(candidate, "xb"):
-                return candidate
-        except FileExistsError:
-            continue
-    raise FileExistsError(f"No free backup name for {base}{suffix} in {directory}")
-
-
 def _ensure_unchanged(model: _Model) -> None:
     """Fail if the source changed on disk since it was read (e.g. saved from SWMM meanwhile)."""
     try:
@@ -733,7 +703,8 @@ def append_subcatchments(
     _check_unique(updated, plan.ids)
     _verify(updated, plan.ids)
 
-    backup_path = _write_atomic(target, updated.encode("latin-1"), backup=backup, source=model)
+    data = updated.encode("latin-1")
+    backup_path = _write_atomic(target, data, backup=backup, source=model)
     logger.debug("Wrote %s (backup: %s)", target, backup_path)
     return ApplyResult(
         output_path=target,
@@ -743,4 +714,5 @@ def append_subcatchments(
         outlet=plan.outlet,
         flow_units=model.flow_units,
         infiltration_method=model.infiltration_method,
+        written_sha256=hashlib.sha256(data).hexdigest(),
     )

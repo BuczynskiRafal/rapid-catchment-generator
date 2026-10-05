@@ -16,6 +16,8 @@ Functions
 
 .. autofunction:: rcg.inspect
 
+.. autofunction:: rcg.restore
+
 .. autofunction:: rcg.warm_up
 
 Value objects
