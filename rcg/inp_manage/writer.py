@@ -56,8 +56,9 @@ from rcg.catchment import (
     SubcatchmentParameters,
     base_infiltration_method,
     infiltration_for,
+    is_metric,
 )
-from rcg.exceptions import ModelOperationError
+from rcg.exceptions import ModelOperationError, ValidationError
 from rcg.inp_manage.backups import BACKUP_DIR_NAME, create_backup
 from rcg.logging_config import get_logger
 from rcg.validation import validate_parameters
@@ -120,14 +121,12 @@ _SWMM_SECTIONS = frozenset(
     HYDROGRAPHS CURVES TIMESERIES PATTERNS MAP COORDINATES VERTICES POLYGONS SYMBOLS LABELS BACKDROP
     TAGS PROFILES EVENTS""".split()
 )
-# SWMM sections EPANET does not have: one of them settles that a file is a SWMM model.
-_SWMM_ONLY_SECTIONS = frozenset(
-    """RAINGAGES EVAPORATION TEMPERATURE ADJUSTMENTS SUBCATCHMENTS SUBAREAS INFILTRATION LID_CONTROLS
-    LID_USAGE AQUIFERS GROUNDWATER GWF SNOWPACKS OUTFALLS DIVIDERS STORAGE CONDUITS ORIFICES WEIRS
-    OUTLETS XSECTIONS TRANSECTS STREETS INLETS INLET_USAGE LOSSES POLLUTANTS LANDUSES COVERAGES
-    LOADINGS BUILDUP WASHOFF TREATMENT INFLOWS DWF RDII HYDROGRAPHS TIMESERIES POLYGONS SYMBOLS
-    PROFILES EVENTS""".split()
+# Sections EPANET input files have too.
+_SHARED_WITH_EPANET = frozenset(
+    "TITLE OPTIONS REPORT FILES JUNCTIONS PUMPS CONTROLS PATTERNS CURVES MAP COORDINATES VERTICES LABELS BACKDROP TAGS".split()
 )
+# SWMM sections EPANET does not have: one of them settles that a file is a SWMM model.
+_SWMM_ONLY_SECTIONS = _SWMM_SECTIONS - _SHARED_WITH_EPANET
 # EPANET sections SWMM does not have.
 _EPANET_ONLY_SECTIONS = frozenset(
     "PIPES RESERVOIRS TANKS VALVES EMITTERS DEMANDS ENERGY REACTIONS MIXING SOURCES STATUS TIMES QUALITY".split()
@@ -257,41 +256,38 @@ class _Model:
 
     @property
     def is_metric(self) -> bool:
-        return self.flow_units in FLOW_UNITS_SI
+        return is_metric(self.flow_units)  # the module-level rcg.catchment.is_metric
+
+
+def _read_error(path: Path, message: str) -> ModelOperationError:
+    return ModelOperationError(message, operation="read", model_path=str(path))
 
 
 def _check_structure(raw: bytes, doc: _InpDocument, path: Path) -> None:
     """Reject files that are not 8-bit text SWMM input files (with a message for the user)."""
     for bom, encoding in _WIDE_BOMS:
         if raw.startswith(bom):
-            raise ModelOperationError(
+            raise _read_error(
+                path,
                 f"{path.name} is saved as {encoding} text, which SWMM cannot read. "
                 "Save it as UTF-8 or ANSI (for example from the SWMM GUI) and try again.",
-                operation="read",
-                model_path=str(path),
             )
     if b"\x00" in raw:
-        raise ModelOperationError(
-            f"{path.name} is not a text file (it contains binary data), so it cannot be a SWMM model.",
-            operation="read",
-            model_path=str(path),
-        )
+        raise _read_error(path, f"{path.name} is not a text file (it contains binary data), so it cannot be a SWMM model.")
     sections = doc.sections()
     if not sections & _SWMM_SECTIONS:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} is not a SWMM model: it has no SWMM section such as [TITLE], [OPTIONS], "
             "[JUNCTIONS] or [SUBCATCHMENTS].",
-            operation="read",
-            model_path=str(path),
         )
     epanet = set(sections & _EPANET_ONLY_SECTIONS)
     if {"JUNCTIONS", "PATTERNS"} <= sections:  # shared names, but EPANET's core pair without SWMM links
         epanet.add("PATTERNS")
     if epanet and not sections & _SWMM_ONLY_SECTIONS:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} looks like an EPANET network ({', '.join(f'[{s}]' for s in sorted(epanet))}), not a SWMM model.",
-            operation="read",
-            model_path=str(path),
         )
 
 
@@ -303,18 +299,16 @@ def _options(doc: _InpDocument, path: Path) -> tuple[str, str]:
             values[row[0].upper()] = row[1].strip('"').upper()  # SWMM keeps the last value given
     flow_units = values.get("FLOW_UNITS", DEFAULT_FLOW_UNITS)
     if flow_units not in FLOW_UNITS_SI + FLOW_UNITS_US:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} has an unknown FLOW_UNITS {flow_units!r}; expected one of "
             f"{', '.join(FLOW_UNITS_US + FLOW_UNITS_SI)}.",
-            operation="read",
-            model_path=str(path),
         )
     method = values.get("INFILTRATION", DEFAULT_INFILTRATION)
     if method not in INFILTRATION_METHODS:
-        raise ModelOperationError(
+        raise _read_error(
+            path,
             f"{path.name} has an unknown INFILTRATION method {method!r}; expected one of {', '.join(INFILTRATION_METHODS)}.",
-            operation="read",
-            model_path=str(path),
         )
     return flow_units, method
 
@@ -323,7 +317,7 @@ def _read_model(path: Path) -> _Model:
     try:
         raw = path.read_bytes()
     except OSError as e:
-        raise ModelOperationError(f"Cannot read {path}: {e}", operation="read", model_path=str(path)) from e
+        raise _read_error(path, f"Cannot read {path}: {e}") from e
     # latin-1 maps every byte to one code point, so untouched text round-trips exactly
     # whatever the file's real encoding (UTF-8, cp1250, ...); everything we add is ASCII.
     doc = _InpDocument(raw.decode("latin-1"))
@@ -685,20 +679,23 @@ def append_subcatchments(
     Raises
     ------
     ValidationError
-        If a parameter value is out of range.
+        If there are no parameters or a parameter value is out of range.
     ModelOperationError
         If the model cannot be read, verified or written, the target is read-only or
         the source changed while it was being edited. The target is untouched then.
     """
     source_path = _resolve(source)
     target = _resolve(output_path) if output_path is not None else source_path
-    if not parameters:
-        raise ModelOperationError("No subcatchments to add", operation="apply", model_path=str(source_path))
-    for item in parameters:
+    # The only parameter checks on the way to disk: rcg.apply relies on them, so direct
+    # callers of this function get exactly the same errors.
+    items = tuple(parameters)
+    if not items:
+        raise ValidationError("At least one subcatchment is required", field="parameters", value=parameters)
+    for item in items:
         validate_parameters(item)
 
     model = _read_model(source_path)
-    plan = _edit(model, parameters)
+    plan = _edit(model, items)
     updated = model.doc.render()
     _check_unique(updated, plan.ids)
     _verify(updated, plan.ids)

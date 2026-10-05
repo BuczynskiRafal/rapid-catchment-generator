@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 
 from rcg.catchment import MM_PER_INCH, ApplyResult, ModelInfo, SubcatchmentParameters, width_m
 from rcg.config import load_defaults
-from rcg.exceptions import ConfigurationError, ValidationError
+from rcg.exceptions import ConfigurationError
 from rcg.fuzzy.categories import LandCover, LandForm
 from rcg.logging_config import get_logger
 from rcg.validation import (
@@ -29,7 +29,6 @@ from rcg.validation import (
     validate_inp_path,
     validate_land_cover,
     validate_land_form,
-    validate_parameters,
 )
 
 if TYPE_CHECKING:
@@ -184,12 +183,9 @@ def apply(
     source = validate_inp_path(inp_path)
     target = source if output_path is None else validate_inp_path(output_path, must_exist=False)
 
+    # The writer validates the parameters (each value, and that there is at least one)
+    # before it reads the model; checking them here too would run every check twice.
     items = (parameters,) if isinstance(parameters, SubcatchmentParameters) else tuple(parameters)
-    if not items:
-        raise ValidationError("At least one subcatchment is required", field="parameters", value=parameters)
-    for item in items:
-        validate_parameters(item)
-
     result = append_subcatchments(source, items, output_path=target, backup=backup)
     logger.info(
         "Added %s to %s (raingage=%s, outlet=%s)",

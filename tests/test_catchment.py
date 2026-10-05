@@ -5,9 +5,12 @@ from pathlib import Path
 import pytest
 
 from rcg.catchment import (
+    FLOW_UNITS_SI,
+    FLOW_UNITS_US,
     LAND_COVER_LABELS,
     LAND_FORM_LABELS,
     ApplyResult,
+    is_metric,
     label,
     lookup_land_cover,
     lookup_land_form,
@@ -58,6 +61,11 @@ def test_land_cover_round_trips_through_name_and_label(member):
 )
 def test_lookup_land_cover_variants(text, expected):
     assert lookup_land_cover(text) is expected
+
+
+def test_is_metric():
+    assert all(is_metric(u) for u in FLOW_UNITS_SI)
+    assert not any(is_metric(u) for u in FLOW_UNITS_US)
 
 
 def test_width_formula():

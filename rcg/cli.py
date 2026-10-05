@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from rcg import __version__
-from rcg.catchment import FLOW_UNITS_SI, LAND_COVER_LABELS, LAND_FORM_LABELS, ModelInfo, SubcatchmentParameters
+from rcg.catchment import LAND_COVER_LABELS, LAND_FORM_LABELS, ModelInfo, SubcatchmentParameters, is_metric
 from rcg.exceptions import RCGError, ValidationError
 from rcg.logging_config import get_logger
 
@@ -164,7 +164,7 @@ def _run(args: argparse.Namespace) -> str:
     if args.json:
         payload: dict[str, Any] = {**result.to_dict(), "parameters": params.to_dict()}
         return _json(payload)
-    units = "SI units" if result.flow_units in FLOW_UNITS_SI else "US units: acres, feet, inches"
+    units = "SI units" if is_metric(result.flow_units) else "US units: acres, feet, inches"
     lines = [
         f"Added {', '.join(result.subcatchment_ids)} ({params.catchment_type}, {params.area_ha:g} ha) to {result.output_path}",
         f"Rain gage {result.raingage}, outlet {result.outlet}",

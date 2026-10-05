@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - `ApplyResult.written_sha256`: SHA-256 of the bytes written, also in `to_dict()` and `rcg add --json`.
 - Backup handling lives in `rcg.inp_manage.backups`; `rcg.inp_manage.writer.create_backup` and `BACKUP_DIR_NAME` are
   still importable from the writer.
+- `rcg.catchment.is_metric(flow_units)` tells whether a model takes SI values.
 
 ### Changed
 - Desktop app layout: the SWMM model card spans the window; the inputs and the preview sit side by side at equal height,
@@ -26,6 +27,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Malformed fuzzy rules raise `RuleDefinitionError` naming the rule (an unknown output such as a misspelt `slope=` is
   no longer dropped silently), and out-of-range inputs to `FuzzyEngine` raise `FuzzyEngineError`. Both exceptions also
   derive from `ValueError`, which 2.0.0 raised in these cases.
+- `rcg.inp_manage.writer.append_subcatchments` called with no parameters raises `ValidationError` ("At least one
+  subcatchment is required"), the same error as `rcg.apply`, instead of `ModelOperationError`. Parameters are validated
+  once per apply instead of twice.
 
 ### Deprecated
 - `rcg.fuzzy.engine.create_fuzzy_engine`: call `FuzzyEngine(...)` directly.

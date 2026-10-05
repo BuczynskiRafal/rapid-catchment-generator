@@ -330,6 +330,21 @@ def test_failed_verification_writes_nothing(example_inp, urban_params, monkeypat
     assert sorted(p.name for p in example_inp.parent.iterdir()) == ["example.inp"]
 
 
+def test_parameters_are_validated_once_with_the_same_errors(example_inp, urban_params, forest_params, monkeypatch):
+    calls = []
+    real = writer.validate_parameters
+    monkeypatch.setattr(writer, "validate_parameters", lambda p: calls.append(p) or real(p))
+    apply(example_inp, [urban_params, forest_params], backup=False)
+    assert calls == [urban_params, forest_params]
+    original = example_inp.read_bytes()
+    with pytest.raises(ValidationError, match="At least one") as direct:
+        writer.append_subcatchments(example_inp, [])
+    assert direct.value.field == "parameters"
+    with pytest.raises(ValidationError, match="Area must be"):
+        writer.append_subcatchments(example_inp, [dataclasses.replace(urban_params, area_ha=-1.0)])
+    assert example_inp.read_bytes() == original
+
+
 def test_failed_backup_writes_nothing(example_inp, urban_params, monkeypatch):
     original = example_inp.read_bytes()
 
@@ -441,6 +456,13 @@ def test_section_headers_in_any_case_are_accepted(example_inp, urban_params, old
 
 
 # --------------------------------------------------------------------------- structural check
+
+
+def test_section_sets_are_consistent():
+    # A misspelt shared section would silently stay in the SWMM-only set.
+    assert writer._SHARED_WITH_EPANET < writer._SWMM_SECTIONS
+    assert len(writer._SWMM_ONLY_SECTIONS) == len(writer._SWMM_SECTIONS) - len(writer._SHARED_WITH_EPANET) == 42
+    assert not writer._SWMM_SECTIONS & writer._EPANET_ONLY_SECTIONS
 
 
 @pytest.mark.parametrize(

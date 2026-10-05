@@ -29,6 +29,7 @@ __all__ = [
     "ModelInfo",
     "SubcatchmentParameters",
     "infiltration_for",
+    "is_metric",
     "label",
     "lookup_land_cover",
     "lookup_land_form",
@@ -46,6 +47,12 @@ FLOW_UNITS_US = ("CFS", "GPM", "MGD")
 ACRES_PER_HECTARE = 2.4710538
 FEET_PER_METRE = 3.2808399
 MM_PER_INCH = 25.4
+
+
+def is_metric(flow_units: str) -> bool:
+    """Return whether a model with these ``FLOW_UNITS`` takes SI values (hectares, metres, millimetres)."""
+    return flow_units in FLOW_UNITS_SI
+
 
 INFILTRATION_METHODS = ("HORTON", "MODIFIED_HORTON", "GREEN_AMPT", "MODIFIED_GREEN_AMPT", "CURVE_NUMBER")
 """Values of the ``INFILTRATION`` option understood by SWMM 5.1/5.2."""
