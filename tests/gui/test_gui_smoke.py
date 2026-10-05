@@ -49,6 +49,14 @@ def test_window_opens_and_warms_up_in_background(qtbot, rcg_app, gui_settings):
     assert "Choose a SWMM model" in win.add_hint.text()
 
 
+def test_area_range_follows_the_validation_limit(window):
+    from rcg.validation import max_area_ha, min_area_ha
+
+    assert window.area_spin.maximum() == max_area_ha()
+    assert window.area_spin.minimum() >= min_area_ha()
+    assert "0.01 to 10 000 ha" in window.area_spin.toolTip()
+
+
 def test_category_combos_use_labels_in_enum_order(window):
     covers = [window.cover_combo.itemData(i) for i in range(window.cover_combo.count())]
     forms = [window.form_combo.itemData(i) for i in range(window.form_combo.count())]
@@ -140,6 +148,13 @@ def test_dropping_a_file_sets_the_model(window, model_copy):
     )
     window.dropEvent(event)
     assert window.path_field.path() == model_copy.resolve()
+
+
+def test_open_model_sets_the_path_and_focuses_the_field(qtbot, window, model_copy):
+    window.open_model(str(model_copy))
+    assert window.path_field.path() == model_copy.resolve()
+    if window.isActiveWindow():  # focus is only reported for the active window
+        assert window.path_field.edit.hasFocus()
 
 
 # --------------------------------------------------------------------------- add / undo
@@ -360,3 +375,31 @@ def test_dark_palette_restyles_the_window(qtbot, rcg_app, window, model_copy, sc
     finally:
         rcg_app.setPalette(original)
         qtbot.waitUntil(lambda: not theme.current_tokens().dark, timeout=5_000)
+
+
+def test_box_helpers_lay_out_items_like_explicit_calls(qtbot, rcg_app):
+    """``hbox``/``vbox``: no margins, ints are stretches, tuples carry stretch and alignment."""
+    from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
+
+    from rcg.gui.widgets._util import hbox, vbox
+
+    host = QWidget()
+    qtbot.addWidget(host)
+    first, second, third = (QLabel(text, host) for text in "abc")
+    inner = hbox(third)
+    box = vbox(first, 2, (second, 1, Qt.AlignmentFlag.AlignHCenter), (inner, 3), spacing=5, parent=host)
+
+    assert host.layout() is box
+    assert box.spacing() == 5
+    margins = box.contentsMargins()
+    assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (0, 0, 0, 0)
+    assert box.count() == 4
+    assert box.itemAt(0).widget() is first and box.stretch(0) == 0
+    assert box.itemAt(1).spacerItem() is not None and box.stretch(1) == 2
+    assert box.itemAt(2).widget() is second and box.stretch(2) == 1
+    assert box.itemAt(2).alignment() == Qt.AlignmentFlag.AlignHCenter
+    assert box.itemAt(3).layout() is inner and box.stretch(3) == 3
+    # spacing=None leaves it unset: like a bare QHBoxLayout, it follows the parent layout.
+    reference = QHBoxLayout()
+    box.addLayout(reference)
+    assert inner.spacing() == reference.spacing() == 5

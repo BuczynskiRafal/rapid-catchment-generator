@@ -54,11 +54,13 @@ from rcg.gui.file_actions import show_in_folder
 from rcg.gui.help_dialog import HelpDialog
 from rcg.gui.resources import resource_path
 from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPathField, PreviewPanel
-from rcg.gui.widgets._util import ElidedLabel, WrapLabel, card, divider, label, set_prop
+from rcg.gui.widgets._util import ElidedLabel, LayoutItem, WrapLabel, card, divider, hbox, label, set_prop, vbox
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.path_field import INP_FILTER
+from rcg.gui.widgets.preview import PREPARING_TEXT
 from rcg.gui.workers import EngineWorker, Task
 from rcg.logging_config import get_logger
+from rcg.validation import max_area_ha
 
 if TYPE_CHECKING:
     from rcg.catchment import ApplyResult, ModelInfo, SubcatchmentParameters
@@ -70,11 +72,16 @@ __all__ = ["MainWindow", "OUTPUT_COPY", "OUTPUT_IN_PLACE", "normalise_output_pat
 logger = get_logger("gui")  # one logger for the whole GUI (rcg.gui)
 
 APP_TITLE = "Rapid Catchment Generator"
+ADD_TEXT = "Add subcatchment"
+ENGINE_FAILED_TEXT = "The fuzzy engine could not be started."
 OUTPUT_IN_PLACE = "in_place"
 OUTPUT_COPY = "copy"
 PREVIEW_DEBOUNCE_MS = 150
 CLOSE_WAIT_MS = 200
-AREA_MIN_HA, AREA_MAX_HA, AREA_DEFAULT_HA = 0.01, 10_000.0, 1.0
+# The spin box shows two decimals, so its minimum is 0.01 ha, deliberately above
+# min_area_ha(); the maximum is the validation limit from defaults.json.
+AREA_MIN_HA, AREA_MAX_HA, AREA_DEFAULT_HA = 0.01, max_area_ha(), 1.0
+AREA_RANGE_TEXT = f"{AREA_MIN_HA:g} to {AREA_MAX_HA:,.0f} ha".replace(",", " ")  # "0.01 to 10 000 ha"
 _CACHE_LIMIT = 512
 
 _HINT_ROLE = Qt.ItemDataRole.UserRole + 1  # one-line hint of a category option
@@ -187,9 +194,13 @@ class _ApplyContext:
     source: Path
     output: Path | None
     key: InputsKey
-    to_copy: bool
     params: SubcatchmentParameters | None = None
     request_id: int | None = None  # preview request computing ``key`` for this Add
+
+    @property
+    def to_copy(self) -> bool:
+        """Whether this Add writes a separate file (``output``) instead of updating ``source``."""
+        return self.output is not None
 
 
 class MainWindow(QMainWindow):
@@ -300,21 +311,11 @@ class MainWindow(QMainWindow):
         self.help_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.help_button.clicked.connect(self.show_help)
 
-        titles = QVBoxLayout()
-        titles.setContentsMargins(0, 0, 0, 0)
-        titles.setSpacing(0)
-        titles.addWidget(title)
-        titles.addWidget(subtitle)
-
-        header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header.setSpacing(12)
+        centred = Qt.AlignmentFlag.AlignVCenter
         icon = self._header_icon(parent)
-        if icon is not None:
-            header.addWidget(icon, 0, Qt.AlignmentFlag.AlignVCenter)
-        header.addLayout(titles, 1)
-        header.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
-        return header
+        leading: tuple[LayoutItem, ...] = ((icon, 0, centred),) if icon is not None else ()
+        titles = vbox(title, subtitle, spacing=0)
+        return hbox(*leading, (titles, 1), (self.help_button, 0, centred), spacing=12)
 
     def _header_icon(self, parent: QWidget) -> QLabel | None:
         """The application icon, sharp on high-DPI screens; ``None`` if it is missing."""
@@ -343,17 +344,8 @@ class MainWindow(QMainWindow):
         content.setObjectName("inputsContent")
 
         self.preview = PreviewPanel(content)
-        row = QHBoxLayout()
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(self.GAP)
-        row.addWidget(self._build_inputs_card(content), 1)
-        row.addWidget(self.preview, 1)
-
-        cards = QVBoxLayout(content)
-        cards.setContentsMargins(0, 0, 0, 0)
-        cards.setSpacing(self.GAP)
-        cards.addWidget(self._build_model_card(content))
-        cards.addLayout(row)
+        row = hbox((self._build_inputs_card(content), 1), (self.preview, 1), spacing=self.GAP)
+        vbox(self._build_model_card(content), row, spacing=self.GAP, parent=content)
 
         self.inputs_scroll = _VerticalScrollArea(parent)
         self.inputs_scroll.setObjectName("inputsScroll")
@@ -423,12 +415,7 @@ class MainWindow(QMainWindow):
 
         # Side by side at their own width (the focus ring hugs the text): the card spans
         # the window, so one row is enough and keeps the card short.
-        outputs = QHBoxLayout()
-        outputs.setContentsMargins(0, 0, 0, 0)
-        outputs.setSpacing(24)
-        outputs.addWidget(self.in_place_radio)
-        outputs.addWidget(self.copy_radio)
-        outputs.addStretch(1)
+        outputs = hbox(self.in_place_radio, self.copy_radio, 1, spacing=24)
 
         grid = self._new_grid()
         grid.addWidget(self._field_label("File", self.path_field.edit, box), 0, 0)
@@ -462,10 +449,10 @@ class MainWindow(QMainWindow):
         self.area_spin.setCorrectionMode(QAbstractSpinBox.CorrectionMode.CorrectToNearestValue)
         self.area_spin.setAccelerated(True)
         self.area_spin.setAccessibleName("Area in hectares")
-        self.area_spin.setToolTip("Subcatchment area, 0.01 to 10 000 ha. Up and Down arrows step by 1 ha.")
+        self.area_spin.setToolTip(f"Subcatchment area, {AREA_RANGE_TEXT}. Up and Down arrows step by 1 ha.")
         self.area_spin.setMinimumWidth(110)
         self.area_spin.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        area_caption = ElidedLabel("0.01 to 10 000 ha", "caption", box, mode=Qt.TextElideMode.ElideRight)
+        area_caption = ElidedLabel(AREA_RANGE_TEXT, "caption", box, mode=Qt.TextElideMode.ElideRight)
 
         grid = self._new_grid()
         grid.addWidget(self._field_label("Land cover", self.cover_combo, box), 0, 0)
@@ -476,10 +463,7 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.form_combo, 3, 1)
         grid.addWidget(self.form_hint, 4, 1)
         grid.setRowMinimumHeight(5, 6)
-        area_row = QHBoxLayout()
-        area_row.setSpacing(10)
-        area_row.addWidget(self.area_spin)
-        area_row.addWidget(area_caption, 1)  # elides instead of widening the column
+        area_row = hbox(self.area_spin, (area_caption, 1), spacing=10)  # the caption elides instead of widening the column
         grid.addWidget(self._field_label("Area", self.area_spin, box), 6, 0)
         grid.addLayout(area_row, 6, 1)
         layout = self._card_layout(box, title, grid)
@@ -512,8 +496,8 @@ class MainWindow(QMainWindow):
         # the window's minimum) height.
         self.add_hint = WrapLabel("", "caption", parent, reserve_lines=2, max_lines=2)
         self.add_hint.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight)
-        self.add_button = PrimaryButton("Add subcatchment", parent)
-        self.add_button.setAccessibleName("Add subcatchment")
+        self.add_button = PrimaryButton(ADD_TEXT, parent)
+        self.add_button.setAccessibleName(ADD_TEXT)
         self.add_button.setMinimumWidth(180)
         self.add_button.clicked.connect(self.add_subcatchment)
 
@@ -659,8 +643,8 @@ class MainWindow(QMainWindow):
         self._log_unexpected("Fuzzy engine warm-up failed", exc)
         if self._closing:
             return
-        self.preview.show_unavailable("The fuzzy engine could not be started.")
-        self.banner.show_error(self._describe_error(exc, "The fuzzy engine could not be started."))
+        self.preview.show_unavailable(ENGINE_FAILED_TEXT)
+        self.banner.show_error(self._describe_error(exc, ENGINE_FAILED_TEXT))
         self._update_add_state()
 
     def _inputs_key(self) -> InputsKey:
@@ -768,24 +752,27 @@ class MainWindow(QMainWindow):
         enabled = self._engine_ready and has_model and not self._busy
         self.add_button.setEnabled(enabled)
         self.add_action.setEnabled(enabled)
-        self.add_button.setText("Adding…" if self._busy else "Add subcatchment")
+        self.add_button.setText("Adding…" if self._busy else ADD_TEXT)
 
         if self._status_timer.isActive() and not self._busy:
             return  # a confirmation is being shown; it reverts when the timer fires
         set_prop(self.add_hint, "role", "caption")
-        if self._busy:
-            hint = "Writing the model…"
-        elif self._engine_failed:
-            hint = "The fuzzy engine is not available."
-        elif not self._engine_ready:
-            hint = "Preparing fuzzy engine…"
-        elif not has_model:
-            hint = "Fix the model path." if self.path_field.text().strip() else "Choose a SWMM model."
-        else:
-            shortcut = self.add_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
-            hint = f"Press {shortcut} to add" if shortcut else ""
+        hint = self._add_hint(has_model)
         self.add_hint.setText(hint)
         self.add_button.setToolTip(hint if not enabled else "")
+
+    def _add_hint(self, has_model: bool) -> str:
+        """The line under *Add subcatchment*: why it is disabled, or its shortcut."""
+        if self._busy:
+            return "Writing the model…"
+        if self._engine_failed:
+            return "The fuzzy engine is not available."
+        if not self._engine_ready:
+            return PREPARING_TEXT
+        if not has_model:
+            return "Fix the model path." if self.path_field.text().strip() else "Choose a SWMM model."
+        shortcut = self.add_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
+        return f"Press {shortcut} to add" if shortcut else ""
 
     # ------------------------------------------------------------------ add / undo
     def add_subcatchment(self) -> None:
@@ -804,7 +791,7 @@ class MainWindow(QMainWindow):
         # Disabling the button while busy moves keyboard focus away; give it back afterwards.
         self._refocus_add = self.add_button.hasFocus()
         key = self._inputs_key()
-        ctx = _ApplyContext(source=source, output=output, key=key, to_copy=output is not None)
+        ctx = _ApplyContext(source=source, output=output, key=key)
         self._apply_ctx = ctx
         self._set_busy(True)
 
@@ -1019,8 +1006,19 @@ class MainWindow(QMainWindow):
         filename = self._dropped_file(event.mimeData())
         if filename:
             event.acceptProposedAction()
-            self.path_field.set_path(filename)
+            self.open_model(filename)
+
+    def open_model(self, path: str | Path) -> None:
+        """Make *path* the edited model (dropped file, "Open with", command-line argument).
+
+        Once the window is shown it is also brought to the front with the path field
+        focused, so the user sees the model check right away.
+        """
+        self.path_field.set_path(path)
+        if self.isVisible():
             self.path_field.edit.setFocus(Qt.FocusReason.OtherFocusReason)
+            self.raise_()
+            self.activateWindow()
 
     # ------------------------------------------------------------------ showing
     def showEvent(self, event: QShowEvent) -> None:

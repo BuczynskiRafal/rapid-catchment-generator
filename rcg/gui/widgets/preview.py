@@ -9,7 +9,6 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
-    QHBoxLayout,
     QLabel,
     QProgressBar,
     QSizePolicy,
@@ -20,15 +19,17 @@ from PySide6.QtWidgets import (
 
 from rcg.catchment import INFILTRATION_FIELDS, infiltration_for
 from rcg.gui.categories import CATCHMENT_TYPE_LABELS, catchment_type_label, infiltration_method_label
-from rcg.gui.widgets._util import ElidedLabel, ReservedLabel, WrapLabel, divider, label
+from rcg.gui.widgets._util import ElidedLabel, ReservedLabel, WrapLabel, divider, hbox, label, vbox
 
 if TYPE_CHECKING:
     from rcg.catchment import ModelInfo, SubcatchmentParameters
 
-__all__ = ["DEFAULT_INFILTRATION_METHOD", "PreviewPanel", "format_number"]
+__all__ = ["DEFAULT_INFILTRATION_METHOD", "PREPARING_TEXT", "PreviewPanel", "format_number"]
 
 DEFAULT_INFILTRATION_METHOD = "GREEN_AMPT"
 """Shown while no model is chosen (RCG 1.x always wrote Green-Ampt)."""
+
+PREPARING_TEXT = "Preparing fuzzy engine…"
 
 NO_MODEL_INFILTRATION_NOTE = "Green-Ampt until a model is chosen"
 NO_MODEL_INFILTRATION_TOOLTIP = (
@@ -103,18 +104,9 @@ class _Metric(QWidget):
         if tooltip:
             self.setToolTip(tooltip)
 
-        value_row = QHBoxLayout()
-        value_row.setContentsMargins(0, 0, 0, 0)
-        value_row.setSpacing(self.VALUE_UNIT_SPACING)
-        value_row.addWidget(self.value, 0, Qt.AlignmentFlag.AlignBaseline)
-        value_row.addWidget(self.unit, 0, Qt.AlignmentFlag.AlignBaseline)
-        value_row.addStretch(1)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(self.caption)
-        layout.addLayout(value_row)
+        baseline = Qt.AlignmentFlag.AlignBaseline
+        value_row = hbox((self.value, 0, baseline), (self.unit, 0, baseline), 1, spacing=self.VALUE_UNIT_SPACING)
+        vbox(self.caption, value_row, spacing=0, parent=self)
 
     def set_value(self, text: str) -> None:
         self.value.setText(text)
@@ -248,11 +240,7 @@ class PreviewPanel(QFrame):
         self.badge.setAccessibleName("Catchment type")
         self.badge.hide()
 
-        header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header.addWidget(title)
-        header.addStretch(1)
-        header.addWidget(self.badge)
+        header = hbox(title, 1, self.badge)
         # The badge comes and goes; it keeps its place so the card never jumps.
         policy = self.badge.sizePolicy()
         policy.setRetainSizeWhenHidden(True)
@@ -277,7 +265,7 @@ class PreviewPanel(QFrame):
     # -- pages -----------------------------------------------------------------------
     def _build_preparing_page(self) -> QWidget:
         page = QWidget(self)
-        self.preparing_label = label("Preparing fuzzy engine…", "placeholder", page)
+        self.preparing_label = label(PREPARING_TEXT, "placeholder", page)
         self.preparing_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preparing_detail = WrapLabel(
             "Building the fuzzy rule base takes a few seconds the first time. Inputs stay editable meanwhile.",
@@ -289,16 +277,10 @@ class PreviewPanel(QFrame):
         self.progress.setRange(0, 0)
         self.progress.setTextVisible(False)
         self.progress.setMaximumWidth(220)
-        self.progress.setAccessibleName("Preparing fuzzy engine")
+        self.progress.setAccessibleName(PREPARING_TEXT.rstrip("…"))
 
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
-        layout.addStretch(1)
-        layout.addWidget(self.preparing_label)
-        layout.addWidget(self.progress, 0, Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(self.preparing_detail)
-        layout.addStretch(1)
+        centred = Qt.AlignmentFlag.AlignHCenter
+        vbox(1, self.preparing_label, (self.progress, 0, centred), self.preparing_detail, 1, spacing=10, parent=page)
         return page
 
     def _build_result_page(self) -> QWidget:
@@ -311,11 +293,7 @@ class PreviewPanel(QFrame):
         self.width_metric = _Metric(
             "Width", "m", page, tooltip="Characteristic width of overland flow (SWMM: Width)", samples=_WIDTH_SAMPLES
         )
-        metrics = QHBoxLayout()
-        metrics.setContentsMargins(0, 0, 0, 0)
-        metrics.setSpacing(12)
-        for metric in (self.slope, self.impervious, self.width_metric):
-            metrics.addWidget(metric, 1)
+        metrics = hbox(*((metric, 1) for metric in (self.slope, self.impervious, self.width_metric)), spacing=12)
 
         grid = QGridLayout()
         grid.setContentsMargins(0, 0, 0, 0)
@@ -358,33 +336,15 @@ class PreviewPanel(QFrame):
         infiltration_title.setToolTip("The [INFILTRATION] row written for the new subcatchment")
         self.infiltration_note = ElidedLabel("", "caption", page, mode=Qt.TextElideMode.ElideRight)
         self.infiltration_note.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        infiltration_header = QHBoxLayout()
-        infiltration_header.setContentsMargins(0, 0, 0, 0)
-        infiltration_header.setSpacing(12)
-        infiltration_header.addWidget(infiltration_title)
-        infiltration_header.addWidget(self.infiltration_note, 1)
+        infiltration_header = hbox(infiltration_title, (self.infiltration_note, 1), spacing=12)
 
         self.infiltration_row = _InfiltrationRow(page)
 
         self.error = WrapLabel("", "captionError", page)
         self.error.hide()
 
-        infiltration = QVBoxLayout()
-        infiltration.setContentsMargins(0, 0, 0, 0)
-        infiltration.setSpacing(4)
-        infiltration.addLayout(infiltration_header)
-        infiltration.addWidget(self.infiltration_row)
-
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
-        layout.addLayout(metrics)
-        layout.addWidget(divider(page))
-        layout.addLayout(grid)
-        layout.addWidget(divider(page))
-        layout.addLayout(infiltration)
-        layout.addWidget(self.error)
-        layout.addStretch(1)
+        infiltration = vbox(infiltration_header, self.infiltration_row, spacing=4)
+        vbox(metrics, divider(page), grid, divider(page), infiltration, self.error, 1, spacing=12, parent=page)
         return page
 
     # -- model -----------------------------------------------------------------------
@@ -409,18 +369,17 @@ class PreviewPanel(QFrame):
         return self._model
 
     # -- states ----------------------------------------------------------------------
-    def show_preparing(self, text: str = "Preparing fuzzy engine…") -> None:
-        self.preparing_label.setText(text)
-        self.progress.show()
-        self.preparing_detail.show()
-        self.badge.hide()
-        self.stack.setCurrentIndex(self.PAGE_PREPARING)
+    def show_preparing(self, text: str = PREPARING_TEXT) -> None:
+        self._show_placeholder(text, busy=True)
 
     def show_unavailable(self, text: str) -> None:
         """The engine could not be built: keep the placeholder page, without progress."""
+        self._show_placeholder(text, busy=False)
+
+    def _show_placeholder(self, text: str, *, busy: bool) -> None:
         self.preparing_label.setText(text)
-        self.progress.hide()
-        self.preparing_detail.hide()
+        self.progress.setVisible(busy)
+        self.preparing_detail.setVisible(busy)
         self.badge.hide()
         self.stack.setCurrentIndex(self.PAGE_PREPARING)
 

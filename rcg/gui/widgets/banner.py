@@ -107,12 +107,6 @@ class MessageBanner(QFrame):
     def show_error(self, text: str) -> None:
         self.show_message("error", text)
 
-    def show_success(self, text: str, timeout_ms: int = 8000) -> None:
-        self.show_message("success", text, timeout_ms=timeout_ms)
-
-    def show_info(self, text: str, timeout_ms: int = 8000) -> None:
-        self.show_message("info", text, timeout_ms=timeout_ms)
-
     def dismiss(self) -> None:
         self._timer.stop()
         self.hide()
