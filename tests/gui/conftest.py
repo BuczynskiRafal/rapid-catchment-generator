@@ -81,6 +81,28 @@ def gui_engine():
 
 
 @pytest.fixture
+def gui_font(request, rcg_app):
+    """Temporarily override the app font for layout regressions, when parametrized."""
+    from rcg.gui.theme import install_theme
+
+    font_spec = getattr(request, "param", None)
+    if font_spec is None:
+        yield
+        return
+    original = rcg_app.font()
+    family, points = font_spec
+    font = QFont(family)
+    font.setPointSizeF(points)
+    rcg_app.setFont(font)
+    install_theme(rcg_app)
+    try:
+        yield
+    finally:
+        rcg_app.setFont(original)
+        install_theme(rcg_app)
+
+
+@pytest.fixture
 def gui_settings(tmp_path: Path) -> QSettings:
     """Settings in a temporary INI file, so tests never touch the user's settings."""
     return QSettings(str(tmp_path / "rcg-gui.ini"), QSettings.Format.IniFormat)
@@ -96,7 +118,7 @@ def model_copy(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def window(qtbot, rcg_app, gui_engine, gui_settings) -> Iterator:
+def window(qtbot, rcg_app, gui_font, gui_engine, gui_settings) -> Iterator:
     """A shown main window whose engine is ready and whose first preview is displayed."""
     from rcg.gui.main_window import MainWindow
 

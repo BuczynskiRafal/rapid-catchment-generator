@@ -255,7 +255,7 @@ class InputsCard(_Card):
     def _build_action_row(self) -> QHBoxLayout:
         # Two lines are always reserved, so a longer message never changes the row's (and
         # the window's minimum) height.
-        self.add_hint = WrapLabel("", "caption", self, reserve_lines=2)
+        self.add_hint = WrapLabel("", "caption", self, reserve_lines=2, max_lines=2)
         self.add_hint.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight)
         self.add_button = PrimaryButton(ADD_TEXT, self)
         self.add_button.setAccessibleName(ADD_TEXT)

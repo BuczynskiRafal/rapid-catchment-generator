@@ -311,7 +311,7 @@ class MainWindow(QMainWindow):
         if not self.preview_controller.ready:
             return PREPARING_TEXT
         if not has_model:
-            return "Fix the model path first." if self.path_field.text().strip() else "Choose a SWMM model first."
+            return "Fix the model path." if self.path_field.text().strip() else "Choose a SWMM model."
         shortcut = shortcut_text(self.add_action)
         return f"Press {shortcut} to add" if shortcut else ""
 
