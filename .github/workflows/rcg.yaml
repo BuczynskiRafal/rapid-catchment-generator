@@ -170,7 +170,7 @@ jobs:
           cp artifacts/rcg-gui-Linux/dist/RCG release/RCG-linux
           cp artifacts/rcg-gui-Linux/dist-cli/rcg release/rcg-cli-linux
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: release/*
           generate_release_notes: true
