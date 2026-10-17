@@ -2,8 +2,8 @@
 
 The engine maps a land form and a land cover to a terrain slope, a percentage of
 impervious surface and a catchment score that is classified into a catchment type.
-Building the ``skfuzzy`` control systems takes a few seconds, so a shared default
-engine is created lazily by :func:`get_default_fuzzy_engine`.
+A precompiled static table is used for standard lookups, while dynamic ``skfuzzy``
+control systems are compiled lazily if custom memberships or rules are supplied.
 """
 
 from __future__ import annotations
@@ -11,19 +11,21 @@ from __future__ import annotations
 import os
 import threading
 import warnings
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+import numpy as np
 
 # scikit-fuzzy imports matplotlib.pyplot; never let it pick (or probe) a GUI backend.
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-import skfuzzy as fuzz  # noqa: E402
-from skfuzzy import control as ctrl  # noqa: E402
-
 from rcg.exceptions import FuzzyEngineError  # noqa: E402
 from rcg.fuzzy._lazy import lazy_singleton  # noqa: E402
+from rcg.fuzzy._static_table import STATIC_TABLE  # noqa: E402
 from rcg.fuzzy.categories import LandCover, LandForm  # noqa: E402
 
 if TYPE_CHECKING:
+    from skfuzzy import control as ctrl
+
     from rcg.fuzzy.memberships import Memberships
     from rcg.fuzzy.rule_engine import RuleEngine
 
@@ -52,41 +54,241 @@ class FuzzyEngine:
     """
 
     _lock: ClassVar[threading.RLock] = threading.RLock()
-    """Serialises computations of every engine (re-entrant: compute_all calls compute_*)."""
+    """Serialises computations of every engine."""
 
-    def __init__(self, memberships: Memberships | None = None, rule_engine: RuleEngine | None = None) -> None:
-        if memberships is None:
+    def __init__(
+        self,
+        memberships: Memberships | None = None,
+        rule_engine: RuleEngine | None = None,
+    ) -> None:
+        self._results: dict[tuple[int, int], dict[str, float]] = {}
+        self._dynamic_initialized: bool = False
+        self._slope_ctrl: ctrl.ControlSystem | None = None
+        self._impervious_ctrl: ctrl.ControlSystem | None = None
+        self._catchment_ctrl: ctrl.ControlSystem | None = None
+        self._slope_sim: ctrl.ControlSystemSimulation | None = None
+        self._impervious_sim: ctrl.ControlSystemSimulation | None = None
+        self._catchment_sim: ctrl.ControlSystemSimulation | None = None
+
+        if memberships is None and rule_engine is None:
+            self._is_static: bool = True
+            self._memberships: Memberships | None = None
+            self._rule_engine: RuleEngine | None = None
+        else:
+            self._is_static = False
             from rcg.fuzzy.memberships import get_default_memberships
 
-            memberships = get_default_memberships()
-        self.memberships = memberships
+            default_memberships = get_default_memberships()
+            if memberships is None:
+                memberships = default_memberships
+            self._memberships = memberships
 
-        if rule_engine is None:
+            if rule_engine is None:
+                if memberships is default_memberships:
+                    from rcg.fuzzy.rule_definitions import get_default_rules
+
+                    rule_engine = get_default_rules()
+                    self._is_static = True
+                else:
+                    from rcg.fuzzy.rule_definitions import define_all_rules
+                    from rcg.fuzzy.rule_engine import RuleEngine
+
+                    rule_engine = define_all_rules(RuleEngine(memberships=memberships))
+            self._rule_engine = rule_engine
+
+    @property
+    def memberships(self) -> Memberships:
+        if self._memberships is None:
+            from rcg.fuzzy.memberships import get_default_memberships
+
+            self._memberships = get_default_memberships()
+        return self._memberships
+
+    @memberships.setter
+    def memberships(self, value: Memberships) -> None:
+        with self._lock:
+            self._memberships = value
+            self._is_static = False
+            from rcg.fuzzy.rule_definitions import define_all_rules
+            from rcg.fuzzy.rule_engine import RuleEngine
+
+            self._rule_engine = define_all_rules(RuleEngine(memberships=value))
+            self._slope_ctrl = None
+            self._impervious_ctrl = None
+            self._catchment_ctrl = None
+            self._slope_sim = None
+            self._impervious_sim = None
+            self._catchment_sim = None
+            self._dynamic_initialized = False
+            self._results.clear()
+
+    @property
+    def rule_engine(self) -> RuleEngine:
+        if self._rule_engine is None:
             from rcg.fuzzy.rule_definitions import get_default_rules
 
-            rule_engine = get_default_rules()
+            self._rule_engine = get_default_rules()
+        return self._rule_engine
 
-        self.slope_ctrl = ctrl.ControlSystem(rule_engine.slope_rules)
-        self.impervious_ctrl = ctrl.ControlSystem(rule_engine.impervious_rules)
-        self.catchment_ctrl = ctrl.ControlSystem(rule_engine.catchment_rules)
+    @rule_engine.setter
+    def rule_engine(self, value: RuleEngine) -> None:
+        with self._lock:
+            self._rule_engine = value
+            if hasattr(value, "_get_memberships"):
+                self._memberships = value._get_memberships()
+            self._is_static = False
+            self._slope_ctrl = None
+            self._impervious_ctrl = None
+            self._catchment_ctrl = None
+            self._slope_sim = None
+            self._impervious_sim = None
+            self._catchment_sim = None
+            self._dynamic_initialized = False
+            self._results.clear()
 
-        self.slope_sim = ctrl.ControlSystemSimulation(self.slope_ctrl)
-        self.impervious_sim = ctrl.ControlSystemSimulation(self.impervious_ctrl)
-        self.catchment_sim = ctrl.ControlSystemSimulation(self.catchment_ctrl)
+    def _ensure_dynamic(self) -> None:
+        if (
+            self._dynamic_initialized
+            and self._slope_ctrl is not None
+            and self._impervious_ctrl is not None
+            and self._catchment_ctrl is not None
+            and self._slope_sim is not None
+            and self._impervious_sim is not None
+            and self._catchment_sim is not None
+        ):
+            return
+        with self._lock:
+            if (
+                self._dynamic_initialized
+                and self._slope_ctrl is not None
+                and self._impervious_ctrl is not None
+                and self._catchment_ctrl is not None
+                and self._slope_sim is not None
+                and self._impervious_sim is not None
+                and self._catchment_sim is not None
+            ):
+                return
+            from skfuzzy import control as ctrl
 
-        self._results: dict[tuple[int, int], dict[str, float]] = {}
+            rule_eng = self.rule_engine
+
+            if self._slope_ctrl is None:
+                self._slope_ctrl = ctrl.ControlSystem(rule_eng.slope_rules)
+            if self._impervious_ctrl is None:
+                self._impervious_ctrl = ctrl.ControlSystem(rule_eng.impervious_rules)
+            if self._catchment_ctrl is None:
+                self._catchment_ctrl = ctrl.ControlSystem(rule_eng.catchment_rules)
+
+            if self._slope_sim is None:
+                self._slope_sim = ctrl.ControlSystemSimulation(self._slope_ctrl)
+            if self._impervious_sim is None:
+                self._impervious_sim = ctrl.ControlSystemSimulation(self._impervious_ctrl)
+            if self._catchment_sim is None:
+                self._catchment_sim = ctrl.ControlSystemSimulation(self._catchment_ctrl)
+
+            self._dynamic_initialized = True
+
+    @property
+    def slope_ctrl(self) -> ctrl.ControlSystem:
+        if self._slope_ctrl is None:
+            self._ensure_dynamic()
+        assert self._slope_ctrl is not None
+        return self._slope_ctrl
+
+    @slope_ctrl.setter
+    def slope_ctrl(self, value: ctrl.ControlSystem) -> None:
+        with self._lock:
+            self._slope_ctrl = value
+            self._slope_sim = None
+            self._dynamic_initialized = False
+            self._is_static = False
+            self._results.clear()
+
+    @property
+    def impervious_ctrl(self) -> ctrl.ControlSystem:
+        if self._impervious_ctrl is None:
+            self._ensure_dynamic()
+        assert self._impervious_ctrl is not None
+        return self._impervious_ctrl
+
+    @impervious_ctrl.setter
+    def impervious_ctrl(self, value: ctrl.ControlSystem) -> None:
+        with self._lock:
+            self._impervious_ctrl = value
+            self._impervious_sim = None
+            self._dynamic_initialized = False
+            self._is_static = False
+            self._results.clear()
+
+    @property
+    def catchment_ctrl(self) -> ctrl.ControlSystem:
+        if self._catchment_ctrl is None:
+            self._ensure_dynamic()
+        assert self._catchment_ctrl is not None
+        return self._catchment_ctrl
+
+    @catchment_ctrl.setter
+    def catchment_ctrl(self, value: ctrl.ControlSystem) -> None:
+        with self._lock:
+            self._catchment_ctrl = value
+            self._catchment_sim = None
+            self._dynamic_initialized = False
+            self._is_static = False
+            self._results.clear()
+
+    @property
+    def slope_sim(self) -> ctrl.ControlSystemSimulation:
+        if self._slope_sim is None:
+            self._ensure_dynamic()
+        assert self._slope_sim is not None
+        return self._slope_sim
+
+    @slope_sim.setter
+    def slope_sim(self, value: ctrl.ControlSystemSimulation) -> None:
+        with self._lock:
+            self._slope_sim = value
+            self._is_static = False
+            self._results.clear()
+
+    @property
+    def impervious_sim(self) -> ctrl.ControlSystemSimulation:
+        if self._impervious_sim is None:
+            self._ensure_dynamic()
+        assert self._impervious_sim is not None
+        return self._impervious_sim
+
+    @impervious_sim.setter
+    def impervious_sim(self, value: ctrl.ControlSystemSimulation) -> None:
+        with self._lock:
+            self._impervious_sim = value
+            self._is_static = False
+            self._results.clear()
+
+    @property
+    def catchment_sim(self) -> ctrl.ControlSystemSimulation:
+        if self._catchment_sim is None:
+            self._ensure_dynamic()
+        assert self._catchment_sim is not None
+        return self._catchment_sim
+
+    @catchment_sim.setter
+    def catchment_sim(self, value: ctrl.ControlSystemSimulation) -> None:
+        with self._lock:
+            self._catchment_sim = value
+            self._is_static = False
+            self._results.clear()
 
     def compute_slope(self, land_form: int, land_cover: int) -> float:
         """Return the terrain slope in percent for the given category values."""
-        return self._compute_single(self.slope_sim, land_form, land_cover, self.memberships.slope.label)
+        return self.compute_all(land_form, land_cover)["slope"]
 
     def compute_impervious(self, land_form: int, land_cover: int) -> float:
         """Return the impervious surface share in percent for the given category values."""
-        return self._compute_single(self.impervious_sim, land_form, land_cover, self.memberships.impervious.label)
+        return self.compute_all(land_form, land_cover)["impervious"]
 
     def compute_catchment(self, land_form: int, land_cover: int) -> float:
         """Return the raw catchment score (0-100) for the given category values."""
-        return self._compute_single(self.catchment_sim, land_form, land_cover, self.memberships.catchment.label)
+        return self.compute_all(land_form, land_cover)["catchment"]
 
     def compute_all(self, land_form: int, land_cover: int) -> dict[str, float]:
         """Compute all three outputs.
@@ -104,14 +306,28 @@ class FuzzyEngine:
             ``slope``, ``impervious`` and ``catchment`` results. Results are memoised per
             input pair (inference is deterministic and there are only 126 pairs).
         """
+        self._validate_inputs(land_form, land_cover)
         key = (int(land_form), int(land_cover))
         with self._lock:
             if key not in self._results:
-                self._results[key] = {
-                    "slope": self.compute_slope(land_form, land_cover),
-                    "impervious": self.compute_impervious(land_form, land_cover),
-                    "catchment": self.compute_catchment(land_form, land_cover),
-                }
+                if self._is_static:
+                    slope, imperv, catchment, _ = STATIC_TABLE[key]
+                    self._results[key] = {
+                        "slope": slope,
+                        "impervious": imperv,
+                        "catchment": catchment,
+                    }
+                else:
+                    self._ensure_dynamic()
+                    self._results[key] = {
+                        "slope": self._compute_single(self.slope_sim, land_form, land_cover, self.memberships.slope.label),
+                        "impervious": self._compute_single(
+                            self.impervious_sim, land_form, land_cover, self.memberships.impervious.label
+                        ),
+                        "catchment": self._compute_single(
+                            self.catchment_sim, land_form, land_cover, self.memberships.catchment.label
+                        ),
+                    }
             return dict(self._results[key])
 
     def classify_catchment(self, score: float) -> str:
@@ -128,6 +344,26 @@ class FuzzyEngine:
             One of ``urban``, ``suburban``, ``rural``, ``forests``, ``meadows``,
             ``arable`` or ``mountains``. Ties resolve to the first term defined.
         """
+        if self._is_static:
+            if 0.0 <= score <= 7.5:
+                return "urban"
+            if 7.5 < score <= 22.5:
+                return "suburban"
+            if 22.5 < score <= 37.5:
+                return "rural"
+            if 37.5 < score <= 52.5:
+                return "forests"
+            if 52.5 < score <= 67.5:
+                return "meadows"
+            if 67.5 < score <= 245.0 / 3.0:
+                return "arable"
+            if 245.0 / 3.0 < score < 100.0:
+                return "mountains"
+            return "urban"
+
+        self._ensure_dynamic()
+        import skfuzzy as fuzz
+
         member = self.memberships.catchment
         degrees = {str(key): float(fuzz.interp_membership(member.universe, member[key].mf, score)) for key in member.terms}
         if not degrees:
@@ -143,14 +379,35 @@ class FuzzyEngine:
             return float(sim.output[output_label])
 
     @staticmethod
-    def _validate_inputs(land_form: int, land_cover: int) -> None:
-        if not (1 <= land_form <= len(LandForm)):
-            raise FuzzyEngineError(
-                f"Invalid land_form: {land_form}. Must be 1-{len(LandForm)}", land_form=land_form, land_cover=land_cover
+    def _validate_inputs(land_form: Any, land_cover: Any) -> None:
+        if isinstance(land_form, bool) or not isinstance(land_form, (int, np.integer)):
+            valid_lc = (
+                int(land_cover) if isinstance(land_cover, (int, np.integer)) and not isinstance(land_cover, bool) else None
             )
-        if not (1 <= land_cover <= len(LandCover)):
             raise FuzzyEngineError(
-                f"Invalid land_cover: {land_cover}. Must be 1-{len(LandCover)}", land_form=land_form, land_cover=land_cover
+                f"land_form must be an integer (1-{len(LandForm)}), got {type(land_form).__name__}: {land_form!r}",
+                land_form=None,
+                land_cover=valid_lc,
+            )
+        if isinstance(land_cover, bool) or not isinstance(land_cover, (int, np.integer)):
+            raise FuzzyEngineError(
+                f"land_cover must be an integer (1-{len(LandCover)}), got {type(land_cover).__name__}: {land_cover!r}",
+                land_form=int(land_form),
+                land_cover=None,
+            )
+        lf = int(land_form)
+        lc = int(land_cover)
+        if not (1 <= lf <= len(LandForm)):
+            raise FuzzyEngineError(
+                f"Invalid land_form: {land_form}. Must be 1-{len(LandForm)}",
+                land_form=lf,
+                land_cover=lc,
+            )
+        if not (1 <= lc <= len(LandCover)):
+            raise FuzzyEngineError(
+                f"Invalid land_cover: {land_cover}. Must be 1-{len(LandCover)}",
+                land_form=lf,
+                land_cover=lc,
             )
 
 
