@@ -12,13 +12,6 @@ Rapid Catchment Generator (RCG) is a tool for rapid prototyping of a hydraulic m
 
 RCG is available as a **desktop app**, a **command-line tool** and a **Python library**, and all three share the same engine and the same numbers. The methodology and validation are published in [*Water* (2025, 17(12), 1820)](https://doi.org/10.3390/w17121820).
 
-### Key features
-
-* **Literature-backed fuzzy inference** — 126 Mamdani rules across 9 land-form and 14 land-cover categories ([*Water* 2025](https://doi.org/10.3390/w17121820)) derive slope, imperviousness, catchment class, Manning $n$, and depression storage.
-* **Three interfaces, one engine** — native PySide6 desktop GUI (`rcg-gui`), scriptable CLI with `--json` output (`rcg`), and typed Python API (`py.typed`).
-* **Safe, non-destructive `.inp` editing** — preserves comments, formatting, and untouched sections; verifies changes in memory with `swmmio`; writes atomically with automatic `.rcg_backups/` and SHA-256 lost-update protection.
-* **Unit- and method-aware** — adapts automatically to SI (`CMS`, `LPS`, `MLD`) and US (`CFS`, `GPM`, `MGD`) flow units and all five SWMM infiltration methods (`GREEN_AMPT`, `MODIFIED_GREEN_AMPT`, `HORTON`, `MODIFIED_HORTON`, `CURVE_NUMBER`).
-
 * [Install](#install)
 * [Desktop app](#desktop-app)
 * [Command line](#command-line)
