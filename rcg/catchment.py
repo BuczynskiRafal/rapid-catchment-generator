@@ -21,6 +21,7 @@ __all__ = [
     "FLOW_UNITS_US",
     "INFILTRATION_FIELDS",
     "INFILTRATION_METHODS",
+    "KNOWN_INFILTRATION_KEYS",
     "LAND_COVER_LABELS",
     "LAND_FORM_LABELS",
     "MM_PER_INCH",
@@ -91,6 +92,24 @@ its value. The Green-Ampt row written by RCG has two more, trailing values
 Green-Ampt, so they carry no label. Values are written in the model's own units
 (the SI or US column), without conversion.
 """
+KNOWN_INFILTRATION_KEYS: frozenset[str] = frozenset(
+    {
+        "Suction",
+        "Ksat",
+        "IMD",
+        "Param4",
+        "Param5",
+        "MaxRate",
+        "MinRate",
+        "Decay",
+        "DryTime",
+        "MaxInfil",
+        "CurvNo",
+        "CurveNum",
+        "Conductivity",
+    }
+)
+"""Known infiltration parameter keys across all supported SWMM infiltration methods."""
 
 
 def base_infiltration_method(method: str) -> str:
@@ -264,9 +283,12 @@ class SubcatchmentParameters:
     pct_zero : int
         Percent of impervious area without depression storage.
     infiltration : Mapping[str, float]
-        Green-Ampt parameters ``Suction``, ``Ksat``, ``IMD``, ``Param4``, ``Param5``.
-        Written only to models whose ``INFILTRATION`` is ``GREEN_AMPT`` or
-        ``MODIFIED_GREEN_AMPT``; other methods get :func:`infiltration_for` instead.
+        Infiltration parameters for the model's infiltration method: Green-Ampt
+        (``Suction``, ``Ksat``, ``IMD``, optionally ``Param4``, ``Param5``), Horton /
+        Modified Horton (``MaxRate``, ``MinRate``, ``Decay``, ``DryTime``, ``MaxInfil``),
+        or Curve Number (``CurvNo``/``CurveNum``, ``Conductivity``, ``DryTime``).
+        When custom parameters matching the model's method are supplied, they are
+        written to the model; otherwise defaults from :func:`infiltration_for` are used.
     """
 
     land_form: LandForm

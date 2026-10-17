@@ -74,8 +74,8 @@ def warm_up(engine: FuzzyEngine | None = None) -> FuzzyEngine:
 
 def preview(
     area_ha: float,
-    land_form: LandForm | str,
-    land_cover: LandCover | str,
+    land_form: LandForm | str | int,
+    land_cover: LandCover | str | int,
     *,
     engine: FuzzyEngine | None = None,
 ) -> SubcatchmentParameters:
@@ -85,10 +85,10 @@ def preview(
     ----------
     area_ha : float
         Area in hectares, ``0.0001 <= area_ha <= 10 000``.
-    land_form : LandForm or str
-        Land form as enum, snake_case name or human label (case-insensitive).
-    land_cover : LandCover or str
-        Land cover as enum, snake_case name or human label (case-insensitive).
+    land_form : LandForm, str or int
+        Land form as enum, integer code (1–9), snake_case name or human label (case-insensitive).
+    land_cover : LandCover, str or int
+        Land cover as enum, integer code (1–14), snake_case name or human label (case-insensitive).
     engine : FuzzyEngine, optional
         Engine to use. Defaults to the shared engine.
 

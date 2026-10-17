@@ -144,14 +144,17 @@ def test_inspect_predicts_what_apply_uses(example_inp, urban_params):
 
 def test_inspect_model_without_gage_nodes_and_options(tmp_path):
     path = tmp_path / "bare.inp"
-    path.write_text("[TITLE]\nbare\n\n[SUBCATCHMENTS]\ns1 RG O 1 1 1 1 0\nS2 RG O 1 1 1 1 0\n")
+    path.write_text("[TITLE]\nbare\n\n[SUBCATCHMENTS]\ns1 RG O 1 1 1 1 0\nS2 RG O 1 1 1 1 0\n", encoding="utf-8")
     info = inspect(path)
     assert (info.flow_units, info.is_metric, info.infiltration_method) == ("CFS", False, "HORTON")
     assert (info.subcatchment_count, info.raingage, info.outlet) == (2, None, None)
 
 
 def test_inspect_falls_back_to_the_last_junction(example_inp):
-    example_inp.write_text(re.sub(r"(?ims)^\[OUTFALLS\].*?(?=^\[)", "", example_inp.read_text()))
+    example_inp.write_text(
+        re.sub(r"(?ims)^\[OUTFALLS\].*?(?=^\[)", "", example_inp.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
     assert inspect(example_inp).outlet == "J3"
 
 
@@ -167,11 +170,11 @@ def test_inspect_errors(tmp_path):
     with pytest.raises(ValidationError, match=r"\.inp"):
         inspect(tmp_path / "model.txt")
     epanet = tmp_path / "net.inp"
-    epanet.write_text("[TITLE]\n[JUNCTIONS]\n J1 1\n[PIPES]\n P1 J1 J2 1 1 1\n")
+    epanet.write_text("[TITLE]\n[JUNCTIONS]\n J1 1\n[PIPES]\n P1 J1 J2 1 1 1\n", encoding="utf-8")
     with pytest.raises(ModelOperationError, match="EPANET"):
         inspect(epanet)
     odd = tmp_path / "odd.inp"
-    odd.write_text("[OPTIONS]\nFLOW_UNITS FURLONGS\n")
+    odd.write_text("[OPTIONS]\nFLOW_UNITS FURLONGS\n", encoding="utf-8")
     with pytest.raises(ModelOperationError, match="FLOW_UNITS"):
         inspect(odd)
 

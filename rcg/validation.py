@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import difflib
 import math
+import numbers
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TypeVar
 
 from rcg.catchment import (
+    KNOWN_INFILTRATION_KEYS,
     LAND_COVER_LABELS,
     LAND_FORM_LABELS,
     SubcatchmentParameters,
@@ -24,6 +26,7 @@ from rcg.exceptions import ValidationError
 from rcg.fuzzy.categories import LandCover, LandForm
 
 __all__ = [
+    "KNOWN_INFILTRATION_KEYS",
     "max_area_ha",
     "min_area_ha",
     "validate_area",
@@ -107,7 +110,7 @@ _PARAMETER_BOUNDS: dict[str, tuple[float, bool, float]] = {
 
 
 def validate_parameters(parameters: SubcatchmentParameters) -> SubcatchmentParameters:
-    """Check every numeric value of ``parameters`` before it is written to a model.
+    """Check every value of ``parameters`` before it is written to a model.
 
     :func:`rcg.preview` always produces valid values; this guards hand-made or
     modified :class:`~rcg.catchment.SubcatchmentParameters`.
@@ -120,23 +123,53 @@ def validate_parameters(parameters: SubcatchmentParameters) -> SubcatchmentParam
     Raises
     ------
     ValidationError
-        If a value is not a finite number or is outside its SWMM range: area within the
-        accepted limits, ``0 <= impervious_pct <= 100``, ``slope_pct >= 0``,
+        If a value is not a finite number or is outside its SWMM range: valid
+        categories (``land_form`` and ``land_cover``), area within the accepted
+        limits, ``0 <= impervious_pct <= 100``, ``slope_pct >= 0``,
+        ``0 <= catchment_score <= 100``, valid ``catchment_type``,
         ``width_m > 0``, Manning's n ``> 0``, depression storage ``>= 0``,
-        ``0 <= pct_zero <= 100`` and infiltration values ``>= 0``.
+        ``0 <= pct_zero <= 100`` and infiltration values ``>= 0`` for known keys.
     """
     if not isinstance(parameters, SubcatchmentParameters):
         raise ValidationError(
             f"Expected SubcatchmentParameters, got {type(parameters).__name__}", field="parameters", value=parameters
         )
+    validate_land_form(parameters.land_form)
+    validate_land_cover(parameters.land_cover)
     validate_area(_finite(parameters.area_ha, "area_ha"))
+    score = _finite(parameters.catchment_score, "catchment_score")
+    if not (0.0 <= score <= 100.0):
+        raise ValidationError(
+            f"catchment_score must be between 0 and 100, got: {score}",
+            field="catchment_score",
+            value=score,
+        )
+    valid_types = {"urban", "suburban", "rural", "forests", "meadows", "arable", "mountains"}
+    if parameters.catchment_type not in valid_types:
+        raise ValidationError(
+            f"Invalid catchment_type {parameters.catchment_type!r}; expected one of {', '.join(sorted(valid_types))}",
+            field="catchment_type",
+            value=parameters.catchment_type,
+        )
     for name, (low, inclusive, high) in _PARAMETER_BOUNDS.items():
         value = _finite(getattr(parameters, name), name)
         if value < low or (value == low and not inclusive) or value > high:
             lower = f"{'>=' if inclusive else '>'} {low:g}"
             bounds = lower if math.isinf(high) else f"{lower} and <= {high:g}"
             raise ValidationError(f"{name} must be {bounds}, got: {value!r}", field=name, value=value)
+    if not isinstance(parameters.infiltration, Mapping):
+        raise ValidationError(
+            f"infiltration must be a mapping, got {type(parameters.infiltration).__name__}",
+            field="infiltration",
+            value=parameters.infiltration,
+        )
     for key, raw in parameters.infiltration.items():
+        if key not in KNOWN_INFILTRATION_KEYS:
+            raise ValidationError(
+                f"Unknown infiltration parameter {key!r}. Valid parameters are: {', '.join(sorted(KNOWN_INFILTRATION_KEYS))}",
+                field=f"infiltration[{key}]",
+                value=key,
+            )
         value = _finite(raw, f"infiltration[{key}]")
         if value < 0:
             raise ValidationError(
@@ -155,9 +188,18 @@ def _validate_category(
     what = field_name.replace("_", " ")
     if isinstance(value, enum_cls):
         return value
+    if isinstance(value, (int, numbers.Integral)) and not isinstance(value, bool):
+        try:
+            return enum_cls(int(value))
+        except ValueError:
+            raise ValidationError(
+                f"Invalid {what} code {value}. Valid integer codes are 1-{len(enum_cls)}.",
+                field=field_name,
+                value=value,
+            ) from None
     if not isinstance(value, str):
         raise ValidationError(
-            f"{what.capitalize()} must be a {enum_cls.__name__} or a string, got {type(value).__name__}",
+            f"{what.capitalize()} must be a {enum_cls.__name__}, integer code or string, got {type(value).__name__}",
             field=field_name,
             value=value,
         )
@@ -178,8 +220,8 @@ def _validate_category(
     raise ValidationError(f"Unknown {what} {value!r}. {hint}", field=field_name, value=value)
 
 
-def validate_land_form(value: LandForm | str) -> LandForm:
-    """Resolve a land form given as enum, snake_case name or human label (case-insensitive).
+def validate_land_form(value: LandForm | int | str) -> LandForm:
+    """Resolve a land form given as enum, integer code (1-9), snake_case name or human label (case-insensitive).
 
     Raises
     ------
@@ -189,8 +231,8 @@ def validate_land_form(value: LandForm | str) -> LandForm:
     return _validate_category(value, LandForm, lookup_land_form, LAND_FORM_LABELS, "land_form")
 
 
-def validate_land_cover(value: LandCover | str) -> LandCover:
-    """Resolve a land cover given as enum, snake_case name or human label (case-insensitive).
+def validate_land_cover(value: LandCover | int | str) -> LandCover:
+    """Resolve a land cover given as enum, integer code (1-14), snake_case name or human label (case-insensitive).
 
     Raises
     ------
