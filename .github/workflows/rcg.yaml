@@ -31,6 +31,8 @@ jobs:
         run: uvx ruff check . --output-format=github
       - name: Check formatting
         run: uvx ruff format --check .
+      - name: Build documentation with Sphinx
+        run: uv run --no-project --with-requirements docs/requirements.txt python -m sphinx -W --keep-going -E -b html docs/source docs/_build/html
 
   type-check:
     runs-on: ubuntu-latest

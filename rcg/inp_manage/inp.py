@@ -54,15 +54,15 @@ class ModelParameters:
 class BuildCatchments:
     """Deprecated: add subcatchments to a SWMM model file.
 
+    .. deprecated:: 2.0
+        Use :func:`rcg.preview` and :func:`rcg.apply`.
+
     Parameters
     ----------
     file_path : str or Path
         SWMM ``.inp`` file, updated in place.
     backup : bool, optional
         Keep a timestamped backup before each write (default ``True``).
-
-    .. deprecated:: 2.0
-        Use :func:`rcg.preview` and :func:`rcg.apply`.
     """
 
     def __init__(self, file_path: str | Path, backup: bool = True) -> None:

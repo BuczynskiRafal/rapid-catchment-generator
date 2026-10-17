@@ -21,7 +21,7 @@ from .categories import Catchments, Impervious, LandCover, LandForm, Slope
 from .rule_engine import RuleEngine, rule
 
 RuleRow = tuple[LandCover, tuple[LandForm, ...], Slope, Impervious, Catchments]
-"""One table row: land cover, the land forms it covers, then slope, impervious and catchment."""
+"""One table row — land cover, the land forms it covers, then slope, impervious and catchment."""
 
 _C, _F, _S, _I, _K = LandCover, LandForm, Slope, Impervious, Catchments
 
@@ -186,6 +186,7 @@ RULE_TABLE: tuple[RuleRow, ...] = (
         _S.steeper_hills_and_foothills, _I.mountains_vegetated, _K.mountains),
 )
 # fmt: on
+"""Canonical 126-pair fuzzy rule table mapping ``(land_cover, land_forms)`` to ``(slope, impervious, catchment)``."""
 
 
 def check_rule_table(table: Sequence[RuleRow]) -> None:

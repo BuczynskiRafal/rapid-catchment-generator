@@ -1,41 +1,30 @@
-Inp Manage Package
-====================
+SWMM File Management (``rcg.inp_manage``)
+=========================================
 
-Submodules
-----------
+.. automodule:: rcg.inp_manage
+   :no-members:
 
-inp_manage.writer module
-------------------------------
+Model Writer (``rcg.inp_manage.writer``)
+----------------------------------------
 
 .. automodule:: rcg.inp_manage.writer
-   :members:
-   :no-index:
+   :members: append_subcatchments, inspect_model, DESIGN_STORM
    :show-inheritance:
 
-inp_manage.backups module
--------------------------
+Model Backups (``rcg.inp_manage.backups``)
+------------------------------------------
 
 .. automodule:: rcg.inp_manage.backups
    :members:
-   :no-index:
    :show-inheritance:
 
-inp_manage.inp module (deprecated)
-----------------------------------
+Legacy 1.x Facade (``rcg.inp_manage.inp``)
+------------------------------------------
 
 .. deprecated:: 2.0
-   Use :func:`rcg.preview` and :func:`rcg.apply` instead. This module is a thin facade
-   kept for backwards compatibility and will be removed in a future release.
+   Use :func:`rcg.preview` and :func:`rcg.apply` instead. This module is a thin
+   compatibility facade and will be removed in a future release.
 
 .. automodule:: rcg.inp_manage.inp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: rcg.inp_manage
-   :members:
-   :undoc-members:
+   :members: BuildCatchments, ModelParameters
    :show-inheritance:

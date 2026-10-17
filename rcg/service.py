@@ -229,11 +229,11 @@ def restore(backup_path: str | Path, target_path: str | Path, *, expected_sha256
     Parameters
     ----------
     backup_path : str or Path
-        :attr:`ApplyResult.backup_path` of the apply to undo. The backup is kept.
+        :attr:`~rcg.ApplyResult.backup_path` of the apply to undo. The backup is kept.
     target_path : str or Path
-        :attr:`ApplyResult.output_path` of that apply.
+        :attr:`~rcg.ApplyResult.output_path` of that apply.
     expected_sha256 : str, optional
-        :attr:`ApplyResult.written_sha256`. When given, the file is restored only if it
+        :attr:`~rcg.ApplyResult.written_sha256`. When given, the file is restored only if it
         is still exactly as RCG wrote it, so edits made elsewhere are not lost.
 
     Raises

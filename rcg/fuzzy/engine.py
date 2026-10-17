@@ -44,13 +44,6 @@ class FuzzyEngine:
         Membership functions to use. Defaults to the shared instance.
     rule_engine : RuleEngine, optional
         Rule set to use. Defaults to the rules from ``rule_definitions``.
-
-    Attributes
-    ----------
-    memberships : Memberships
-        Membership functions used for inference.
-    slope_sim, impervious_sim, catchment_sim : ctrl.ControlSystemSimulation
-        Simulations for the three outputs.
     """
 
     _lock: ClassVar[threading.RLock] = threading.RLock()
@@ -402,8 +395,12 @@ class Prototype:
 
     Attributes
     ----------
-    slope_result, impervious_result, catchment_result : float
-        Fuzzy outputs.
+    slope_result : float
+        Defuzzified slope output in percent.
+    impervious_result : float
+        Defuzzified impervious surface share in percent.
+    catchment_result : float
+        Defuzzified catchment score (0-100).
     """
 
     def __init__(self, land_form: LandForm, land_cover: LandCover, engine: FuzzyEngine | None = None) -> None:

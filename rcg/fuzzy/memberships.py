@@ -5,6 +5,7 @@ This module provides the Memberships class and factory functions for creating
 membership function instances with proper dependency injection support.
 
 Numerical notes on universe discretization and centroid defuzzification:
+
 - Output universes use an integer step of ``1.0`` (``slope`` in ``[0, 60]``,
   ``impervious`` and ``catchment`` in ``[0, 100]``). For triangular terms with
   half-integer vertices (such as ``slope = (0, 1, 2.5)`` or ``(1, 2.5, 5)``),
@@ -40,9 +41,10 @@ class Memberships:
     """
     Class defining fuzzy membership functions for land form, land cover, slope, impervious, and catchment.
 
-    Example:
-        memberships = Memberships()
-        # Ready to use: memberships.slope, etc.
+    Examples
+    --------
+    >>> memberships = Memberships()
+    >>> # Ready to use: memberships.slope, etc.
     """
 
     def __init__(self) -> None:
@@ -63,7 +65,7 @@ class Memberships:
         self.variables: Mapping[str, ctrl.Antecedent | ctrl.Consequent] = MappingProxyType(
             {v.label: v for v in (self.land_form_type, self.land_cover_type, self.slope, self.impervious, self.catchment)}
         )
-        """Every fuzzy variable by label: ``land_form``, ``land_cover``, ``slope``, ``impervious``, ``catchment``."""
+        """Every fuzzy variable by label — ``land_form``, ``land_cover``, ``slope``, ``impervious``, ``catchment``."""
 
     def term(self, variable: str, name: str) -> Any:
         """Return the term ``name`` of the fuzzy variable labelled ``variable``.
