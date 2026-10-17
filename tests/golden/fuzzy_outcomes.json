@@ -277,12 +277,12 @@
    "slope": 1.25
   },
   "flats_and_plateaus|urban_highly_impervious": {
-   "catchment": 87.333333,
-   "catchment_type": "mountains",
+   "catchment": 5.0,
+   "catchment_type": "urban",
    "impervious": 86.666667,
    "n_imperv": 0.013,
-   "n_perv": 0.05,
-   "pct_zero": 10,
+   "n_perv": 0.15,
+   "pct_zero": 50,
    "s_imperv": 1.27,
    "s_perv": 5.08,
    "slope": 1.25

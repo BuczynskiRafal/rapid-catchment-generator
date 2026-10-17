@@ -104,7 +104,7 @@ RULE_TABLE: tuple[RuleRow, ...] = (
     (_C.urban_highly_impervious, (_F.marshes_and_lowlands,),
         _S.marshes_and_lowlands, _I.urban_highly_impervious, _K.urban),
     (_C.urban_highly_impervious, (_F.flats_and_plateaus,),
-        _S.flats_and_plateaus, _I.urban_highly_impervious, _K.mountains),
+        _S.flats_and_plateaus, _I.urban_highly_impervious, _K.urban),
     (_C.urban_highly_impervious, (_F.flats_and_plateaus_in_combination_with_hills,),
         _S.flats_and_plateaus_in_combination_with_hills, _I.urban_highly_impervious, _K.urban),
     (_C.urban_highly_impervious, (_F.hills_with_gentle_slopes, _F.steeper_hills_and_foothills, _F.hills_and_outcrops_of_mountain_ranges),

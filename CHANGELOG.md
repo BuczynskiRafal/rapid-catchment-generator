@@ -38,6 +38,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   `defaults.json` instead of a separate hard-coded value. A model opened with the app or dropped on the window also
   focuses the path field.
 
+### Fixed
+- Fixed hydrological rule table row 34: flat terrain (`flats_and_plateaus`) with highly impervious urban land cover (`urban_highly_impervious`) is now correctly classified as `urban` catchment (score `5.0`, `n_perv` `0.15`, `pct_zero` `50`) instead of `mountains`.
+
 ### Deprecated
 - `rcg.fuzzy.engine.create_fuzzy_engine`: call `FuzzyEngine(...)` directly.
 - The 1.x aliases in `rcg.fuzzy.categories` (`land_form`, `land_cover`, `slope_ctgr`, `impervious_ctgr`,
