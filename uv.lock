@@ -1465,17 +1465,16 @@ wheels = [
 
 [[package]]
 name = "pyswmm"
-version = "1.5.1"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aenum" },
     { name = "julian" },
     { name = "packaging" },
     { name = "swmm-toolkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/7b/623a5c9eff6852434a6f2ed1d5c050b17d172884aaad829ed8d2194347b2/pyswmm-1.5.1.tar.gz", hash = "sha256:4d1f66835c5ad3662bfdf8edbbef701cc968302ea0da9686dd9bd68a366544dd", size = 78501, upload-time = "2023-12-01T20:49:23.478Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/02/a9b7236bca62fb59bb39b33531a9b8dfbdb9f006699b2914b32687cf95f8/pyswmm-2.2.0.tar.gz", hash = "sha256:0c1388a18113432013111cc6aa576c484d912ac6874d8cbe57100b02035f4491", size = 114353, upload-time = "2026-10-01T19:12:28.919Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/7b/4ce79b2b9e7b89e8f74cdc303074b8bdd319a4c58aa1e5fceaf31b338425/pyswmm-1.5.1-py3-none-any.whl", hash = "sha256:0ffb7e1ba3052582bc277256987bcd92a8acc9459b4d611a0b52a081dd016b08", size = 104306, upload-time = "2023-12-01T20:49:21.586Z" },
+    { url = "https://files.pythonhosted.org/packages/90/46/61fddca946611607becbb4dfce70726290b8cef599c142099f611d6daad4/pyswmm-2.2.0-py3-none-any.whl", hash = "sha256:9682b37af9617b9a1b399a8552808aea7c22a03f66a76dc1961d7372e217831f", size = 151314, upload-time = "2026-10-01T19:12:27.332Z" },
 ]
 
 [[package]]
@@ -1650,6 +1649,7 @@ dev = [
     { name = "pytest-mock" },
     { name = "pytest-qt" },
     { name = "ruff" },
+    { name = "swmm-toolkit" },
 ]
 gui = [
     { name = "pyside6" },
@@ -1662,7 +1662,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.21.6" },
     { name = "pandas", specifier = ">=1.3.5" },
     { name = "pyside6", marker = "extra == 'gui'", specifier = ">=6.8" },
-    { name = "pyswmm", marker = "extra == 'dev'" },
+    { name = "pyswmm", marker = "extra == 'dev'", specifier = ">=2.2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pytest-mock", marker = "extra == 'dev'" },
@@ -1670,6 +1670,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "scikit-fuzzy", specifier = ">=0.4.2" },
     { name = "scipy", specifier = ">=1.7" },
+    { name = "swmm-toolkit", marker = "extra == 'dev'", specifier = "!=0.17.0" },
     { name = "swmmio", specifier = ">=0.6.0" },
 ]
 provides-extras = ["gui", "dev"]
@@ -1963,25 +1964,25 @@ wheels = [
 
 [[package]]
 name = "swmm-toolkit"
-version = "0.17.0"
+version = "0.16.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aenum" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/6f/e059e9e7d3a7107cbd1dc5f897b0b29ae32b63b7a2287ad87d8928785db5/swmm_toolkit-0.17.0.tar.gz", hash = "sha256:83e8e9dccbac785aa4868643cdfc3972ff7ffe06f04fdfa6f603b82f5c643e72", size = 592747, upload-time = "2026-02-26T17:20:02.378Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/87/92b5bb9a90a25a6677f35405844ec15582b1dd9c5076350b5fc309542b9f/swmm_toolkit-0.16.2.tar.gz", hash = "sha256:6454f02b93ec90f09aab5a3bf1f618c3de6cfe456a67288cc4d130e0d692342f", size = 587219, upload-time = "2025-12-04T20:27:54.975Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/d6/24c8da26e3db21d4515d833f15c3551019c257dcb96d248bcd6078207c2d/swmm_toolkit-0.17.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:0390d0afdfb7fb3296638c813dd549b290e0028e6812aac4acab59b442f88870", size = 606795, upload-time = "2026-02-26T17:19:52.02Z" },
-    { url = "https://files.pythonhosted.org/packages/24/34/f0290172534bae205b9ac5a3f2f37f22c74d27b4db3fe3a8b0e262c0e781/swmm_toolkit-0.17.0-cp39-abi3-macosx_11_0_x86_64.whl", hash = "sha256:587025031c81548cd914018663bb4259e000601eb4224b36675aee266fb56e50", size = 682096, upload-time = "2026-02-26T17:19:53.696Z" },
-    { url = "https://files.pythonhosted.org/packages/f6/69/f3f182590129a0d36507823c956981ec4dc55ad30bf1712aaf7f0a4579b2/swmm_toolkit-0.17.0-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:f0d5026a98f14db88a79cf790b74877b6822f71e7a548b6618b55ce4a1b0f23e", size = 495529, upload-time = "2026-02-26T17:19:55.115Z" },
-    { url = "https://files.pythonhosted.org/packages/0a/0d/4954077349d3957903ee6b20fe0d4846b44328e6a2a9ce2d077c2f7b8ee3/swmm_toolkit-0.17.0-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:28737dd539d383a6d8ea2000fc372825b1e25bdaef076bd01fab816ebe62c06e", size = 520831, upload-time = "2026-02-26T17:19:56.562Z" },
-    { url = "https://files.pythonhosted.org/packages/86/82/609a6aa0f442481f7d307f527b4822b4c46827c812901a2473c608c59b7d/swmm_toolkit-0.17.0-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:34ca45714f790fc84e6884567cfd2af97c702dd5e6a1af6a9f3dd000210db6d2", size = 541304, upload-time = "2026-02-26T17:19:58.017Z" },
-    { url = "https://files.pythonhosted.org/packages/2f/1a/21817b7e1cd6ac3da0897cf1fed0034306569a81109bf40c924aac1eb1a6/swmm_toolkit-0.17.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:c7b81deebf0b65ba6021a6d362b8af14157ffb15781f7fd8ef4c6ca4911f8b80", size = 563777, upload-time = "2026-02-26T17:19:59.436Z" },
-    { url = "https://files.pythonhosted.org/packages/59/be/48a70a62de1ebeb1c2c099290853ac141ca757c2207c9170b335561abd8a/swmm_toolkit-0.17.0-cp39-abi3-win_amd64.whl", hash = "sha256:a8a5a3e5e282d8660fb268f41a87d0da5c3cbed8fae12545ca9fa89a4324187b", size = 1000363, upload-time = "2026-02-26T17:20:00.891Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/42/67c827dd8fba055fdd1b57bd68888edb39fd1ff49d40ac932cd40d292d2d/swmm_toolkit-0.16.2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:2ee67385709d0bd60393994a894aaf33ec70c6451cf5fed9bd76d8591e3568af", size = 601590, upload-time = "2025-12-04T20:27:44.04Z" },
+    { url = "https://files.pythonhosted.org/packages/45/c5/33d4d754781b9817c8ff3d1461110cf740ab8fc864cfb3f1d419a0878cd3/swmm_toolkit-0.16.2-cp39-abi3-macosx_11_0_x86_64.whl", hash = "sha256:96e312ef1f7d635759a6fcee90795b4055bdd1d65ea7a24c1be64137d6360e59", size = 676237, upload-time = "2025-12-04T20:27:45.584Z" },
+    { url = "https://files.pythonhosted.org/packages/17/72/3845def834bbcdba89f987a2fc08d4006c211a1c44cf1df5e9b965441ba8/swmm_toolkit-0.16.2-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:822bebc7bc0eec1d529dcc4fc04cd8a180fb7eaeabf56cb5a833c1e47a3573c3", size = 489259, upload-time = "2025-12-04T20:27:47.365Z" },
+    { url = "https://files.pythonhosted.org/packages/60/b6/4acd7dfc67e3056b51b3d519b6382d17f4a76da7e935c51497535bc3ea38/swmm_toolkit-0.16.2-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:df642c01184f5cf3b2467cfb7fadea430e4e907d65c7b87df7d1c9a177d87122", size = 513638, upload-time = "2025-12-04T20:27:48.975Z" },
+    { url = "https://files.pythonhosted.org/packages/44/4c/9fbc5665d4cd9df3fe5fccc84c606429e24ab2c0e64e4ae76b80dce57636/swmm_toolkit-0.16.2-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:f0963a4a15816aa2f29bab0337432b1a8d0f90e9420d316057cedfaa923a81a9", size = 534735, upload-time = "2025-12-04T20:27:50.317Z" },
+    { url = "https://files.pythonhosted.org/packages/88/df/93c7a82110ea4cae49064260f56387a0f13b4f1bae1f681c74772206954b/swmm_toolkit-0.16.2-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:5431fc4687f361b2eb32b905c6d1965af2ffec9a012366b465899bd4dd69dca6", size = 556656, upload-time = "2025-12-04T20:27:51.966Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/15/1e03f57eb2ea504ab868da8145c7d92b26102e2c7ffcddabd09cf55a0ad1/swmm_toolkit-0.16.2-cp39-abi3-win_amd64.whl", hash = "sha256:06c56f4e2ac916e1fbc9c6cf9d1573cfcde3fe11fdd6543ac37c463f2fe17603", size = 998980, upload-time = "2025-12-04T20:27:53.646Z" },
 ]
 
 [[package]]
 name = "swmmio"
-version = "0.8.6"
+version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "geojson" },
@@ -1998,14 +1999,12 @@ dependencies = [
     { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "pyproj", version = "3.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pyshp" },
-    { name = "pyswmm" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/08/04816276fc33d2f48a60e2a05c0ea8f20868fbc984cec4733f5217bc237d/swmmio-0.8.6.tar.gz", hash = "sha256:3fb44d2f6433bcc238a5fa3418424d15e5deac42703af8e305b27b5dcf841a55", size = 257349, upload-time = "2026-09-23T00:57:15.356Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/68/5d6305ec31c0083804152e660026802387f2b1039e1d2eb38f19e1c82063/swmmio-0.8.6-py3-none-any.whl", hash = "sha256:3daf7e9abb66a34eba9ee4e93813f840ada2c54ad107d6a2b877e4053120d9e7", size = 309179, upload-time = "2026-09-23T00:57:13.888Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/ad/dda16dbdb2d33286d3a3c463c8243a269176e6a91ed49bed083a1287e408/swmmio-0.8.2-py3-none-any.whl", hash = "sha256:3cc81be43186c97e29f8ca2564e4554e53fe128653058cdf478e2d80d077b704", size = 308137, upload-time = "2025-06-11T19:54:51.237Z" },
 ]
 
 [[package]]

@@ -42,7 +42,8 @@ dev = [
     "pytest-cov",
     "pytest-mock",
     "pytest-qt",
-    "pyswmm",  # end-to-end tests run the written models in SWMM
+    "pyswmm>=2.2.0",  # end-to-end tests run the written models in SWMM
+    "swmm-toolkit!=0.17.0",
     "mypy",
     "ruff",
 ]

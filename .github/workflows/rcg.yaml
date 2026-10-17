@@ -24,7 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
+          cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
       - name: Lint with ruff
@@ -40,13 +40,12 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
+          cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
       - name: Install dependencies
         run: |
-          uv venv --python 3.12
-          uv pip install -e ".[dev,gui]"
+          uv sync --locked --extra dev --extra gui --python 3.12
       - name: Type check with mypy
         run: uv run --no-sync mypy rcg
 
@@ -68,7 +67,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
+          cache-dependency-glob: "uv.lock"
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
       - name: Install Qt system libraries (Linux)
@@ -76,8 +75,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libxcb-cursor0
       - name: Install dependencies
         run: |
-          uv venv --python ${{ matrix.python-version }}
-          uv pip install -e ".[dev,gui]" pyswmm
+          uv sync --locked --extra dev --extra gui --python ${{ matrix.python-version }}
+      - name: Fix Mach-O code signatures (macOS arm64 defense-in-depth)
+        if: runner.os == 'macOS'
+        run: |
+          find .venv -type f \( -name "*.dylib" -o -name "*.so" \) -exec codesign --force --sign - {} +
       - name: Test with pytest
         run: uv run --no-sync pytest -p no:cacheprovider -rs --cov=rcg --cov-report=xml
       - name: Upload coverage reports to Codecov
@@ -115,7 +117,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
+          cache-dependency-glob: "uv.lock"
       - name: Set up Python
         run: uv python install 3.12
       - name: Install Qt system libraries (Linux)
