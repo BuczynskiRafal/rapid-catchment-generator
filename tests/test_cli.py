@@ -15,6 +15,7 @@ ADD_ARGS = ["--area", "5", "--land-form", "flats_and_plateaus", "--land-cover", 
 @pytest.fixture(autouse=True)
 def _shared_engine(engine):
     """Make sure the CLI reuses the session engine instead of building its own."""
+    return engine
 
 
 def run(capsys, *argv):
@@ -24,10 +25,22 @@ def run(capsys, *argv):
 
 
 def test_python_dash_m_help_and_version():
-    help_run = subprocess.run([sys.executable, "-m", "rcg", "--help"], capture_output=True, text=True, cwd=REPO_ROOT)
+    help_run = subprocess.run(
+        [sys.executable, "-m", "rcg", "--help"],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        timeout=15,
+    )
     assert help_run.returncode == 0
     assert "add" in help_run.stdout and "list-options" in help_run.stdout and "inspect" in help_run.stdout
-    version_run = subprocess.run([sys.executable, "-m", "rcg", "--version"], capture_output=True, text=True, cwd=REPO_ROOT)
+    version_run = subprocess.run(
+        [sys.executable, "-m", "rcg", "--version"],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        timeout=15,
+    )
     assert version_run.stdout.strip() == f"rcg {__version__}"
 
 
@@ -91,7 +104,10 @@ def test_preview_text_and_json(capsys):
 
 
 def test_add_text_reports_us_units(capsys, example_inp):
-    example_inp.write_text(example_inp.read_text().replace("FLOW_UNITS           CMS", "FLOW_UNITS           CFS"))
+    example_inp.write_text(
+        example_inp.read_text(encoding="utf-8").replace("FLOW_UNITS           CMS", "FLOW_UNITS           CFS"),
+        encoding="utf-8",
+    )
     code, out, _ = run(capsys, "add", str(example_inp), *ADD_ARGS, "--no-backup")
     assert code == 0
     assert "Flow units CFS (US units: acres, feet, inches), infiltration MODIFIED_GREEN_AMPT" in out
@@ -119,7 +135,7 @@ def test_inspect_text_and_json(capsys, example_inp):
 
 def test_inspect_model_without_gage_or_nodes(capsys, tmp_path):
     path = tmp_path / "bare.inp"
-    path.write_text("[TITLE]\nbare\n")
+    path.write_text("[TITLE]\nbare\n", encoding="utf-8")
     code, out, _ = run(capsys, "inspect", str(path))
     assert code == 0
     assert "Flow units         CFS (US: acres, feet, inches)" in out
@@ -132,7 +148,7 @@ def test_inspect_errors(capsys, tmp_path):
         main(["inspect", str(tmp_path / "missing.inp")])
     assert info.value.code == 2
     notes = tmp_path / "notes.inp"
-    notes.write_text("just some notes\n")
+    notes.write_text("just some notes\n", encoding="utf-8")
     code, _, err = run(capsys, "inspect", str(notes))
     assert code == 1
     assert "not a SWMM model" in err
@@ -172,7 +188,10 @@ def test_did_you_mean_is_shown(capsys):
 
 def test_model_errors_exit_1(capsys, tmp_path):
     bad = tmp_path / "bad.inp"
-    bad.write_text("[SUBCATCHMENTS]\nS1 RG1 O1 1 2 3 4 5 6 7 8 9 10 11 12\n[OPTIONS]\nnot\toptions\tat all\n")
+    bad.write_text(
+        "[SUBCATCHMENTS]\nS1 RG1 O1 1 2 3 4 5 6 7 8 9 10 11 12\n[OPTIONS]\nnot\toptions\tat all\n",
+        encoding="utf-8",
+    )
     code, _, err = run(capsys, "add", str(bad), *ADD_ARGS)
     assert code == 1
     assert "rcg: error:" in err
@@ -187,3 +206,11 @@ def test_unexpected_errors_exit_1(capsys, example_inp, monkeypatch):
     monkeypatch.setattr(rcg.service, "apply", explode)
     code, _, _ = run(capsys, "add", str(example_inp), *ADD_ARGS)
     assert code == 1
+
+
+def test_verbose_flag_enables_debug_logging(capsys, example_inp):
+    code, out, err = run(capsys, "-v", "add", str(example_inp), *ADD_ARGS, "--no-backup")
+    assert code == 0
+    assert "Added S16" in out
+    assert "DEBUG" in err
+    assert "Wrote" in err

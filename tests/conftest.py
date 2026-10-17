@@ -20,7 +20,7 @@ LEGACY_INP = Path(__file__).resolve().parent / "inp_manage" / "test_file.inp"
 
 @pytest.fixture(autouse=True)
 def _restore_rcg_logger() -> Iterator[None]:
-    """Undo what ``rcg.cli.main`` / ``setup_logging`` did to the ``rcg`` logger in a test."""
+    """Undo what ``rcg.cli.main`` / ``setup_logging`` did to the ``rcg`` logger and its children in a test."""
     rcg_logger = logging.getLogger("rcg")
     handlers, level, propagate = list(rcg_logger.handlers), rcg_logger.level, rcg_logger.propagate
     yield
@@ -30,6 +30,13 @@ def _restore_rcg_logger() -> Iterator[None]:
     rcg_logger.handlers[:] = handlers
     rcg_logger.setLevel(level)
     rcg_logger.propagate = propagate
+    for name, obj in list(logging.Logger.manager.loggerDict.items()):
+        if name.startswith("rcg.") and isinstance(obj, logging.Logger):
+            for handler in list(obj.handlers):
+                obj.removeHandler(handler)
+                handler.close()
+            obj.setLevel(logging.NOTSET)
+            obj.propagate = True
 
 
 @pytest.fixture(scope="session")

@@ -75,7 +75,7 @@ def test_defaults_are_cached_and_read_only():
 )
 def test_malformed_defaults(tmp_path, content, match):
     path = tmp_path / "defaults.json"
-    path.write_text(content)
+    path.write_text(content, encoding="utf-8")
     with pytest.raises(ConfigurationError, match=match):
         load_defaults(path)
 
@@ -97,7 +97,7 @@ VALID = {
 )
 def test_malformed_infiltration_defaults(tmp_path, infiltration, match):
     path = tmp_path / "defaults.json"
-    path.write_text(json.dumps({**VALID, "infiltration_defaults": infiltration}))
+    path.write_text(json.dumps({**VALID, "infiltration_defaults": infiltration}), encoding="utf-8")
     with pytest.raises(ConfigurationError, match=match):
         load_defaults(path)
 

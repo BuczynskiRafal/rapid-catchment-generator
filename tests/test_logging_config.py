@@ -60,7 +60,7 @@ def test_unwritable_log_file_leaves_the_logger_unchanged(clean_logger, tmp_path)
     setup_logging(logging.INFO, NAME)
     before = list(clean_logger.handlers)
     blocker = tmp_path / "file"
-    blocker.write_text("")
+    blocker.write_text("", encoding="utf-8")
     with pytest.raises(OSError):
         setup_logging(logging.DEBUG, NAME, log_file=blocker / "rcg.log")  # parent is a file
     assert clean_logger.handlers == before

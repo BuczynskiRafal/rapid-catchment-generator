@@ -39,12 +39,12 @@ def test_apply_then_simulate(example_inp, engine):
 
 def test_us_units_and_horton_model_runs_in_swmm(example_inp, engine):
     """A CFS + HORTON model gets acres, feet, inches and a Horton row that SWMM accepts."""
-    text = example_inp.read_text()
+    text = example_inp.read_text(encoding="utf-8")
     text = text.replace("FLOW_UNITS           CMS", "FLOW_UNITS           CFS")
     text = text.replace("INFILTRATION         MODIFIED_GREEN_AMPT", "INFILTRATION         HORTON")
     # Existing rows must be valid for the model's method, too.
     text = re.sub(r"(?m)^(S\d+)\s+3\.5\s+0\.5\s+0\.25\s+7\s+0\s*$", r"\1    3   0.5   4   7   0", text)
-    example_inp.write_text(text)
+    example_inp.write_text(text, encoding="utf-8")
 
     params = rcg.preview(5.5, "flats_and_plateaus", "urban_moderately_impervious", engine=engine)
     result = rcg.apply(example_inp, params, backup=False)
@@ -55,6 +55,34 @@ def test_us_units_and_horton_model_runs_in_swmm(example_inp, engine):
         new = pyswmm.Subcatchments(sim)[sid]
         assert new.area == pytest.approx(5.5 * 2.4710538, abs=1e-6)  # acres
         assert new.width == pytest.approx(params.width_m * 3.2808399, abs=0.01)  # feet
+        for _ in sim:
+            pass
+        stats = new.statistics
+    assert stats["runoff"] > 0
+    assert stats["infiltration"] > 0
+
+
+@pytest.mark.parametrize(
+    ("method", "existing_row"),
+    [
+        ("CURVE_NUMBER", r"\1    80   0.5   7"),
+        ("MODIFIED_HORTON", r"\1    3   0.5   4   7   0"),
+        ("GREEN_AMPT", r"\1    3.5   0.5   0.25   7   0"),
+    ],
+)
+def test_all_infiltration_methods_run_in_swmm(example_inp, engine, method, existing_row):
+    text = example_inp.read_text(encoding="utf-8")
+    text = text.replace("INFILTRATION         MODIFIED_GREEN_AMPT", f"INFILTRATION         {method}")
+    text = re.sub(r"(?m)^(S\d+)\s+3\.5\s+0\.5\s+0\.25\s+7\s+0\s*$", existing_row, text)
+    example_inp.write_text(text, encoding="utf-8")
+
+    params = rcg.preview(5.5, "flats_and_plateaus", "urban_moderately_impervious", engine=engine)
+    result = rcg.apply(example_inp, params, backup=False)
+    assert result.infiltration_method == method
+    sid = result.subcatchment_ids[0]
+
+    with pyswmm.Simulation(str(example_inp)) as sim:
+        new = pyswmm.Subcatchments(sim)[sid]
         for _ in sim:
             pass
         stats = new.statistics
