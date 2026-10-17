@@ -59,7 +59,7 @@ from rcg.catchment import (
     is_metric,
 )
 from rcg.exceptions import ModelOperationError, ValidationError
-from rcg.inp_manage.backups import BACKUP_DIR_NAME, create_backup
+from rcg.inp_manage.backups import BACKUP_DIR_NAME, _fsync_dir, create_backup
 from rcg.logging_config import get_logger
 from rcg.validation import validate_parameters
 
@@ -253,10 +253,23 @@ class _Model:
     doc: _InpDocument
     flow_units: str
     infiltration_method: str
+    map_units: str | None = None
 
     @property
     def is_metric(self) -> bool:
         return is_metric(self.flow_units)  # the module-level rcg.catchment.is_metric
+
+    @property
+    def is_feet_map(self) -> bool:
+        """True if the model map coordinates are in feet."""
+        if self.map_units is not None:
+            unit = self.map_units.upper()
+            if unit in ("FEET", "FOOT", "FT"):
+                return True
+            if unit in ("METERS", "METRES", "M"):
+                return False
+        # If [MAP] or UNITS is absent, or DEGREES/NONE, fall back to flow units
+        return not self.is_metric
 
 
 def _read_error(path: Path, message: str) -> ModelOperationError:
@@ -313,6 +326,14 @@ def _options(doc: _InpDocument, path: Path) -> tuple[str, str]:
     return flow_units, method
 
 
+def _map_units(doc: _InpDocument) -> str | None:
+    """Return UNITS from ``[MAP]``, or None if unspecified."""
+    for row in doc.rows("MAP"):
+        if len(row) >= 2 and row[0].upper() == "UNITS":
+            return row[1].strip('"').upper()
+    return None
+
+
 def _read_model(path: Path) -> _Model:
     try:
         raw = path.read_bytes()
@@ -323,7 +344,15 @@ def _read_model(path: Path) -> _Model:
     doc = _InpDocument(raw.decode("latin-1"))
     _check_structure(raw, doc, path)
     flow_units, method = _options(doc, path)
-    return _Model(path=path, raw=raw, doc=doc, flow_units=flow_units, infiltration_method=method)
+    map_units = _map_units(doc)
+    return _Model(
+        path=path,
+        raw=raw,
+        doc=doc,
+        flow_units=flow_units,
+        infiltration_method=method,
+        map_units=map_units,
+    )
 
 
 def _existing_raingage(doc: _InpDocument) -> str | None:
@@ -461,13 +490,65 @@ def _last_vertex(doc: _InpDocument) -> tuple[float, float]:
     return 0.0, 0.0
 
 
+def _has_any(mapping: Mapping[str, float], *keys: str) -> bool:
+    lower_keys = {k.lower() for k in keys}
+    return any(str(k).lower() in lower_keys for k in mapping)
+
+
+def _val(infil: Mapping[str, float], default: float, *keys: str) -> float:
+    for k in keys:
+        if k in infil:
+            return float(infil[k])
+    lower_map = {str(k).lower(): v for k, v in infil.items()}
+    for k in keys:
+        if k.lower() in lower_map:
+            return float(lower_map[k.lower()])
+    return float(default)
+
+
 def _infiltration_row(p: SubcatchmentParameters, method: str) -> list[float]:
-    if base_infiltration_method(method) == "GREEN_AMPT":
-        missing = [k for k in INFILTRATION_KEYS if k not in p.infiltration]
-        if missing:
-            raise ModelOperationError(f"Infiltration parameters missing: {', '.join(missing)}", operation="apply")
-        return [p.infiltration[k] for k in INFILTRATION_KEYS]
-    return list(infiltration_for(method).values())
+    base = base_infiltration_method(method)
+    defaults = infiltration_for(method)
+    infil = p.infiltration
+
+    if base == "GREEN_AMPT":
+        if _has_any(infil, "Suction", "Ksat", "IMD"):
+            missing = [k for k in ("Suction", "Ksat", "IMD") if not _has_any(infil, k)]
+            if missing:
+                raise ModelOperationError(f"Infiltration parameters missing: {', '.join(missing)}", operation="apply")
+            return [
+                _val(infil, defaults["Suction"], "Suction"),
+                _val(infil, defaults["Ksat"], "Ksat"),
+                _val(infil, defaults["IMD"], "IMD"),
+                _val(infil, defaults.get("Param4", 7.0), "Param4"),
+                _val(infil, defaults.get("Param5", 0.0), "Param5"),
+            ]
+        return list(defaults.values())
+
+    if base == "HORTON":
+        if _has_any(infil, "MaxRate", "MinRate", "Decay"):
+            missing = [k for k in ("MaxRate", "MinRate", "Decay") if not _has_any(infil, k)]
+            if missing:
+                raise ModelOperationError(f"Infiltration parameters missing: {', '.join(missing)}", operation="apply")
+            return [
+                _val(infil, defaults["MaxRate"], "MaxRate"),
+                _val(infil, defaults["MinRate"], "MinRate"),
+                _val(infil, defaults["Decay"], "Decay"),
+                _val(infil, defaults["DryTime"], "DryTime"),
+                _val(infil, defaults["MaxInfil"], "MaxInfil"),
+            ]
+        return list(defaults.values())
+
+    if base == "CURVE_NUMBER":
+        if _has_any(infil, "CurvNo", "CurveNum"):
+            return [
+                _val(infil, defaults["CurveNum"], "CurvNo", "CurveNum"),
+                _val(infil, defaults["Conductivity"], "Conductivity"),
+                _val(infil, defaults["DryTime"], "DryTime"),
+            ]
+        return list(defaults.values())
+
+    return list(defaults.values())
 
 
 def _ensure_raingage(doc: _InpDocument) -> str:
@@ -522,7 +603,8 @@ def _edit(model: _Model, items: Sequence[SubcatchmentParameters]) -> _Plan:
             )
         )
         infil_rows.append(_row(sid, *_infiltration_row(p, model.infiltration_method)))
-        side = math.sqrt(p.area_ha * 10_000)  # map units are unknown; drawn in metres
+        scale = FEET_PER_METRE if model.is_feet_map else 1.0
+        side = math.sqrt(p.area_ha * 10_000) * scale
         square = ((x, y), (x + side, y), (x + side, y - side), (x, y - side))
         poly_rows.extend(_row(sid, round(px, 3), round(py, 3)) for px, py in square)
         x, y = square[-1]
@@ -639,6 +721,7 @@ def _write_atomic(target: Path, data: bytes, *, backup: bool, source: _Model) ->
         _ensure_unchanged(source)
         os.replace(tmp, target)
         replaced = True
+        _fsync_dir(target.parent)
     except OSError as e:
         raise ModelOperationError(f"Cannot write {target}: {e}", operation="write", model_path=str(target)) from e
     finally:

@@ -193,7 +193,7 @@ target and moved into place, so an interrupted write cannot leave a damaged mode
   `[RAINGAGES]` table is never overwritten.
 * **Outlet:** the last outfall, otherwise the last junction, otherwise the subcatchment itself.
 * **Polygon:** a square of the subcatchment's area placed to the right of the last polygon vertex (or at the origin).
-  Polygons are always in metres.
+  Coordinates are scaled to match the model's map units (metres or feet, derived from `[MAP]` or the model flow units).
 * **Units:** the model's `FLOW_UNITS` decides. SI models (`CMS`, `LPS`, `MLD`) get hectares, metres and millimetres.
   US models (`CFS`, `GPM`, `MGD`) get the area in acres (x 2.4710538), the width in feet (x 3.2808399) and depression
   storage in inches (/ 25.4). Infiltration values are written as they are, without conversion.

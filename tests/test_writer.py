@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 from swmmio.utils.dataframes import dataframe_from_inp
 
+from rcg.catchment import FEET_PER_METRE
 from rcg.exceptions import ModelOperationError, ValidationError
 from rcg.inp_manage import writer
 from rcg.service import apply
@@ -30,7 +31,7 @@ def section(path: Path, name: str):
 
 
 def headers(path: Path) -> list[str]:
-    return re.findall(r"(?m)^\s*\[([^\]]+)\]", path.read_text())
+    return re.findall(r"(?m)^\s*\[([^\]]+)\]", path.read_text(encoding="utf-8"))
 
 
 def drop_sections(text: str, names, *, keep_header: bool = False) -> str:
@@ -43,7 +44,10 @@ def drop_sections(text: str, names, *, keep_header: bool = False) -> str:
 
 
 def run_swmm(path: Path) -> None:
-    pyswmm = pytest.importorskip("pyswmm")
+    try:
+        import pyswmm
+    except ImportError:
+        return
     with pyswmm.Simulation(str(path)) as sim:
         for _ in sim:
             pass
@@ -58,7 +62,7 @@ def only_insertions(before: str, after: str) -> bool:
 
 
 def test_appends_all_four_sections(example_inp, urban_params):
-    before = example_inp.read_text()
+    before = example_inp.read_text(encoding="utf-8")
     result = apply(example_inp, urban_params, backup=False)
 
     assert result.subcatchment_ids == ("S16",)
@@ -87,7 +91,7 @@ def test_appends_all_four_sections(example_inp, urban_params):
     assert polygon.X.max() - polygon.X.min() == pytest.approx(side, abs=1e-3)
     assert polygon.Y.max() - polygon.Y.min() == pytest.approx(side, abs=1e-3)
 
-    after = example_inp.read_text()
+    after = example_inp.read_text(encoding="utf-8")
     assert only_insertions(before, after), "existing lines must be kept verbatim"
     assert headers(example_inp) == headers_of(before)
 
@@ -107,15 +111,15 @@ def test_several_subcatchments_in_one_write(example_inp, urban_params, forest_pa
 
 
 def test_ids_skip_existing_names(example_inp, urban_params, forest_params):
-    text = re.sub(r"(?m)^S6(\s)", r"S16\1", example_inp.read_text())
-    example_inp.write_text(text)
+    text = re.sub(r"(?m)^S6(\s)", r"S16\1", example_inp.read_text(encoding="utf-8"))
+    example_inp.write_text(text, encoding="utf-8")
     result = apply(example_inp, [urban_params, forest_params], backup=False)
     assert result.subcatchment_ids == ("S17", "S18")
 
 
 def test_ids_avoid_orphan_rows_in_other_sections(example_inp, urban_params):
-    text = example_inp.read_text().replace("S15   3.5", "S16   3.5")
-    example_inp.write_text(text)
+    text = example_inp.read_text(encoding="utf-8").replace("S15   3.5", "S16   3.5")
+    example_inp.write_text(text, encoding="utf-8")
     assert apply(example_inp, urban_params, backup=False).subcatchment_ids == ("S17",)
 
 
@@ -123,7 +127,10 @@ def test_ids_avoid_orphan_rows_in_other_sections(example_inp, urban_params):
 
 
 def test_upper_case_polygons_header_is_reused(example_inp, urban_params):
-    example_inp.write_text(example_inp.read_text().replace("[Polygons]", "[POLYGONS]"))
+    example_inp.write_text(
+        example_inp.read_text(encoding="utf-8").replace("[Polygons]", "[POLYGONS]"),
+        encoding="utf-8",
+    )
     apply(example_inp, urban_params, backup=False)
     polygon_headers = [h for h in headers(example_inp) if h.upper() == "POLYGONS"]
     assert polygon_headers == ["POLYGONS"]
@@ -140,8 +147,12 @@ def test_legacy_duplicate_polygons_section_is_not_multiplied(legacy_inp, urban_p
 
 @pytest.mark.parametrize("keep_header", [False, True], ids=["missing", "empty"])
 def test_model_without_subcatchment_sections(example_inp, urban_params, forest_params, keep_header):
-    text = drop_sections(example_inp.read_text(), ("SUBCATCHMENTS", *SUBCATCHMENT_SECTIONS), keep_header=keep_header)
-    example_inp.write_text(text)
+    text = drop_sections(
+        example_inp.read_text(encoding="utf-8"),
+        ("SUBCATCHMENTS", *SUBCATCHMENT_SECTIONS),
+        keep_header=keep_header,
+    )
+    example_inp.write_text(text, encoding="utf-8")
 
     result = apply(example_inp, [urban_params, forest_params], backup=False)
 
@@ -162,63 +173,63 @@ def test_model_without_subcatchment_sections(example_inp, urban_params, forest_p
 
 def test_missing_subareas_infiltration_and_polygons_only(example_inp, urban_params):
     # Existing subcatchments keep their (absent) subareas; only the new one gets rows.
-    text = drop_sections(example_inp.read_text(), ("SUBAREAS", "INFILTRATION", "Polygons"))
-    example_inp.write_text(text)
+    text = drop_sections(example_inp.read_text(encoding="utf-8"), ("SUBAREAS", "INFILTRATION", "Polygons"))
+    example_inp.write_text(text, encoding="utf-8")
     apply(example_inp, urban_params, backup=False)
     for name in ("SUBAREAS", "INFILTRATION", "Polygons"):
         assert list(section(example_inp, name).index.unique()) == ["S16"], name
 
 
 def test_existing_raingages_are_kept(example_inp, urban_params):
-    text = example_inp.read_text().replace(
+    text = example_inp.read_text(encoding="utf-8").replace(
         "Raingage2        INTENSITY",
         "Raingage1        VOLUME    1:00     1.0      TIMESERIES test_series\nRaingage2        INTENSITY",
         1,
     )
-    example_inp.write_text(text)
+    example_inp.write_text(text, encoding="utf-8")
     result = apply(example_inp, urban_params, backup=False)
     assert result.raingage == "Raingage1"
     assert list(section(example_inp, "RAINGAGES").index) == ["Raingage1", "Raingage2"]
 
 
 def test_new_raingage_uses_first_existing_timeseries(example_inp, urban_params):
-    text = drop_sections(example_inp.read_text(), ("RAINGAGES", "SYMBOLS"))
+    text = drop_sections(example_inp.read_text(encoding="utf-8"), ("RAINGAGES", "SYMBOLS"))
     text = re.sub(r"(?m)^(S\d+\s+)Raingage2", r"\1RG1      ", text)
-    example_inp.write_text(text)
+    example_inp.write_text(text, encoding="utf-8")
     result = apply(example_inp, urban_params, backup=False)
     assert result.raingage == "RG1"
     assert section(example_inp, "RAINGAGES").loc["RG1"].DataSourceName == "test_series"
-    assert "generator_series" not in example_inp.read_text()
+    assert "generator_series" not in example_inp.read_text(encoding="utf-8")
     run_swmm(example_inp)
 
 
 def test_outlet_falls_back_to_last_junction_then_self(example_inp, urban_params):
-    text = example_inp.read_text()
+    text = example_inp.read_text(encoding="utf-8")
     no_outfalls = drop_sections(text, ("OUTFALLS",))
-    example_inp.write_text(no_outfalls)
+    example_inp.write_text(no_outfalls, encoding="utf-8")
     assert apply(example_inp, urban_params, backup=False).outlet == "J3"
 
-    example_inp.write_text(drop_sections(no_outfalls, ("JUNCTIONS",)))
+    example_inp.write_text(drop_sections(no_outfalls, ("JUNCTIONS",)), encoding="utf-8")
     result = apply(example_inp, urban_params, backup=False)
     assert result.outlet == result.subcatchment_ids[0]
     assert section(example_inp, "SUBCATCHMENTS").loc[result.outlet].Outlet == result.outlet
 
 
 def test_ids_with_leading_zeros_are_kept_verbatim(example_inp, urban_params):
-    example_inp.write_text(re.sub(r"\bO4\b", "007", example_inp.read_text()))
+    example_inp.write_text(re.sub(r"\bO4\b", "007", example_inp.read_text(encoding="utf-8")), encoding="utf-8")
     result = apply(example_inp, urban_params, backup=False)
     assert result.outlet == "007"
-    assert re.search(r"(?m)^S16\s+Raingage2\s+007\s", example_inp.read_text())
+    assert re.search(r"(?m)^S16\s+Raingage2\s+007\s", example_inp.read_text(encoding="utf-8"))
 
 
 def test_file_without_trailing_newline(example_inp, urban_params):
-    example_inp.write_text(example_inp.read_text().rstrip())
+    example_inp.write_text(example_inp.read_text(encoding="utf-8").rstrip(), encoding="utf-8")
     apply(example_inp, urban_params, backup=False)
     assert len(section(example_inp, "Polygons").loc["S16"]) == 4
 
 
 def test_crlf_and_non_ascii_text_are_preserved(example_inp, urban_params):
-    text = example_inp.read_text().replace("[TITLE]\n", "[TITLE]\nZlewnia Łódź – próbna\n", 1)
+    text = example_inp.read_text(encoding="utf-8").replace("[TITLE]\n", "[TITLE]\nZlewnia Łódź – próbna\n", 1)
     raw = text.replace("\n", "\r\n").encode("utf-8")
     example_inp.write_bytes(raw)
     apply(example_inp, urban_params, backup=False)
@@ -276,12 +287,12 @@ def test_existing_output_file_is_backed_up_before_it_is_replaced(example_inp, ur
     source_bytes = example_inp.read_bytes()
     out = tmp_path / "out" / "existing.inp"
     out.parent.mkdir()
-    out.write_text("old content\n")
+    out.write_text("old content\n", encoding="utf-8")
     result = apply(example_inp, urban_params, output_path=out)
     assert result.backup_path is not None
     assert result.backup_path.parent == out.parent / writer.BACKUP_DIR_NAME
     assert result.backup_path.name.startswith("existing_backup_")
-    assert result.backup_path.read_text() == "old content\n"
+    assert result.backup_path.read_text(encoding="utf-8") == "old content\n"
     assert "S16" in section(out, "SUBCATCHMENTS").index
     assert example_inp.read_bytes() == source_bytes
     assert not (example_inp.parent / writer.BACKUP_DIR_NAME).exists()
@@ -290,7 +301,7 @@ def test_existing_output_file_is_backed_up_before_it_is_replaced(example_inp, ur
 def test_existing_output_file_without_backup_when_opted_out(example_inp, urban_params, tmp_path):
     out = tmp_path / "out" / "existing.inp"
     out.parent.mkdir()
-    out.write_text("old content\n")
+    out.write_text("old content\n", encoding="utf-8")
     result = apply(example_inp, urban_params, output_path=out, backup=False)
     assert result.backup_path is None
     assert not (out.parent / writer.BACKUP_DIR_NAME).exists()
@@ -359,7 +370,7 @@ def test_failed_backup_writes_nothing(example_inp, urban_params, monkeypatch):
 
 
 def test_non_utf8_model_keeps_its_bytes(example_inp, urban_params):
-    text = example_inp.read_text().replace("[TITLE]\n", "[TITLE]\nZlewnia Łódź… próbna\n", 1)
+    text = example_inp.read_text(encoding="utf-8").replace("[TITLE]\n", "[TITLE]\nZlewnia Łódź… próbna\n", 1)
     raw = text.encode("cp1250")
     example_inp.write_bytes(raw)
     apply(example_inp, urban_params, backup=False)
@@ -371,7 +382,10 @@ def test_non_utf8_model_keeps_its_bytes(example_inp, urban_params):
 
 def test_unparseable_model_is_rejected(tmp_path, urban_params):
     bad = tmp_path / "bad.inp"
-    bad.write_text("[SUBCATCHMENTS]\nS1 RG1 O1 1 2 3 4 5 6 7 8 9 10 11 12\n[OPTIONS]\nthis is not\toptions\tdata at all\n")
+    bad.write_text(
+        "[SUBCATCHMENTS]\nS1 RG1 O1 1 2 3 4 5 6 7 8 9 10 11 12\n[OPTIONS]\nthis is not\toptions\tdata at all\n",
+        encoding="utf-8",
+    )
     with pytest.raises(ModelOperationError):
         apply(bad, urban_params)
 
@@ -401,7 +415,10 @@ def test_number_formatting(value, expected):
 
 def test_ids_are_compared_case_insensitively(example_inp, urban_params):
     # SWMM names are case-insensitive: "s16" and "S16" are the same subcatchment (ERROR 207).
-    example_inp.write_text(re.sub(r"(?m)^S15(\s)", r"s16\1", example_inp.read_text()))
+    example_inp.write_text(
+        re.sub(r"(?m)^S15(\s)", r"s16\1", example_inp.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
     result = apply(example_inp, urban_params, backup=False)
     assert result.subcatchment_ids == ("S17",)
     run_swmm(example_inp)
@@ -413,10 +430,10 @@ def test_ids_come_from_every_block_of_a_repeated_section(example_inp, urban_para
         "[SUBAREAS]\nS16 0.15 0.41 1.27 5.08 70 OUTLET\n"
         "[INFILTRATION]\nS16 3.5 0.5 0.25 7 0\n"
     )
-    example_inp.write_text(example_inp.read_text() + extra)
+    example_inp.write_text(example_inp.read_text(encoding="utf-8") + extra, encoding="utf-8")
     result = apply(example_inp, urban_params, backup=False)
     assert result.subcatchment_ids == ("S17",)
-    text = example_inp.read_text()
+    text = example_inp.read_text(encoding="utf-8")
     assert len(re.findall(r"(?m)^S17\s+Raingage2", text)) == 1
 
 
@@ -445,10 +462,10 @@ def test_duplicate_ids_in_rendered_text_are_refused(example_inp, urban_params, m
     ],
 )
 def test_section_headers_in_any_case_are_accepted(example_inp, urban_params, old, new):
-    example_inp.write_text(example_inp.read_text().replace(old, new))
+    example_inp.write_text(example_inp.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
     result = apply(example_inp, urban_params, backup=False)
     assert (result.subcatchment_ids, result.raingage, result.outlet) == (("S16",), "Raingage2", "O4")
-    text = example_inp.read_text()
+    text = example_inp.read_text(encoding="utf-8")
     assert new in text, "the user's spelling of the header is kept"
     assert [h.upper() for h in headers(example_inp)].count(new.strip("[]").upper()) == 1
     if new == "[subareas]":
@@ -499,14 +516,15 @@ def test_random_bytes_are_refused(tmp_path, urban_params):
 
 
 def test_swmm_model_with_some_epanet_like_section_is_accepted(example_inp, urban_params):
-    example_inp.write_text(example_inp.read_text() + "\n[TANKS]\n")
+    example_inp.write_text(example_inp.read_text(encoding="utf-8") + "\n[TANKS]\n", encoding="utf-8")
     assert apply(example_inp, urban_params, backup=False).subcatchment_ids == ("S16",)
 
 
 def test_minimal_model_with_title_and_options_is_accepted(tmp_path, urban_params):
     path = tmp_path / "mini.inp"
     path.write_text(
-        "[TITLE]\nx\n[OPTIONS]\nFLOW_UNITS CMS\nINFILTRATION GREEN_AMPT\nSTART_DATE 01/01/2020\nEND_DATE 01/02/2020\n"
+        "[TITLE]\nx\n[OPTIONS]\nFLOW_UNITS CMS\nINFILTRATION GREEN_AMPT\nSTART_DATE 01/01/2020\nEND_DATE 01/02/2020\n",
+        encoding="utf-8",
     )
     result = apply(path, urban_params, backup=False)
     assert (result.subcatchment_ids, result.raingage, result.outlet) == (("S1",), "RG1", "S1")
@@ -547,7 +565,7 @@ def test_symlinked_model_is_updated_through_the_link(tmp_path, urban_params):
 
 def test_symlinked_output_path_is_written_where_it_points(example_inp, urban_params, tmp_path):
     real = tmp_path / "real_out.inp"
-    real.write_text("old\n")
+    real.write_text("old\n", encoding="utf-8")
     link = tmp_path / "link_out.inp"
     link.symlink_to(real)
     result = apply(example_inp, urban_params, output_path=link, backup=False)
@@ -563,7 +581,7 @@ def test_read_only_target_is_refused(example_inp, urban_params, tmp_path, separa
     if separate_output:
         target = tmp_path / "out" / "ro.inp"
         target.parent.mkdir()
-        target.write_text("old\n")
+        target.write_text("old\n", encoding="utf-8")
     original = target.read_bytes()
     os.chmod(target, 0o444)
     try:
@@ -597,17 +615,17 @@ def test_source_changed_during_edit_is_not_overwritten(example_inp, urban_params
 def test_source_changed_during_edit_leaves_other_target_untouched(example_inp, urban_params, tmp_path, monkeypatch):
     out = tmp_path / "out" / "copy.inp"
     out.parent.mkdir()
-    out.write_text("old\n")
+    out.write_text("old\n", encoding="utf-8")
     real_verify = writer._verify
 
     def verify_then_someone_saves(text, ids):
         real_verify(text, ids)
-        example_inp.write_text(example_inp.read_text() + "\n")
+        example_inp.write_text(example_inp.read_text(encoding="utf-8") + "\n", encoding="utf-8")
 
     monkeypatch.setattr(writer, "_verify", verify_then_someone_saves)
     with pytest.raises(ModelOperationError, match="changed by another program"):
         apply(example_inp, urban_params, output_path=out, backup=False)
-    assert out.read_text() == "old\n"
+    assert out.read_text(encoding="utf-8") == "old\n"
 
 
 # --------------------------------------------------------------------------- value checks
@@ -645,7 +663,7 @@ def test_every_written_value_is_validated(example_inp, urban_params, changes, fi
 def test_smallest_area_is_written_with_its_digits(example_inp, urban_params):
     tiny = dataclasses.replace(urban_params, area_ha=0.0001, width_m=0.5)
     apply(example_inp, tiny, backup=False)
-    assert re.search(r"(?m)^S16\s+Raingage2\s+O4\s+0\.0001\s", example_inp.read_text())
+    assert re.search(r"(?m)^S16\s+Raingage2\s+O4\s+0\.0001\s", example_inp.read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
@@ -654,3 +672,81 @@ def test_smallest_area_is_written_with_its_digits(example_inp, urban_params):
 )
 def test_number_formatting_keeps_small_values(value, expected):
     assert writer._num(value) == expected
+
+
+# --------------------------------------------------------------------------- map units polygon scaling
+
+
+def test_polygon_scaling_map_units_meters(tmp_path, urban_params):
+    path = tmp_path / "model_meters.inp"
+    path.write_text(
+        "[TITLE]\nModel with map meters\n"
+        "[OPTIONS]\nFLOW_UNITS CMS\nINFILTRATION HORTON\n"
+        "[MAP]\nDIMENSIONS 0 0 1000 1000\nUnits Meters\n",
+        encoding="utf-8",
+    )
+    apply(path, urban_params, backup=False)
+    poly = section(path, "Polygons").loc["S1"]
+    side_meters = math.sqrt(urban_params.area_ha * 10_000)
+    assert poly.X.max() - poly.X.min() == pytest.approx(side_meters, abs=1e-3)
+    assert poly.Y.max() - poly.Y.min() == pytest.approx(side_meters, abs=1e-3)
+
+
+def test_polygon_scaling_map_units_feet(tmp_path, urban_params):
+    path = tmp_path / "model_feet.inp"
+    path.write_text(
+        "[TITLE]\nModel with map feet\n"
+        "[OPTIONS]\nFLOW_UNITS CMS\nINFILTRATION HORTON\n"
+        "[MAP]\nDIMENSIONS 0 0 1000 1000\nUnits Feet\n",
+        encoding="utf-8",
+    )
+    apply(path, urban_params, backup=False)
+    poly = section(path, "Polygons").loc["S1"]
+    side_feet = math.sqrt(urban_params.area_ha * 10_000) * FEET_PER_METRE
+    assert poly.X.max() - poly.X.min() == pytest.approx(side_feet, abs=1e-3)
+    assert poly.Y.max() - poly.Y.min() == pytest.approx(side_feet, abs=1e-3)
+
+
+def test_polygon_scaling_no_map_us_units_uses_feet(tmp_path, urban_params):
+    path = tmp_path / "model_us.inp"
+    path.write_text(
+        "[TITLE]\nModel US units no map\n[OPTIONS]\nFLOW_UNITS CFS\nINFILTRATION HORTON\n",
+        encoding="utf-8",
+    )
+    apply(path, urban_params, backup=False)
+    poly = section(path, "Polygons").loc["S1"]
+    side_feet = math.sqrt(urban_params.area_ha * 10_000) * FEET_PER_METRE
+    assert poly.X.max() - poly.X.min() == pytest.approx(side_feet, abs=1e-3)
+    assert poly.Y.max() - poly.Y.min() == pytest.approx(side_feet, abs=1e-3)
+
+
+def test_polygon_scaling_no_map_si_units_uses_meters(tmp_path, urban_params):
+    path = tmp_path / "model_si.inp"
+    path.write_text(
+        "[TITLE]\nModel SI units no map\n[OPTIONS]\nFLOW_UNITS CMS\nINFILTRATION HORTON\n",
+        encoding="utf-8",
+    )
+    apply(path, urban_params, backup=False)
+    poly = section(path, "Polygons").loc["S1"]
+    side_meters = math.sqrt(urban_params.area_ha * 10_000)
+    assert poly.X.max() - poly.X.min() == pytest.approx(side_meters, abs=1e-3)
+    assert poly.Y.max() - poly.Y.min() == pytest.approx(side_meters, abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    ("flow_units", "expected_scale"),
+    [("CFS", FEET_PER_METRE), ("CMS", 1.0)],
+)
+def test_polygon_scaling_map_units_none_falls_back_to_flow_units(tmp_path, urban_params, flow_units, expected_scale):
+    path = tmp_path / f"model_none_{flow_units}.inp"
+    path.write_text(
+        f"[TITLE]\nModel map None {flow_units}\n"
+        f"[OPTIONS]\nFLOW_UNITS {flow_units}\nINFILTRATION HORTON\n"
+        "[MAP]\nDIMENSIONS 0 0 1000 1000\nUnits None\n",
+        encoding="utf-8",
+    )
+    apply(path, urban_params, backup=False)
+    poly = section(path, "Polygons").loc["S1"]
+    side = math.sqrt(urban_params.area_ha * 10_000) * expected_scale
+    assert poly.X.max() - poly.X.min() == pytest.approx(side, abs=1e-3)
+    assert poly.Y.max() - poly.Y.min() == pytest.approx(side, abs=1e-3)

@@ -21,7 +21,7 @@ def test_build_catchments_is_deprecated_and_delegates(example_inp, engine):
     assert result.subcatchment_ids == ("S16",)
     assert result.backup_path is None
     assert builder.last_result is result
-    assert "S16" in example_inp.read_text()
+    assert "S16" in example_inp.read_text(encoding="utf-8")
 
 
 def test_build_catchments_backup_by_default(legacy_inp, engine):

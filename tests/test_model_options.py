@@ -19,14 +19,14 @@ INFILTRATION_LINE = "INFILTRATION         MODIFIED_GREEN_AMPT"
 
 
 def set_options(path: Path, *, flow_units: str | None = "CMS", infiltration: str | None = "MODIFIED_GREEN_AMPT") -> None:
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     text = text.replace(FLOW_UNITS_LINE, "" if flow_units is None else f"FLOW_UNITS           {flow_units}")
     text = text.replace(INFILTRATION_LINE, "" if infiltration is None else f"INFILTRATION         {infiltration}")
-    path.write_text(text)
+    path.write_text(text, encoding="utf-8")
 
 
 def new_row(path: Path, section: str, sid: str = "S16") -> list[str]:
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     body = re.search(rf"(?ims)^\[{section}\](.*?)(?=^\[|\Z)", text)
     assert body, section
     rows = [line.split() for line in body.group(1).splitlines() if line.split() and line.split()[0] == sid]
@@ -110,6 +110,93 @@ def test_infiltration_values_are_not_converted_for_us_units(example_inp, urban_p
     assert new_row(example_inp, "INFILTRATION")[1:] == ["3", "0.5", "4", "7", "0"]
 
 
+# --------------------------------------------------------------------------- polymorphic infiltration (WP4.3, F-19)
+
+
+@pytest.mark.parametrize("method", ["HORTON", "MODIFIED_HORTON"])
+def test_polymorphic_infiltration_horton_custom(example_inp, urban_params, method):
+    import dataclasses
+
+    set_options(example_inp, infiltration=method)
+    custom = {"MaxRate": 4.5, "MinRate": 0.8, "Decay": 3.5, "DryTime": 6.0, "MaxInfil": 1.5}
+    p = dataclasses.replace(urban_params, infiltration=custom)
+    apply(example_inp, p, backup=False)
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["4.5", "0.8", "3.5", "6", "1.5"]
+
+
+def test_polymorphic_infiltration_horton_partial_uses_defaults(example_inp, urban_params):
+    import dataclasses
+
+    set_options(example_inp, infiltration="HORTON")
+    custom = {"MaxRate": 5.0, "MinRate": 1.0, "Decay": 2.0}
+    p = dataclasses.replace(urban_params, infiltration=custom)
+    apply(example_inp, p, backup=False)
+    # DryTime defaults to 7, MaxInfil defaults to 0
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["5", "1", "2", "7", "0"]
+
+
+@pytest.mark.parametrize("key", ["CurvNo", "CurveNum"])
+def test_polymorphic_infiltration_curve_number_custom(example_inp, urban_params, key):
+    import dataclasses
+
+    set_options(example_inp, infiltration="CURVE_NUMBER")
+    custom = {key: 85.0, "Conductivity": 0.25, "DryTime": 5.0}
+    p = dataclasses.replace(urban_params, infiltration=custom)
+    apply(example_inp, p, backup=False)
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["85", "0.25", "5"]
+
+
+@pytest.mark.parametrize("method", ["GREEN_AMPT", "MODIFIED_GREEN_AMPT"])
+def test_polymorphic_infiltration_green_ampt_custom(example_inp, urban_params, method):
+    import dataclasses
+
+    set_options(example_inp, infiltration=method)
+    custom = {"Suction": 50.0, "Ksat": 12.0, "IMD": 0.3}
+    p = dataclasses.replace(urban_params, infiltration=custom)
+    apply(example_inp, p, backup=False)
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["50", "12", "0.3", "7", "0"]
+
+
+def test_polymorphic_infiltration_horton_model_ignores_green_ampt_keys(example_inp, urban_params):
+    import dataclasses
+
+    set_options(example_inp, infiltration="HORTON")
+    p_ga = dataclasses.replace(urban_params, infiltration={"Suction": 50.0, "Ksat": 10.0, "IMD": 0.2})
+    apply(example_inp, p_ga, backup=False)
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["3", "0.5", "4", "7", "0"]
+
+
+def test_polymorphic_infiltration_curve_number_model_ignores_horton_keys(example_inp, urban_params):
+    import dataclasses
+
+    set_options(example_inp, infiltration="CURVE_NUMBER")
+    p_horton = dataclasses.replace(
+        urban_params, infiltration={"MaxRate": 4.0, "MinRate": 1.0, "Decay": 2.0, "DryTime": 7.0, "MaxInfil": 0.0}
+    )
+    apply(example_inp, p_horton, backup=False)
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["80", "0.5", "7"]
+
+
+def test_polymorphic_infiltration_green_ampt_model_ignores_curve_number_keys(example_inp, urban_params):
+    import dataclasses
+
+    set_options(example_inp, infiltration="GREEN_AMPT")
+    p_cn = dataclasses.replace(urban_params, infiltration={"CurvNo": 90.0, "Conductivity": 0.5, "DryTime": 7.0})
+    apply(example_inp, p_cn, backup=False)
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["3.5", "0.5", "0.25", "7", "0"]
+
+
+def test_polymorphic_infiltration_f02_unconverted_in_us_units(example_inp, urban_params):
+    import dataclasses
+
+    set_options(example_inp, flow_units="CFS", infiltration="HORTON")
+    custom = {"MaxRate": 5.5, "MinRate": 1.5, "Decay": 3.0, "DryTime": 4.0, "MaxInfil": 2.0}
+    p = dataclasses.replace(urban_params, infiltration=custom)
+    apply(example_inp, p, backup=False)
+    # F-02: values are written directly in model units without conversion
+    assert new_row(example_inp, "INFILTRATION")[1:] == ["5.5", "1.5", "3", "4", "2"]
+
+
 def test_infiltration_for_reads_defaults_json():
     assert infiltration_for("GREEN_AMPT") == {"Suction": 3.5, "Ksat": 0.5, "IMD": 0.25, "Param4": 7.0, "Param5": 0.0}
     assert infiltration_for("modified_green_ampt") == infiltration_for("GREEN_AMPT")
@@ -138,8 +225,8 @@ def test_infiltration_fields_label_the_leading_values():
 
 
 def drop_raingages(path: Path) -> None:
-    text = re.sub(r"(?ims)^\[(RAINGAGES|SYMBOLS)\].*?(?=^\[|\Z)", "", path.read_text())
-    path.write_text(re.sub(r"(?m)^(S\d+\s+)Raingage2", r"\1RG1      ", text))
+    text = re.sub(r"(?ims)^\[(RAINGAGES|SYMBOLS)\].*?(?=^\[|\Z)", "", path.read_text(encoding="utf-8"))
+    path.write_text(re.sub(r"(?m)^(S\d+\s+)Raingage2", r"\1RG1      ", text), encoding="utf-8")
 
 
 def gage_row(path: Path) -> list[str]:
@@ -147,8 +234,8 @@ def gage_row(path: Path) -> list[str]:
 
 
 def test_generated_storm_gage_is_hourly(example_inp, urban_params):
-    text = re.sub(r"(?ims)^\[(RAINGAGES|SYMBOLS|TIMESERIES)\].*?(?=^\[|\Z)", "", example_inp.read_text())
-    example_inp.write_text(re.sub(r"(?m)^(S\d+\s+)Raingage2", r"\1RG1      ", text))
+    text = re.sub(r"(?ims)^\[(RAINGAGES|SYMBOLS|TIMESERIES)\].*?(?=^\[|\Z)", "", example_inp.read_text(encoding="utf-8"))
+    example_inp.write_text(re.sub(r"(?m)^(S\d+\s+)Raingage2", r"\1RG1      ", text), encoding="utf-8")
     apply(example_inp, urban_params, backup=False)
     assert gage_row(example_inp) == ["RG1", "INTENSITY", "1:00", "1.0", "TIMESERIES", "generator_series"]
     assert writer.DESIGN_STORM[1][0] == "2:00", "the generated series is hourly"
