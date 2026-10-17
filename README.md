@@ -12,6 +12,13 @@ Rapid Catchment Generator (RCG) is a tool for rapid prototyping of a hydraulic m
 
 RCG is available as a **desktop app**, a **command-line tool** and a **Python library**, and all three share the same engine and the same numbers. The methodology and validation are published in [*Water* (2025, 17(12), 1820)](https://doi.org/10.3390/w17121820).
 
+### Key features
+
+* **Literature-backed fuzzy inference** — 126 Mamdani rules across 9 land-form and 14 land-cover categories ([*Water* 2025](https://doi.org/10.3390/w17121820)) derive slope, imperviousness, catchment class, Manning $n$, and depression storage.
+* **Three interfaces, one engine** — native PySide6 desktop GUI (`rcg-gui`), scriptable CLI with `--json` output (`rcg`), and typed Python API (`py.typed`).
+* **Safe, non-destructive `.inp` editing** — preserves comments, formatting, and untouched sections; verifies changes in memory with `swmmio`; writes atomically with automatic `.rcg_backups/` and SHA-256 lost-update protection.
+* **Unit- and method-aware** — adapts automatically to SI (`CMS`, `LPS`, `MLD`) and US (`CFS`, `GPM`, `MGD`) flow units and all five SWMM infiltration methods (`GREEN_AMPT`, `MODIFIED_GREEN_AMPT`, `HORTON`, `MODIFIED_HORTON`, `CURVE_NUMBER`).
+
 * [Install](#install)
 * [Desktop app](#desktop-app)
 * [Command line](#command-line)
@@ -27,8 +34,11 @@ RCG is available as a **desktop app**, a **command-line tool** and a **Python li
 RCG requires **Python 3.10 or newer**. Windows, macOS and Linux are supported.
 
 ```bash
-pip install "rapid-catchment-generator[gui]"   # desktop app + CLI + library (installs PySide6)
-pip install rapid-catchment-generator          # CLI + library only
+# Desktop app + CLI + library (installs PySide6):
+pip install "rapid-catchment-generator[gui] @ git+https://github.com/BuczynskiRafal/rapid-catchment-generator.git"
+
+# CLI + library only:
+pip install "rapid-catchment-generator @ git+https://github.com/BuczynskiRafal/rapid-catchment-generator.git"
 ```
 
 From a local clone of the repository (using [`uv`](https://docs.astral.sh/uv/) or standard `venv`):
@@ -43,7 +53,7 @@ python3 -m venv venv
 venv/bin/pip install ".[gui]"      # or: venv/bin/pip install .
 ```
 
-Ready-made standalone desktop builds are also attached to each [GitHub Release](https://github.com/BuczynskiRafal/rapid-catchment-generator/releases).
+Ready-made standalone desktop and CLI builds are also attached to each [GitHub Release](https://github.com/BuczynskiRafal/rapid-catchment-generator/releases).
 
 
 ## Desktop app
@@ -238,10 +248,10 @@ The meaning of every written value is listed in [Table 4](#table-4-swmm-catchmen
 
 ## How it is built
 
-The diagram below shows the construction of the Rapid Catchment Generator. The modular form of the system allows easy adaptation to specific user needs and tuning to achieve greater accuracy.
+All three interfaces (`rcg.gui`, `rcg.cli`, and the `rcg` Python API) call into a single service and validation layer (`rcg.service` and `rcg.validation`), which coordinates the Mamdani fuzzy inference engine (`rcg.fuzzy`) and the atomic `.inp` writer and backup manager (`rcg.inp_manage`).
 
 <div align="center">
-  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/img/rcg_schema.png" alt="Architecture of Rapid Catchment Generator">
+  <img src="https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/img/rcg_schema.png?raw=true" alt="Architecture of Rapid Catchment Generator">
 </div>
 
 

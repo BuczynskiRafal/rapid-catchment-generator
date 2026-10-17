@@ -23,11 +23,11 @@ RCG requires **Python 3.10 or newer** (Linux, macOS, and Windows).
 
 .. code-block:: bash
 
-   # CLI + Python library:
-   pip install rapid-catchment-generator
+   # Desktop GUI + CLI + Python library (installs PySide6):
+   pip install "rapid-catchment-generator[gui] @ git+https://github.com/BuczynskiRafal/rapid-catchment-generator.git"
 
-   # Desktop GUI + CLI + Python library (adds PySide6):
-   pip install "rapid-catchment-generator[gui]"
+   # CLI + Python library only:
+   pip install "rapid-catchment-generator @ git+https://github.com/BuczynskiRafal/rapid-catchment-generator.git"
 
 From a local clone using `uv <https://docs.astral.sh/uv/>`_:
 

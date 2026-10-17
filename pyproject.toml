@@ -10,18 +10,31 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
-    {name = "Rafal Buczynski"}
+    {name = "Rafał Buczyński"},
+    {name = "Jacek Dawidowicz"},
+]
+keywords = [
+    "swmm",
+    "epa-swmm",
+    "hydrology",
+    "stormwater",
+    "subcatchment",
+    "fuzzy-logic",
+    "urban-drainage",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Hydrology",
+    "Typing :: Typed",
 ]
 dependencies = [
     "numpy>=1.21.6",
@@ -61,6 +74,7 @@ Homepage = "https://github.com/BuczynskiRafal/rapid-catchment-generator"
 Repository = "https://github.com/BuczynskiRafal/rapid-catchment-generator"
 Documentation = "https://rapid-catchment-generator.readthedocs.io/"
 Publication = "https://doi.org/10.3390/w17121820"
+Issues = "https://github.com/BuczynskiRafal/rapid-catchment-generator/issues"
 
 [tool.setuptools.packages.find]
 include = ["rcg*"]

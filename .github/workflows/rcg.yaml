@@ -53,6 +53,9 @@ jobs:
 
   test:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +93,8 @@ jobs:
         # Uploading coverage is optional, including failures before the uploader starts.
         continue-on-error: true
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
           files: ./coverage.xml
           disable_search: true
           fail_ci_if_error: false
