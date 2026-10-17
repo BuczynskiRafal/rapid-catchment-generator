@@ -1,0 +1,56 @@
+name: Bug Report
+description: Report a problem in the desktop app, CLI, or Python library
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A clear and concise description of the issue.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Interface
+      description: Which interface were you using when the issue occurred?
+      options:
+        - Desktop app (rcg-gui)
+        - Command-line tool (rcg)
+        - Python API (import rcg)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Exact commands, parameters, or UI steps that trigger the issue.
+      placeholder: |
+        1. Run `rcg add model.inp --area 5 --land-form flats_and_plateaus --land-cover forests`
+        2. Observe error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected vs. Actual Behavior
+      description: What did you expect to happen, and what happened instead (including any error messages or tracebacks)?
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment & SWMM Model Details
+      description: Operating system, Python and RCG version (`rcg --version`), and output of `rcg inspect model.inp` if applicable.
+      placeholder: |
+        - OS: macOS 15 / Windows 11 / Ubuntu 24.04
+        - Python: 3.12
+        - RCG version: 2.0.0
+        - Model FLOW_UNITS / INFILTRATION: CMS / MODIFIED_GREEN_AMPT
+    validations:
+      required: false

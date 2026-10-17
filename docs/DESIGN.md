@@ -88,7 +88,7 @@ packaging/
 ```
 
 Delete: `gui/` (old Tk app), `rcg/runner.py`, `rcg/interfaces.py`, `rcg/config/rules.json`,
-`setup.py`, `main.py`, root `*.spec`, `RCG.exe` LFS pointer stays (release asset, out of scope),
+`setup.py`, `main.py`, root `*.spec`, `RCG.exe` LFS pointer (replaced by GitHub Releases assets),
 in-package `test_*` folders (moved to `tests/`).
 
 ## Service contract (`rcg/service.py`)
