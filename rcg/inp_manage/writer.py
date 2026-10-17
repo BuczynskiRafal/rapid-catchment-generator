@@ -490,61 +490,56 @@ def _last_vertex(doc: _InpDocument) -> tuple[float, float]:
     return 0.0, 0.0
 
 
-def _has_any(mapping: Mapping[str, float], *keys: str) -> bool:
-    lower_keys = {k.lower() for k in keys}
-    return any(str(k).lower() in lower_keys for k in mapping)
-
-
-def _val(infil: Mapping[str, float], default: float, *keys: str) -> float:
-    for k in keys:
-        if k in infil:
-            return float(infil[k])
-    lower_map = {str(k).lower(): v for k, v in infil.items()}
-    for k in keys:
-        if k.lower() in lower_map:
-            return float(lower_map[k.lower()])
-    return float(default)
-
-
 def _infiltration_row(p: SubcatchmentParameters, method: str) -> list[float]:
     base = base_infiltration_method(method)
     defaults = infiltration_for(method)
-    infil = p.infiltration
+    lower_map = {str(k).lower(): float(v) for k, v in p.infiltration.items()}
+
+    def has_any(*keys: str) -> bool:
+        return any(k.lower() in lower_map for k in keys)
+
+    def val(default: float, *keys: str) -> float:
+        for k in keys:
+            if k.lower() in lower_map:
+                return lower_map[k.lower()]
+        return float(default)
 
     if base == "GREEN_AMPT":
-        if _has_any(infil, "Suction", "Ksat", "IMD"):
-            missing = [k for k in ("Suction", "Ksat", "IMD") if not _has_any(infil, k)]
+        if has_any("Suction", "Ksat", "IMD"):
+            missing = [k for k in ("Suction", "Ksat", "IMD") if not has_any(k)]
             if missing:
                 raise ModelOperationError(f"Infiltration parameters missing: {', '.join(missing)}", operation="apply")
             return [
-                _val(infil, defaults["Suction"], "Suction"),
-                _val(infil, defaults["Ksat"], "Ksat"),
-                _val(infil, defaults["IMD"], "IMD"),
-                _val(infil, defaults.get("Param4", 7.0), "Param4"),
-                _val(infil, defaults.get("Param5", 0.0), "Param5"),
+                val(defaults["Suction"], "Suction"),
+                val(defaults["Ksat"], "Ksat"),
+                val(defaults["IMD"], "IMD"),
+                val(defaults.get("Param4", 7.0), "Param4"),
+                val(defaults.get("Param5", 0.0), "Param5"),
             ]
         return list(defaults.values())
 
     if base == "HORTON":
-        if _has_any(infil, "MaxRate", "MinRate", "Decay"):
-            missing = [k for k in ("MaxRate", "MinRate", "Decay") if not _has_any(infil, k)]
+        if has_any("MaxRate", "MinRate", "Decay"):
+            missing = [k for k in ("MaxRate", "MinRate", "Decay") if not has_any(k)]
             if missing:
                 raise ModelOperationError(f"Infiltration parameters missing: {', '.join(missing)}", operation="apply")
             return [
-                _val(infil, defaults["MaxRate"], "MaxRate"),
-                _val(infil, defaults["MinRate"], "MinRate"),
-                _val(infil, defaults["Decay"], "Decay"),
-                _val(infil, defaults["DryTime"], "DryTime"),
-                _val(infil, defaults["MaxInfil"], "MaxInfil"),
+                val(defaults["MaxRate"], "MaxRate"),
+                val(defaults["MinRate"], "MinRate"),
+                val(defaults["Decay"], "Decay"),
+                val(defaults["DryTime"], "DryTime"),
+                val(defaults["MaxInfil"], "MaxInfil"),
             ]
         return list(defaults.values())
 
     if base == "CURVE_NUMBER":
-        if _has_any(infil, "CurvNo", "CurveNum"):
+        if has_any("CurvNo", "CurveNum", "Conductivity"):
+            if not has_any("CurvNo", "CurveNum"):
+                raise ModelOperationError("Infiltration parameters missing: CurveNum", operation="apply")
             return [
-                _val(infil, defaults["CurveNum"], "CurvNo", "CurveNum"),
-                _val(infil, defaults["Conductivity"], "Conductivity"),
-                _val(infil, defaults["DryTime"], "DryTime"),
+                val(defaults["CurveNum"], "CurvNo", "CurveNum"),
+                val(defaults["Conductivity"], "Conductivity"),
+                val(defaults["DryTime"], "DryTime"),
             ]
         return list(defaults.values())
 

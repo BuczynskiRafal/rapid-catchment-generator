@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import os
 import shutil
+import stat as stat_module
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -83,35 +84,34 @@ def prune_backups(
         return []
 
     pattern = f"{model.stem}_backup_*{model.suffix}"
+    entries: list[tuple[float, str, Path]] = []
     try:
-        backups = sorted(
-            [p for p in backup_dir.glob(pattern) if p.is_file()],
-            key=lambda p: (p.stat().st_mtime, p.name),
-            reverse=True,
-        )
+        candidates = list(backup_dir.glob(pattern))
     except OSError:
         return []
+    for p in candidates:
+        try:
+            st = p.stat()
+        except OSError:
+            continue
+        if stat_module.S_ISREG(st.st_mode):
+            entries.append((st.st_mtime, p.name, p))
 
-    if len(backups) <= 1:
+    if len(entries) <= 1:
         return []
 
+    entries.sort(reverse=True)
     now = datetime.now().timestamp()
     cutoff_seconds = max_age_days * 86400.0
     pruned: list[Path] = []
 
-    for i, b in enumerate(backups):
-        # Never delete the newest backup (index 0)
-        if i == 0:
-            continue
-        try:
-            stat = b.stat()
-            is_excess = i >= max_backups
-            is_expired = (now - stat.st_mtime) > cutoff_seconds
-            if is_excess or is_expired:
+    for i, (mtime, _, b) in enumerate(entries[1:], start=1):
+        if i >= max_backups or (now - mtime) > cutoff_seconds:
+            try:
                 b.unlink(missing_ok=True)
                 pruned.append(b)
-        except OSError:
-            continue
+            except OSError:
+                continue
 
     return pruned
 
