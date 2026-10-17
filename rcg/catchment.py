@@ -40,10 +40,10 @@ __all__ = [
 # --------------------------------------------------------------------------- SWMM units
 
 FLOW_UNITS_SI = ("CMS", "LPS", "MLD")
-"""SI flow units: areas in hectares, lengths in metres, depths in millimetres."""
+"""SI flow units — areas in hectares, lengths in metres, depths in millimetres."""
 
 FLOW_UNITS_US = ("CFS", "GPM", "MGD")
-"""US customary flow units: areas in acres, lengths in feet, depths in inches."""
+"""US customary flow units — areas in acres, lengths in feet, depths in inches."""
 
 ACRES_PER_HECTARE = 2.4710538
 FEET_PER_METRE = 3.2808399
@@ -233,7 +233,7 @@ def _lookup(enum_cls: type[_E], value: str, aliases: Mapping[str, _E]) -> _E | N
 
 
 def lookup_land_form(value: str) -> LandForm | None:
-    """Resolve a snake_case name or human label to a :class:`LandForm` (case-insensitive).
+    """Resolve a snake_case name or human label to a :class:`~rcg.LandForm` (case-insensitive).
 
     Returns ``None`` when nothing matches; :mod:`rcg.validation` turns that into a
     helpful error.
@@ -242,7 +242,7 @@ def lookup_land_form(value: str) -> LandForm | None:
 
 
 def lookup_land_cover(value: str) -> LandCover | None:
-    """Resolve a snake_case name or human label to a :class:`LandCover` (case-insensitive).
+    """Resolve a snake_case name or human label to a :class:`~rcg.LandCover` (case-insensitive).
 
     Returns ``None`` when nothing matches; :mod:`rcg.validation` turns that into a
     helpful error.
@@ -261,8 +261,10 @@ class SubcatchmentParameters:
 
     Attributes
     ----------
-    land_form, land_cover : LandForm, LandCover
-        Input categories.
+    land_form : LandForm
+        Input land form category.
+    land_cover : LandCover
+        Input land cover category.
     area_ha : float
         Area in hectares.
     slope_pct : float
@@ -275,11 +277,15 @@ class SubcatchmentParameters:
         Linguistic catchment class: ``urban``, ``suburban``, ``rural``, ``forests``,
         ``meadows``, ``arable`` or ``mountains``.
     width_m : float
-        Characteristic width in metres, see :func:`width_m`.
-    n_imperv, n_perv : float
-        Manning's n for the impervious and pervious parts.
-    s_imperv_mm, s_perv_mm : float
-        Depression storage in millimetres.
+        Characteristic width in metres, see :func:`~rcg.catchment.width_m`.
+    n_imperv : float
+        Manning's n for the impervious part.
+    n_perv : float
+        Manning's n for the pervious part.
+    s_imperv_mm : float
+        Impervious depression storage in millimetres.
+    s_perv_mm : float
+        Pervious depression storage in millimetres.
     pct_zero : int
         Percent of impervious area without depression storage.
     infiltration : Mapping[str, float]
@@ -288,7 +294,7 @@ class SubcatchmentParameters:
         Modified Horton (``MaxRate``, ``MinRate``, ``Decay``, ``DryTime``, ``MaxInfil``),
         or Curve Number (``CurvNo``/``CurveNum``, ``Conductivity``, ``DryTime``).
         When custom parameters matching the model's method are supplied, they are
-        written to the model; otherwise defaults from :func:`infiltration_for` are used.
+        written to the model; otherwise defaults from :func:`~rcg.catchment.infiltration_for` are used.
     """
 
     land_form: LandForm

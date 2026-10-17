@@ -107,11 +107,16 @@ class FuzzyRule:
 class RuleBuilder:
     """Builder class for creating fuzzy rules with a fluent API.
 
-    Example:
-        rule("flat_urban")
-            .when(land_form=LandForm.FLAT, land_cover=LandCover.URBAN)
-            .then(slope=Slope.LOW, impervious=Impervious.HIGH)
-            .build()
+    Examples
+    --------
+    >>> rule("flat_urban").when(
+    ...     land_form=LandForm.flats_and_plateaus,
+    ...     land_cover=LandCover.urban_moderately_impervious,
+    ... ).then(
+    ...     slope=Slope.flats_and_plateaus,
+    ...     impervious=Impervious.urban_moderately_impervious,
+    ...     catchment=Catchments.urban,
+    ... ).build()
     """
 
     def __init__(self) -> None:

@@ -81,10 +81,14 @@ def setup_logging(
         Logger to configure (default ``"rcg"``).
     log_file : Path, optional
         Also write records to this file (rotated at ``max_bytes``, ``backup_count`` kept).
-    log_format, date_format : str
-        Record and timestamp formats.
-    max_bytes, backup_count : int
-        Rotation settings for ``log_file``.
+    log_format : str
+        Log record format string.
+    date_format : str
+        Timestamp format string.
+    max_bytes : int
+        Maximum file size in bytes before rotation.
+    backup_count : int
+        Number of rotated log files to retain.
     console_level : int, optional
         Level of the stderr output; defaults to ``level``. No stderr handler is added
         when the process has no ``sys.stderr`` (a windowed build).

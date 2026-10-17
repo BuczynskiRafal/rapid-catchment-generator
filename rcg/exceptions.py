@@ -51,8 +51,10 @@ class FuzzyEngineError(RCGError, ValueError):
 
     Attributes
     ----------
-    land_form, land_cover : int or None
-        Inputs that caused the failure.
+    land_form : int or None
+        Land form input that caused the failure.
+    land_cover : int or None
+        Land cover input that caused the failure.
     """
 
     def __init__(self, message: str, land_form: int | None = None, land_cover: int | None = None) -> None:
