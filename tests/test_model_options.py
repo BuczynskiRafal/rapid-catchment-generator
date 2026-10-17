@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import re
 import warnings
 from pathlib import Path
@@ -115,8 +116,6 @@ def test_infiltration_values_are_not_converted_for_us_units(example_inp, urban_p
 
 @pytest.mark.parametrize("method", ["HORTON", "MODIFIED_HORTON"])
 def test_polymorphic_infiltration_horton_custom(example_inp, urban_params, method):
-    import dataclasses
-
     set_options(example_inp, infiltration=method)
     custom = {"MaxRate": 4.5, "MinRate": 0.8, "Decay": 3.5, "DryTime": 6.0, "MaxInfil": 1.5}
     p = dataclasses.replace(urban_params, infiltration=custom)
@@ -125,8 +124,6 @@ def test_polymorphic_infiltration_horton_custom(example_inp, urban_params, metho
 
 
 def test_polymorphic_infiltration_horton_partial_uses_defaults(example_inp, urban_params):
-    import dataclasses
-
     set_options(example_inp, infiltration="HORTON")
     custom = {"MaxRate": 5.0, "MinRate": 1.0, "Decay": 2.0}
     p = dataclasses.replace(urban_params, infiltration=custom)
@@ -137,8 +134,6 @@ def test_polymorphic_infiltration_horton_partial_uses_defaults(example_inp, urba
 
 @pytest.mark.parametrize("key", ["CurvNo", "CurveNum"])
 def test_polymorphic_infiltration_curve_number_custom(example_inp, urban_params, key):
-    import dataclasses
-
     set_options(example_inp, infiltration="CURVE_NUMBER")
     custom = {key: 85.0, "Conductivity": 0.25, "DryTime": 5.0}
     p = dataclasses.replace(urban_params, infiltration=custom)
@@ -146,10 +141,15 @@ def test_polymorphic_infiltration_curve_number_custom(example_inp, urban_params,
     assert new_row(example_inp, "INFILTRATION")[1:] == ["85", "0.25", "5"]
 
 
+def test_polymorphic_infiltration_curve_number_missing_curvno_raises(example_inp, urban_params):
+    set_options(example_inp, infiltration="CURVE_NUMBER")
+    p = dataclasses.replace(urban_params, infiltration={"Conductivity": 0.25, "DryTime": 5.0})
+    with pytest.raises(ModelOperationError, match="Infiltration parameters missing: CurveNum"):
+        apply(example_inp, p, backup=False)
+
+
 @pytest.mark.parametrize("method", ["GREEN_AMPT", "MODIFIED_GREEN_AMPT"])
 def test_polymorphic_infiltration_green_ampt_custom(example_inp, urban_params, method):
-    import dataclasses
-
     set_options(example_inp, infiltration=method)
     custom = {"Suction": 50.0, "Ksat": 12.0, "IMD": 0.3}
     p = dataclasses.replace(urban_params, infiltration=custom)
@@ -158,8 +158,6 @@ def test_polymorphic_infiltration_green_ampt_custom(example_inp, urban_params, m
 
 
 def test_polymorphic_infiltration_horton_model_ignores_green_ampt_keys(example_inp, urban_params):
-    import dataclasses
-
     set_options(example_inp, infiltration="HORTON")
     p_ga = dataclasses.replace(urban_params, infiltration={"Suction": 50.0, "Ksat": 10.0, "IMD": 0.2})
     apply(example_inp, p_ga, backup=False)
@@ -167,8 +165,6 @@ def test_polymorphic_infiltration_horton_model_ignores_green_ampt_keys(example_i
 
 
 def test_polymorphic_infiltration_curve_number_model_ignores_horton_keys(example_inp, urban_params):
-    import dataclasses
-
     set_options(example_inp, infiltration="CURVE_NUMBER")
     p_horton = dataclasses.replace(
         urban_params, infiltration={"MaxRate": 4.0, "MinRate": 1.0, "Decay": 2.0, "DryTime": 7.0, "MaxInfil": 0.0}
@@ -178,8 +174,6 @@ def test_polymorphic_infiltration_curve_number_model_ignores_horton_keys(example
 
 
 def test_polymorphic_infiltration_green_ampt_model_ignores_curve_number_keys(example_inp, urban_params):
-    import dataclasses
-
     set_options(example_inp, infiltration="GREEN_AMPT")
     p_cn = dataclasses.replace(urban_params, infiltration={"CurvNo": 90.0, "Conductivity": 0.5, "DryTime": 7.0})
     apply(example_inp, p_cn, backup=False)
@@ -187,8 +181,6 @@ def test_polymorphic_infiltration_green_ampt_model_ignores_curve_number_keys(exa
 
 
 def test_polymorphic_infiltration_f02_unconverted_in_us_units(example_inp, urban_params):
-    import dataclasses
-
     set_options(example_inp, flow_units="CFS", infiltration="HORTON")
     custom = {"MaxRate": 5.5, "MinRate": 1.5, "Decay": 3.0, "DryTime": 4.0, "MaxInfil": 2.0}
     p = dataclasses.replace(urban_params, infiltration=custom)

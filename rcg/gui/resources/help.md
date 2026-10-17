@@ -19,8 +19,7 @@ SWMM GUI afterwards if you have better local data.
 6. Press **Add subcatchment**. The subcatchment is built from the inputs as they were when you
    pressed it, even if you change them while it is being written.
 
-The **Preview** shows exactly what will be written, and updates as you change the inputs.
-The first preview appears once the fuzzy engine is ready, which takes a few seconds after start-up.
+The **Preview** shows exactly what will be written, and updates immediately as you change the inputs.
 The infiltration row follows the model's infiltration method (Green-Ampt is shown until a model
 is chosen). For models in US units (CFS, GPM, MGD) the area, width and depression storage are
 converted to acres, feet and inches when they are written.
@@ -92,10 +91,14 @@ Land forms are ordered from the flattest to the steepest terrain; the order matt
 | N-Imperv, N-Perv | Manning coefficients mapped from the catchment type. |
 | Dstore-Imperv, Dstore-Perv | Typical depression storage mapped from the catchment type. |
 | % Zero-Imperv | Share of the impervious area without depression storage, mapped from the catchment type. |
-| Infiltration | Green-Ampt defaults. |
-| Polygon | A square of the given area placed to the right of the existing drawing. |
+| Infiltration | Defaults matching the model's `INFILTRATION` option (`GREEN_AMPT`, `MODIFIED_GREEN_AMPT`, `HORTON`, `MODIFIED_HORTON`, or `CURVE_NUMBER`). |
+| Polygon | A square of the given area placed to the right of the existing drawing (scaled to the model's map units). |
 
-## Background
+## Background and citation
+
+The fuzzy-logic framework and its validation are described in:
+
+> Dawidowicz, J.; Buczyński, R. Rapid SWMM Catchment Prototyping Using Fuzzy Logic: Analyzing Catchment Features for Enhanced Efficiency. *Water* **2025**, *17*(12), 1820. <https://doi.org/10.3390/w17121820>
 
 The land form categories follow the topographic classification behind Iszkowski's runoff
 coefficients (after Dołęga and Rogala, 1973):
@@ -114,3 +117,4 @@ coefficients (after Dołęga and Rogala, 1973):
 
 Found a problem? Please report it on the
 [issue tracker](https://github.com/BuczynskiRafal/rapid-catchment-generator/issues).
+

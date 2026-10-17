@@ -6,9 +6,9 @@
 * :func:`inspect` describes a model (units, infiltration method, rain gage, outlet)
   without changing it.
 * :func:`restore` undoes an :func:`apply` from its backup.
-* :func:`warm_up` builds the shared fuzzy engine ahead of time (takes seconds).
+* :func:`warm_up` initialises the shared fuzzy engine ahead of time.
 
-The fuzzy engine (scikit-fuzzy and its scientific stack) is imported only inside
+The fuzzy engine module is imported only inside
 :func:`preview`, :func:`apply` and :func:`warm_up`; importing this module and calling
 :func:`inspect` stay fast.
 """

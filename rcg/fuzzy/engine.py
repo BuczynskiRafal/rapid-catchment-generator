@@ -62,7 +62,6 @@ class FuzzyEngine:
         rule_engine: RuleEngine | None = None,
     ) -> None:
         self._results: dict[tuple[int, int], dict[str, float]] = {}
-        self._dynamic_initialized: bool = False
         self._slope_ctrl: ctrl.ControlSystem | None = None
         self._impervious_ctrl: ctrl.ControlSystem | None = None
         self._catchment_ctrl: ctrl.ControlSystem | None = None
@@ -96,6 +95,27 @@ class FuzzyEngine:
                     rule_engine = define_all_rules(RuleEngine(memberships=memberships))
             self._rule_engine = rule_engine
 
+    def _is_dynamic_ready(self) -> bool:
+        return None not in (
+            self._slope_ctrl,
+            self._impervious_ctrl,
+            self._catchment_ctrl,
+            self._slope_sim,
+            self._impervious_sim,
+            self._catchment_sim,
+        )
+
+    def _reset_dynamic(self, *, clear_controls: bool = False) -> None:
+        self._is_static = False
+        if clear_controls:
+            self._slope_ctrl = None
+            self._impervious_ctrl = None
+            self._catchment_ctrl = None
+            self._slope_sim = None
+            self._impervious_sim = None
+            self._catchment_sim = None
+        self._results.clear()
+
     @property
     def memberships(self) -> Memberships:
         if self._memberships is None:
@@ -108,19 +128,11 @@ class FuzzyEngine:
     def memberships(self, value: Memberships) -> None:
         with self._lock:
             self._memberships = value
-            self._is_static = False
             from rcg.fuzzy.rule_definitions import define_all_rules
             from rcg.fuzzy.rule_engine import RuleEngine
 
             self._rule_engine = define_all_rules(RuleEngine(memberships=value))
-            self._slope_ctrl = None
-            self._impervious_ctrl = None
-            self._catchment_ctrl = None
-            self._slope_sim = None
-            self._impervious_sim = None
-            self._catchment_sim = None
-            self._dynamic_initialized = False
-            self._results.clear()
+            self._reset_dynamic(clear_controls=True)
 
     @property
     def rule_engine(self) -> RuleEngine:
@@ -136,37 +148,13 @@ class FuzzyEngine:
             self._rule_engine = value
             if hasattr(value, "_get_memberships"):
                 self._memberships = value._get_memberships()
-            self._is_static = False
-            self._slope_ctrl = None
-            self._impervious_ctrl = None
-            self._catchment_ctrl = None
-            self._slope_sim = None
-            self._impervious_sim = None
-            self._catchment_sim = None
-            self._dynamic_initialized = False
-            self._results.clear()
+            self._reset_dynamic(clear_controls=True)
 
     def _ensure_dynamic(self) -> None:
-        if (
-            self._dynamic_initialized
-            and self._slope_ctrl is not None
-            and self._impervious_ctrl is not None
-            and self._catchment_ctrl is not None
-            and self._slope_sim is not None
-            and self._impervious_sim is not None
-            and self._catchment_sim is not None
-        ):
+        if self._is_dynamic_ready():
             return
         with self._lock:
-            if (
-                self._dynamic_initialized
-                and self._slope_ctrl is not None
-                and self._impervious_ctrl is not None
-                and self._catchment_ctrl is not None
-                and self._slope_sim is not None
-                and self._impervious_sim is not None
-                and self._catchment_sim is not None
-            ):
+            if self._is_dynamic_ready():
                 return
             from skfuzzy import control as ctrl
 
@@ -186,8 +174,6 @@ class FuzzyEngine:
             if self._catchment_sim is None:
                 self._catchment_sim = ctrl.ControlSystemSimulation(self._catchment_ctrl)
 
-            self._dynamic_initialized = True
-
     @property
     def slope_ctrl(self) -> ctrl.ControlSystem:
         if self._slope_ctrl is None:
@@ -200,9 +186,7 @@ class FuzzyEngine:
         with self._lock:
             self._slope_ctrl = value
             self._slope_sim = None
-            self._dynamic_initialized = False
-            self._is_static = False
-            self._results.clear()
+            self._reset_dynamic()
 
     @property
     def impervious_ctrl(self) -> ctrl.ControlSystem:
@@ -216,9 +200,7 @@ class FuzzyEngine:
         with self._lock:
             self._impervious_ctrl = value
             self._impervious_sim = None
-            self._dynamic_initialized = False
-            self._is_static = False
-            self._results.clear()
+            self._reset_dynamic()
 
     @property
     def catchment_ctrl(self) -> ctrl.ControlSystem:
@@ -232,9 +214,7 @@ class FuzzyEngine:
         with self._lock:
             self._catchment_ctrl = value
             self._catchment_sim = None
-            self._dynamic_initialized = False
-            self._is_static = False
-            self._results.clear()
+            self._reset_dynamic()
 
     @property
     def slope_sim(self) -> ctrl.ControlSystemSimulation:
@@ -247,8 +227,7 @@ class FuzzyEngine:
     def slope_sim(self, value: ctrl.ControlSystemSimulation) -> None:
         with self._lock:
             self._slope_sim = value
-            self._is_static = False
-            self._results.clear()
+            self._reset_dynamic()
 
     @property
     def impervious_sim(self) -> ctrl.ControlSystemSimulation:
@@ -261,8 +240,7 @@ class FuzzyEngine:
     def impervious_sim(self, value: ctrl.ControlSystemSimulation) -> None:
         with self._lock:
             self._impervious_sim = value
-            self._is_static = False
-            self._results.clear()
+            self._reset_dynamic()
 
     @property
     def catchment_sim(self) -> ctrl.ControlSystemSimulation:
@@ -275,8 +253,7 @@ class FuzzyEngine:
     def catchment_sim(self, value: ctrl.ControlSystemSimulation) -> None:
         with self._lock:
             self._catchment_sim = value
-            self._is_static = False
-            self._results.clear()
+            self._reset_dynamic()
 
     def compute_slope(self, land_form: int, land_cover: int) -> float:
         """Return the terrain slope in percent for the given category values."""
