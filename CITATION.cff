@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use Rapid Catchment Generator (RCG) in your research or engineering projects, please cite our article in Water."
+title: "Rapid Catchment Generator"
+type: software
+version: 2.0.0
+license: MIT
+repository-code: "https://github.com/BuczynskiRafal/rapid-catchment-generator"
+url: "https://rapid-catchment-generator.readthedocs.io/"
+keywords:
+  - SWMM
+  - EPA SWMM
+  - hydrology
+  - stormwater
+  - subcatchment
+  - fuzzy logic
+  - urban drainage
+authors:
+  - given-names: "Rafał"
+    family-names: "Buczyński"
+    orcid: "https://orcid.org/0000-0002-0956-0325"
+    affiliation: "Department of Water Supply and Sewage Systems, Faculty of Civil Engineering and Environmental Sciences, Bialystok University of Technology, 15-351 Bialystok, Poland"
+  - given-names: "Jacek"
+    family-names: "Dawidowicz"
+    orcid: "https://orcid.org/0000-0003-1742-9463"
+    affiliation: "Department of Water Supply and Sewage Systems, Faculty of Civil Engineering and Environmental Sciences, Bialystok University of Technology, 15-351 Bialystok, Poland"
+preferred-citation:
+  type: article
+  title: "Rapid SWMM Catchment Prototyping Using Fuzzy Logic: Analyzing Catchment Features for Enhanced Efficiency"
+  authors:
+    - given-names: "Jacek"
+      family-names: "Dawidowicz"
+      orcid: "https://orcid.org/0000-0003-1742-9463"
+      affiliation: "Department of Water Supply and Sewage Systems, Faculty of Civil Engineering and Environmental Sciences, Bialystok University of Technology, 15-351 Bialystok, Poland"
+    - given-names: "Rafał"
+      family-names: "Buczyński"
+      orcid: "https://orcid.org/0000-0002-0956-0325"
+      affiliation: "Department of Water Supply and Sewage Systems, Faculty of Civil Engineering and Environmental Sciences, Bialystok University of Technology, 15-351 Bialystok, Poland"
+  journal: "Water"
+  publisher:
+    name: "MDPI"
+  year: 2025
+  month: 6
+  volume: 17
+  issue: 12
+  start: 1820
+  issn: "2073-4441"
+  doi: "10.3390/w17121820"
+  url: "https://www.mdpi.com/2073-4441/17/12/1820"
