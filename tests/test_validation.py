@@ -241,7 +241,7 @@ def test_validate_parameters_accepts_valid_catchment_types(urban_params, valid_t
     assert validate_parameters(p) is p
 
 
-@pytest.mark.parametrize("invalid_type", ["industrial", "commercial", "", "URBAN", None, 123])
+@pytest.mark.parametrize("invalid_type", ["industrial", "commercial", "", "URBAN", None, 123, [], {}])
 def test_validate_parameters_rejects_invalid_catchment_types(urban_params, invalid_type):
     import dataclasses
 

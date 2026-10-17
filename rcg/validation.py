@@ -145,7 +145,7 @@ def validate_parameters(parameters: SubcatchmentParameters) -> SubcatchmentParam
             value=score,
         )
     valid_types = {"urban", "suburban", "rural", "forests", "meadows", "arable", "mountains"}
-    if parameters.catchment_type not in valid_types:
+    if not isinstance(parameters.catchment_type, str) or parameters.catchment_type not in valid_types:
         raise ValidationError(
             f"Invalid catchment_type {parameters.catchment_type!r}; expected one of {', '.join(sorted(valid_types))}",
             field="catchment_type",
@@ -164,7 +164,7 @@ def validate_parameters(parameters: SubcatchmentParameters) -> SubcatchmentParam
             value=parameters.infiltration,
         )
     for key, raw in parameters.infiltration.items():
-        if key not in KNOWN_INFILTRATION_KEYS:
+        if not isinstance(key, str) or key not in KNOWN_INFILTRATION_KEYS:
             raise ValidationError(
                 f"Unknown infiltration parameter {key!r}. Valid parameters are: {', '.join(sorted(KNOWN_INFILTRATION_KEYS))}",
                 field=f"infiltration[{key}]",
