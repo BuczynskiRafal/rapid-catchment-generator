@@ -143,7 +143,9 @@ def test_save_as_copy_then_add_again_builds_on_the_copy(qtbot, window, model_cop
 
     # The second Add was an in-place update of the copy, so it can be undone.
     assert window.history.undo_candidate() is second
-    assert window.undo_entry(second)
+    window.undo_entry(second)
+    qtbot.waitUntil(lambda: second.undone, timeout=3000)
+    qtbot.waitUntil(lambda: not window.busy, timeout=3000)
     assert len(subcatchment_ids(output)) == source_count + 1
 
 
@@ -163,7 +165,7 @@ def test_adjusted_output_name_is_confirmed_when_it_exists(window, tmp_path, monk
     sibling = tmp_path / "model_v1.inp"  # what with_suffix() would have overwritten
     adjusted = tmp_path / "model_v1.1.inp"
     for path in (source, sibling, adjusted):
-        path.write_text("[TITLE]\n")
+        path.write_text("[TITLE]\n", encoding="utf-8")
     asked: list[Path] = []
     answer = {"value": False}
 
@@ -517,7 +519,7 @@ def test_chevron_is_written_to_the_per_user_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(theme, "_cache_dir", lambda: tmp_path / "cache" / "rcg")
     path = theme._chevron_svg("#123456")
     assert path == tmp_path / "cache" / "rcg" / "theme" / "chevron-123456.svg"
-    assert 'stroke="#123456"' in path.read_text()
+    assert 'stroke="#123456"' in path.read_text(encoding="utf-8")
     assert not list(path.parent.glob("*.tmp")), "written atomically"
 
 
@@ -525,7 +527,7 @@ def test_chevron_falls_back_when_the_cache_is_not_writable(tmp_path, monkeypatch
     from rcg.gui import theme
 
     blocker = tmp_path / "not-a-folder"
-    blocker.write_text("")
+    blocker.write_text("", encoding="utf-8")
     monkeypatch.setattr(theme, "_cache_dir", lambda: blocker / "rcg")
     assert theme._chevron_svg("#654321") is None
     assert "url(" not in theme.stylesheet(theme.tokens(rcg_app.palette()), 13.0)

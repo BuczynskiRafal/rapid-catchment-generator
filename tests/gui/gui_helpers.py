@@ -55,10 +55,10 @@ def save_screenshot(widget, dirs: list[Path], name: str) -> None:
 
 def make_us_model(source: Path, target: Path, *, flow_units: str = "CFS", infiltration: str = "HORTON") -> Path:
     """Copy *source* with other ``FLOW_UNITS`` and ``INFILTRATION`` options."""
-    text = source.read_text()
+    text = source.read_text(encoding="utf-8")
     text = re.sub(r"^(FLOW_UNITS\s+)\S+", rf"\g<1>{flow_units}", text, count=1, flags=re.MULTILINE)
     text = re.sub(r"^(INFILTRATION\s+)\S+", rf"\g<1>{infiltration}", text, count=1, flags=re.MULTILINE)
-    target.write_text(text)
+    target.write_text(text, encoding="utf-8")
     return target
 
 

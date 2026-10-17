@@ -18,8 +18,12 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
+    QButtonGroup,
+    QComboBox,
+    QDoubleSpinBox,
     QFrame,
     QMainWindow,
+    QRadioButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -31,8 +35,9 @@ from rcg.gui.file_actions import ask_save_path, choose_output_path, confirm_repl
 from rcg.gui.help_dialog import HelpDialog, show_about_box
 from rcg.gui.menus import install_menus, shortcut_text
 from rcg.gui.preview_controller import InputsKey, PreviewController
-from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, PreviewPanel
-from rcg.gui.widgets._util import hbox, set_tab_order, vbox
+from rcg.gui.widgets import HistoryEntry, HistoryPanel, MessageBanner, ModelPathField, PreviewPanel
+from rcg.gui.widgets._util import ElidedLabel, WrapLabel, hbox, set_tab_order, vbox
+from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.gui.widgets.containers import VerticalScrollArea, WindowCentral, invalidate_layouts
 from rcg.gui.widgets.drop import FileDropFilter
 from rcg.gui.widgets.header import build_header
@@ -179,19 +184,59 @@ class MainWindow(QMainWindow):
         return self.inputs_scroll
 
     def _adopt_card_widgets(self) -> None:
-        """Expose the cards' widgets on the window (tests and the window's own code use them)."""
-        model, inputs = self.model_card, self.inputs_card
-        self.path_field = model.path_field
-        self.in_place_radio, self.copy_radio, self.output_group = model.in_place_radio, model.copy_radio, model.output_group
-        self.cover_combo, self.form_combo, self.area_spin = inputs.cover_combo, inputs.form_combo, inputs.area_spin
-        self.cover_hint, self.form_hint = inputs.cover_hint, inputs.form_hint
-        self.add_hint, self.add_button = inputs.add_hint, inputs.add_button
+        """Connect cards' signals and install drop filter."""
+        self.model_card.path_field.modelChanged.connect(self._on_model_changed)
+        self._drop_filter = FileDropFilter(
+            self, dropped=self.open_model, highlight=self.model_card.path_field.set_drop_highlight
+        )
+        self.model_card.output_group.buttonToggled.connect(self._on_output_mode_changed)
+        self.inputs_card.statusExpired.connect(self._update_add_state)
+        self.inputs_card.add_button.clicked.connect(self.add_subcatchment)
 
-        self.path_field.modelChanged.connect(self._on_model_changed)
-        self._drop_filter = FileDropFilter(self, dropped=self.open_model, highlight=self.path_field.set_drop_highlight)
-        self.output_group.buttonToggled.connect(self._on_output_mode_changed)
-        inputs.statusExpired.connect(self._update_add_state)
-        self.add_button.clicked.connect(self.add_subcatchment)
+    # -- card widget accessors -------------------------------------------------------
+    @property
+    def path_field(self) -> ModelPathField:
+        return self.model_card.path_field
+
+    @property
+    def in_place_radio(self) -> QRadioButton:
+        return self.model_card.in_place_radio
+
+    @property
+    def copy_radio(self) -> QRadioButton:
+        return self.model_card.copy_radio
+
+    @property
+    def output_group(self) -> QButtonGroup:
+        return self.model_card.output_group
+
+    @property
+    def cover_combo(self) -> QComboBox:
+        return self.inputs_card.cover_combo
+
+    @property
+    def form_combo(self) -> QComboBox:
+        return self.inputs_card.form_combo
+
+    @property
+    def area_spin(self) -> QDoubleSpinBox:
+        return self.inputs_card.area_spin
+
+    @property
+    def cover_hint(self) -> ElidedLabel:
+        return self.inputs_card.cover_hint
+
+    @property
+    def form_hint(self) -> ElidedLabel:
+        return self.inputs_card.form_hint
+
+    @property
+    def add_hint(self) -> WrapLabel:
+        return self.inputs_card.add_hint
+
+    @property
+    def add_button(self) -> PrimaryButton:
+        return self.inputs_card.add_button
 
     def _build_actions(self) -> None:
         actions = install_menus(
@@ -423,17 +468,31 @@ class MainWindow(QMainWindow):
         target, backup = entry.output_path, entry.backup_path
         from rcg import service  # light: does not load the fuzzy engine
 
-        try:
-            service.restore(backup, target, expected_sha256=entry.written_sha256)
-        except RCGError as exc:
-            logger.warning("Undo of %s failed: %s", entry.title, exc, exc_info=isinstance(exc.__cause__, OSError))
-            self.banner.show_error(str(exc))
-            return False
+        self._set_busy(True)
+        task = Task(service.restore, backup, target, expected_sha256=entry.written_sha256)
+        task.signals.succeeded.connect(lambda _, e=entry, t=target: self._on_restore_succeeded(e, t))
+        task.signals.failed.connect(lambda exc, e=entry: self._on_restore_failed(e, exc))
+        task.signals.finished.connect(self._on_restore_finished)
+        self._task = task
+        self._pool.start(task)
+        return True
+
+    def _on_restore_succeeded(self, entry: HistoryEntry, target: Path) -> None:
         entry.undone = True
         self.history.refresh()
         self.path_field.revalidate()
         self.flash_status(f"Undone: {entry.title} removed from {target.name}")
-        return True
+
+    def _on_restore_failed(self, entry: HistoryEntry, exc: BaseException) -> None:
+        if isinstance(exc, RCGError):
+            logger.warning("Undo of %s failed: %s", entry.title, exc, exc_info=isinstance(exc.__cause__, OSError))
+            self.banner.show_error(str(exc))
+        else:
+            logger.error("Undo of %s failed unexpectedly", entry.title, exc_info=(type(exc), exc, exc.__traceback__))
+            self.banner.show_error(self._describe_error(exc, "The undo operation could not be completed."))
+
+    def _on_restore_finished(self) -> None:
+        self._set_busy(False)
 
     def flash_status(self, text: str, timeout_ms: int = 6000) -> None:
         """Show a short confirmation next to the primary button (no layout shift)."""

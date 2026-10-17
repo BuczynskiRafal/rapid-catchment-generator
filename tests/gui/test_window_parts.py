@@ -71,8 +71,8 @@ def test_copy_suggestion_skips_existing_files(tmp_path):
 
     source = tmp_path / "model.inp"
     assert copy_suggestion(source) == tmp_path / "model_rcg.inp"
-    (tmp_path / "model_rcg.inp").write_text("")
-    (tmp_path / "model_rcg_2.inp").write_text("")
+    (tmp_path / "model_rcg.inp").write_text("", encoding="utf-8")
+    (tmp_path / "model_rcg_2.inp").write_text("", encoding="utf-8")
     assert copy_suggestion(source) == tmp_path / "model_rcg_3.inp"
 
 

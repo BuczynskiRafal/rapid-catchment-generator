@@ -13,6 +13,8 @@ so the fields of both cards line up.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QLocale, QSignalBlocker, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
@@ -36,6 +38,9 @@ from rcg.gui.widgets import ModelPathField
 from rcg.gui.widgets._util import ElidedLabel, WrapLabel, divider, hbox, label, set_prop
 from rcg.gui.widgets.buttons import PrimaryButton
 from rcg.validation import max_area_ha
+
+if TYPE_CHECKING:
+    from rcg.catchment import ModelInfo
 
 __all__ = [
     "ADD_TEXT",
@@ -147,6 +152,24 @@ class ModelCard(_Card):
         """The card's focusable widgets in Tab order."""
         return [self.path_field.edit, self.path_field.browse_button, self.in_place_radio, self.copy_radio]
 
+    @property
+    def model_path(self) -> Path | None:
+        """The currently selected SWMM model path, or ``None``."""
+        return self.path_field.path()
+
+    def set_model_path(self, path: str | Path) -> None:
+        """Set the model path in the path field."""
+        self.path_field.set_path(path)
+
+    @property
+    def model_info(self) -> ModelInfo | None:
+        """The model metadata for the currently selected file, or ``None``."""
+        return self.path_field.model_info()
+
+    def revalidate_model(self) -> None:
+        """Re-validate and re-inspect the model path."""
+        self.path_field.revalidate()
+
 
 class InputsCard(_Card):
     """Land cover, land form and area, with the *Add subcatchment* row at the bottom.
@@ -235,6 +258,20 @@ class InputsCard(_Card):
     def clear_status(self) -> None:
         """Drop a confirmation that no longer applies; the next state update replaces it."""
         self._status_timer.stop()
+
+    def set_add_enabled(self, enabled: bool) -> None:
+        """Set whether the Add subcatchment button is enabled."""
+        self.add_button.setEnabled(enabled)
+
+    @property
+    def is_add_enabled(self) -> bool:
+        """Whether the Add subcatchment button is currently enabled."""
+        return self.add_button.isEnabled()
+
+    @property
+    def status_text(self) -> str:
+        """The current status text shown in the action row."""
+        return self.add_hint.text()
 
     def _make_combo(self, options: tuple[CategoryOption, ...], accessible: str) -> QComboBox:
         combo = QComboBox(self)

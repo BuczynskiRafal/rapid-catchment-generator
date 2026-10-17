@@ -129,7 +129,7 @@ def test_model_path_validation_is_inline(qtbot, window, tmp_path, model_copy):
     assert not window.add_button.isEnabled()
 
     not_a_model = tmp_path / "notes.txt"
-    not_a_model.write_text("x")
+    not_a_model.write_text("x", encoding="utf-8")
     window.path_field.set_path(not_a_model)
     assert window.path_field.path() is None
     assert ".inp" in window.path_field.message.full_text()
@@ -138,6 +138,32 @@ def test_model_path_validation_is_inline(qtbot, window, tmp_path, model_copy):
     assert window.path_field.path() == model_copy.resolve()
     assert window.path_field.message.full_text().startswith("15 subcatchments")
     assert window.add_button.isEnabled()
+
+
+def test_model_path_field_debounce(qtbot, window):
+    """Typing into the path field starts a 200 ms debounce timer before validation."""
+    field = window.path_field
+    field.edit.setText("invalid_text")
+    assert field._debounce.isActive()
+    qtbot.waitUntil(lambda: not field._debounce.isActive(), timeout=1000)
+    assert field.path() is None
+    assert field.message.property("role") == "captionError"
+
+
+def test_card_encapsulation_accessors(window, model_copy):
+    """ModelCard and InputsCard provide encapsulated properties and methods."""
+    card = window.model_card
+    card.set_model_path(model_copy)
+    assert card.model_path == model_copy.resolve()
+    assert card.model_info is not None
+    assert card.model_info.subcatchment_count == 15
+
+    inputs = window.inputs_card
+    inputs.set_add_enabled(False)
+    assert not inputs.is_add_enabled
+    inputs.set_add_enabled(True)
+    assert inputs.is_add_enabled
+    assert isinstance(inputs.status_text, str)
 
 
 def test_dropping_a_file_sets_the_model(window, model_copy):
@@ -221,11 +247,15 @@ def test_undo_restores_the_backup(qtbot, window, model_copy):
     latest, older = window.history.entries
     assert window.history.undo_candidate() is latest
     qtbot.mouseClick(window.history.undo_button_for(latest), Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(lambda: latest.undone, timeout=3000)
+    qtbot.waitUntil(lambda: not window.busy, timeout=3000)
     assert latest.undone
     assert model_copy.read_bytes() == first_written
     assert window.history.undo_candidate() is older
 
-    assert window.undo_entry(older)
+    window.undo_entry(older)
+    qtbot.waitUntil(lambda: older.undone, timeout=3000)
+    qtbot.waitUntil(lambda: not window.busy, timeout=3000)
     assert model_copy.read_bytes() == original
     assert window.history.undo_candidate() is None
     assert latest.backup_path.is_file(), "backups are kept after undo"
@@ -235,11 +265,13 @@ def test_undo_refuses_when_the_file_changed_since(qtbot, window, model_copy):
     window.path_field.set_path(model_copy)
     add_and_wait(qtbot, window)
     entry = window.history.entries[0]
-    model_copy.write_text(model_copy.read_text() + "\n; edited by hand\n")
+    model_copy.write_text(model_copy.read_text(encoding="utf-8") + "\n; edited by hand\n", encoding="utf-8")
 
-    assert not window.undo_entry(entry)
+    window.undo_entry(entry)
+    qtbot.waitUntil(lambda: window.banner.isVisible(), timeout=3000)
+    qtbot.waitUntil(lambda: not window.busy, timeout=3000)
     assert not entry.undone
-    assert window.banner.isVisible() and window.banner.kind == "error"
+    assert window.banner.kind == "error"
     assert "changed" in window.banner.text
 
 
@@ -323,6 +355,55 @@ def test_unexpected_error_is_logged_and_shown_generically(qtbot, window, model_c
     assert "unexpected error" in window.banner.text
     records = [r for r in caplog.records if r.name == "rcg.gui" and r.exc_info]
     assert records and "internal detail" in str(records[-1].exc_info[1])
+
+
+def test_engine_worker_warmup_failure(qtbot, monkeypatch):
+    """EngineWorker emits warmUpFailed when service.warm_up raises an exception."""
+    from rcg.gui.workers import EngineWorker
+
+    worker = EngineWorker()
+    monkeypatch.setattr(
+        "rcg.service.warm_up",
+        lambda *_, **__: (_ for _ in ()).throw(RuntimeError("Fuzzy warm-up failed")),
+    )
+
+    with qtbot.waitSignal(worker.warmUpFailed, timeout=2000) as blocker:
+        worker.warm_up()
+
+    assert isinstance(blocker.args[0], RuntimeError)
+    assert str(blocker.args[0]) == "Fuzzy warm-up failed"
+
+
+def test_engine_worker_preview_failure(qtbot, gui_engine, monkeypatch):
+    """EngineWorker emits previewFailed when service.preview raises an exception."""
+    from rcg.gui.workers import EngineWorker
+
+    worker = EngineWorker(engine=gui_engine)
+    monkeypatch.setattr(
+        "rcg.service.preview",
+        lambda *_, **__: (_ for _ in ()).throw(ValueError("Preview computation error")),
+    )
+
+    with qtbot.waitSignal(worker.previewFailed, timeout=2000) as blocker:
+        worker.compute(7, (5.5, LandForm.flats_and_plateaus, LandCover.urban_moderately_impervious), pinned=True)
+
+    assert blocker.args[0] == 7
+    assert isinstance(blocker.args[1], ValueError)
+    assert str(blocker.args[1]) == "Preview computation error"
+
+
+def test_main_window_engine_failed_banner(qtbot, window):
+    """When the fuzzy engine worker fails, MainWindow displays an error banner and disables Add."""
+    from rcg.gui.main_window import ENGINE_FAILED_TEXT
+
+    error = RuntimeError("Fuzzy engine crashed")
+    window._on_engine_failed(error)
+
+    assert window.banner.isVisible()
+    assert window.banner.kind == "error"
+    assert ENGINE_FAILED_TEXT in window.banner.text
+    assert not window.add_button.isEnabled()
+    assert window.preview.preparing_label.text() == ENGINE_FAILED_TEXT
 
 
 # --------------------------------------------------------------------------- settings, help, shortcuts

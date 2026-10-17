@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import QFileDialog, QLineEdit, QPushButton, QWidget
 
 from rcg.exceptions import RCGError
@@ -106,13 +106,18 @@ class ModelPathField(QWidget):
         self._start_dir = ""
         self._hint = "Browse, or drop an .inp file onto the window."
 
+        self._debounce = QTimer(self)
+        self._debounce.setInterval(200)
+        self._debounce.setSingleShot(True)
+        self._debounce.timeout.connect(self._on_debounce_timeout)
+
         self.edit = QLineEdit(self)
         self.edit.setPlaceholderText("No model selected")
         self.edit.setMinimumWidth(90)
         self.edit.setClearButtonEnabled(True)
         self.edit.setAcceptDrops(False)  # drops bubble up to the window, which accepts files
         self.edit.setAccessibleName("SWMM model file")
-        self.edit.textChanged.connect(self._revalidate)
+        self.edit.textChanged.connect(self._on_text_changed)
 
         self.browse_button = QPushButton("Browse…", self)
         self.browse_button.setAccessibleName("Browse for SWMM model")
@@ -139,8 +144,11 @@ class ModelPathField(QWidget):
         return self.edit.text()
 
     def set_path(self, path: str | Path) -> None:
+        """Set the path programmatically without triggering the debounce delay."""
         self.edit.setText(str(path))
+        self._debounce.stop()  # Cancel timer started by textChanged
         self.edit.setCursorPosition(len(self.edit.text()))
+        self._revalidate(self.edit.text())
 
     def set_start_directory(self, directory: str) -> None:
         self._start_dir = directory
@@ -157,6 +165,13 @@ class ModelPathField(QWidget):
 
     def revalidate(self) -> None:
         """Re-read the model (e.g. after RCG or another program changed it)."""
+        self._debounce.stop()
+        self._revalidate(self.edit.text())
+
+    def _on_text_changed(self, _text: str) -> None:
+        self._debounce.start(200)
+
+    def _on_debounce_timeout(self) -> None:
         self._revalidate(self.edit.text())
 
     # -- internals -------------------------------------------------------------------

@@ -62,11 +62,11 @@ class Task(QRunnable):
         try:
             result = self._fn(*self._args, **self._kwargs)
         except Exception as exc:  # reported to the GUI, which decides how to surface it
-            self.signals.failed.emit(exc)
+            _emit(self.signals.failed, exc)
         else:
-            self.signals.succeeded.emit(result)
+            _emit(self.signals.succeeded, result)
         finally:
-            self.signals.finished.emit()
+            _emit(self.signals.finished)
 
 
 class EngineWorker(QObject):
