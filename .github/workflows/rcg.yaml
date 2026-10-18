@@ -132,8 +132,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libxcb-cursor0
       - name: Install dependencies
         run: |
-          uv venv --python 3.12
-          uv pip install ".[gui]" pyinstaller pillow
+          uv sync --locked --extra gui --python 3.12
+          uv pip install pyinstaller pillow
       - name: Build the desktop app
         run: uv run --no-sync pyinstaller packaging/rcg-gui.spec
       - name: Build the command-line tool
