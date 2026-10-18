@@ -1,9 +1,14 @@
+[![Release](https://img.shields.io/github/v/release/BuczynskiRafal/rapid-catchment-generator)](https://github.com/BuczynskiRafal/rapid-catchment-generator/releases/latest)
+[![CI](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml/badge.svg?branch=main)](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml)
+[![codecov](https://codecov.io/gh/BuczynskiRafal/rapid-catchment-generator/branch/main/graph/badge.svg)](https://codecov.io/gh/BuczynskiRafal/rapid-catchment-generator)
 [![Documentation Status](https://readthedocs.org/projects/rapid-catchment-generator/badge/?version=latest)](https://rapid-catchment-generator.readthedocs.io/en/latest/?badge=latest)
 [![DOI: 10.3390/w17121820](https://img.shields.io/badge/DOI-10.3390%2Fw17121820-blue.svg)](https://doi.org/10.3390/w17121820)
+[![Python 3.10–3.13](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/BuczynskiRafal/rapid-catchment-generator/releases)
+[![Typing: mypy](https://img.shields.io/badge/typing-mypy-blue.svg)](https://mypy-lang.org/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![GitHub Actions Build Status](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml/badge.svg?branch=main)](https://github.com/BuczynskiRafal/rapid-catchment-generator/actions/workflows/rcg.yaml)
-[![codecov](https://codecov.io/gh/BuczynskiRafal/rapid-catchment-generator/branch/main/graph/badge.svg?token=57X9FHJNHJ)](https://codecov.io/gh/BuczynskiRafal/rapid-catchment-generator)
 
 
 # Rapid Catchment Generator
@@ -543,34 +548,11 @@ If you use Rapid Catchment Generator (RCG) in your research or engineering proje
 ```
 
 
-## Bugs
-
-If you encounter any bugs or issues while using our software, please feel free to report them on the project's [issue tracker](https://github.com/BuczynskiRafal/rapid-catchment-generator/issues). When reporting a bug, please provide as much information as possible to help us reproduce and resolve the issue, including:
-
-* A clear and concise description of the issue
-* Steps to reproduce the problem
-* Expected behavior and actual behavior
-* Any error messages or logs that may be relevant
-
-Your feedback is invaluable and will help us improve the software for all users.
-
-
 ## Contributing
 
-We welcome and appreciate contributions from the community! If you're interested in contributing to this project, please follow these steps:
-
-1. Fork the repository on GitHub.
-2. Create a new branch for your changes.
-3. Make your changes, including updates to documentation if needed.
-4. Write tests to ensure your changes are working as expected.
-5. Ensure all tests pass and there are no linting or code style issues.
-6. Commit your changes and create a pull request, providing a detailed description of your changes.
-
-We will review your pull request as soon as possible and provide feedback. Once your contribution is approved, it will be merged into the main branch.
-
-For more information about contributing to the project, please see our [contributing guide](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/CONTRIBUTING.md).
+Bug reports and feature requests can be opened on the [issue tracker](https://github.com/BuczynskiRafal/rapid-catchment-generator/issues). Development setup, testing commands, and pull request conventions are documented in [CONTRIBUTING.md](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/CONTRIBUTING.md). Security vulnerabilities should be reported privately as described in [SECURITY.md](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/SECURITY.md).
 
 
 ## License
 
-This project is licensed under the [MIT License](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE). By using, distributing, or contributing to this project, you agree to the terms and conditions of the license. Please refer to the [LICENSE](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE) file for the full text of the license.
+Released under the [MIT License](https://github.com/BuczynskiRafal/rapid-catchment-generator/blob/main/LICENSE).
